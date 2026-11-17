@@ -5,7 +5,7 @@
 
 import type { Plugin } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'http';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
 import { fetchAgentProfiles, closeOpenBotDb, DEFAULT_DB_PATH } from './src/data/openbotSource.node.ts';
@@ -66,38 +66,79 @@ const SECURITY_HEADERS: Record<string, string> = {
 
 const SAFE_FILE_STEM = /^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$/;
 
+const EXT_MIME: Record<string, string> = {
+  webp: 'image/webp',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  gif: 'image/gif',
+};
+
+type LogoHit = { bytes: Buffer; mime: string; source: 'config' | 'newest'; version: string };
+
 /**
  * Reads the workspace logo that OpenBot itself stores next to its team-server
- * config. Only the two identifying fields are parsed, the file name is
- * re-validated, and the resolved path must stay inside the logo directory.
+ * config. The version named in the config wins; if OpenBot replaced the picture
+ * without bumping that field, the newest allowed file in the logo folder is used
+ * instead, so a new logo shows up without waiting for the config to catch up.
+ * Only the two identifying fields are parsed and the resolved path must stay
+ * inside the logo directory.
  */
-function loadServerLogo(): { bytes: Buffer; mime: string } | null {
+function loadServerLogo(): LogoHit | null {
   const root = dirname(DEFAULT_DB_PATH);
-  let raw: string;
-  try {
-    raw = readFileSync(join(root, CONFIG_NAME), 'utf8');
-  } catch {
-    return null;
-  }
-
-  let config: z.infer<typeof serverLogoConfig>;
-  try {
-    config = serverLogoConfig.parse(JSON.parse(raw));
-  } catch {
-    return null;
-  }
-
-  const logo = config.hosts?.find((h) => h.serverLogo)?.serverLogo;
-  if (!logo || !SAFE_FILE_STEM.test(logo.version)) return null;
-  const ext = LOGO_MIME_EXT[logo.mimeType];
-  if (!ext) return null;
-
   const logoDir = resolve(root, LOGO_DIR);
-  const file = resolve(logoDir, `${logo.version}.${ext}`);
-  if (!file.startsWith(logoDir + sep)) return null;
+  if (!logoDir.startsWith(resolve(root) + sep)) return null;
 
+  let config: z.infer<typeof serverLogoConfig> | null = null;
   try {
-    return { bytes: readFileSync(file), mime: logo.mimeType };
+    config = serverLogoConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
+  } catch {
+    config = null;
+  }
+
+  const logo = config?.hosts?.find((h) => h.serverLogo)?.serverLogo;
+  if (logo && SAFE_FILE_STEM.test(logo.version)) {
+    const ext = LOGO_MIME_EXT[logo.mimeType];
+    if (ext) {
+      const file = resolve(logoDir, `${logo.version}.${ext}`);
+      if (file.startsWith(logoDir + sep)) {
+        try {
+          return { bytes: readFileSync(file), mime: logo.mimeType, source: 'config', version: logo.version };
+        } catch {
+          /* fall through to the newest file */
+        }
+      }
+    }
+  }
+
+  let names: string[] = [];
+  try {
+    names = readdirSync(logoDir).filter((n) => !n.startsWith('.'));
+  } catch {
+    return null;
+  }
+
+  const newest = names
+    .map((name) => {
+      const dot = name.lastIndexOf('.');
+      const stem = dot > 0 ? name.slice(0, dot) : name;
+      const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : '';
+      const mime = EXT_MIME[ext];
+      if (!mime || !SAFE_FILE_STEM.test(stem)) return null;
+      const file = resolve(logoDir, name);
+      if (!file.startsWith(logoDir + sep)) return null;
+      try {
+        return { file, mime, stem, mtime: statSync(file).mtimeMs };
+      } catch {
+        return null;
+      }
+    })
+    .filter((c): c is { file: string; mime: string; stem: string; mtime: number } => c !== null)
+    .sort((a, b) => b.mtime - a.mtime)[0];
+
+  if (!newest) return null;
+  try {
+    return { bytes: readFileSync(newest.file), mime: newest.mime, source: 'newest', version: newest.stem };
   } catch {
     return null;
   }
@@ -180,6 +221,7 @@ export function openBotApiPlugin(): Plugin {
       'Content-Type': logo.mime,
       'Content-Length': logo.bytes.length,
       'Cache-Control': 'no-store',
+      'X-Office-Logo-Source': logo.source,
       ...SECURITY_HEADERS,
     });
     if (method === 'HEAD') res.end();

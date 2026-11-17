@@ -89,8 +89,8 @@ Measured: `count 15`, keys as above, phases `{idle: 14, working: 1}` at capture 
 | Item | Reality |
 |---|---|
 | Source | `openbot-team-server-v2.json` (same folder as `openbot.db`), field `hosts[].serverLogo` (`version`, `mimeType`) |
-| File | `<app-support>/openbot-team-server-v2.json.assets/logo/<version>.<ext>` |
-| Response | raw image bytes, `Content-Type` taken from the config, `Cache-Control: no-store` |
+| File | `<app-support>/openbot-team-server-v2.json.assets/logo/<version>.<ext>`, else the **newest** allowed file in that folder when the config still names an older, missing version |
+| Response | raw image bytes, `Content-Type` taken from the config (or the file extension in fallback mode), `Cache-Control: no-store`, `X-Office-Logo-Source: config \| newest` |
 | No logo on disk | `204 No Content`, empty body — the UI keeps its own mark |
 | Allowed types | `image/webp`, `image/png`, `image/jpeg`, `image/gif`; SVG is refused on purpose |
 | Guards | Host allowlist → `421`, non-`GET`/`HEAD` → `405`, file stem re-validated, resolved path must stay inside the logo directory |
@@ -99,6 +99,9 @@ Measured: `count 15`, keys as above, phases `{idle: 14, working: 1}` at capture 
 The sidebar renders this image only when the answer is `200` with an `image/*`
 `Content-Type`; anything else keeps the built-in `VO` mark. Static hosts answer
 `/api/office-logo` with `index.html`, so that content-type check is what holds the fallback.
+Nothing is drawn before the first answer resolves, so a reload never flashes the green
+`VO` tile. The browser re-reads the endpoint every 20 s and on window focus, so a logo
+replaced inside OpenBot appears without a page reload.
 
 ---
 

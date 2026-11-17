@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "../store/useStore";
 import { PHASE_COLORS, PHASE_LABEL } from "../constants";
 import { AGENT_PHASES } from "../types";
@@ -20,31 +20,53 @@ export default function HUD() {
   } = useStore();
   const [now, setNow] = useState(Date.now());
   const [sidebarVisible, setSidebarVisible] = useState(true);
-  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+  const [logo, setLogo] = useState<{ src: string; version: string } | null>(null);
+  const [logoChecked, setLogoChecked] = useState(false);
+  const logoUrl = useRef<string | null>(null);
 
   // The workspace logo lives in OpenBot's own app-support folder and is exposed
-  // by the dev API only as image bytes. A 204 (no logo) or a static host that
-  // answers with HTML leaves the plain "VO" mark in place.
+  // by the dev API only as image bytes. It is re-read on focus and every 20 s so
+  // a logo replaced inside OpenBot shows up without a page reload. Nothing is
+  // drawn until the first answer arrives, which keeps the reload free of a
+  // flash of the built-in mark.
   useEffect(() => {
-    let objectUrl: string | null = null;
     let cancelled = false;
-    fetch('/api/office-logo', { headers: { Accept: 'image/*' } })
-      .then((r) => {
-        const type = r.headers.get('content-type') ?? '';
-        if (r.status !== 200 || !type.startsWith('image/')) return null;
-        return r.blob();
-      })
-      .then((blob) => {
-        if (!blob || cancelled) return;
-        objectUrl = URL.createObjectURL(blob);
-        setLogoSrc(objectUrl);
-      })
-      .catch(() => {
-        /* keep the built-in mark */
-      });
+
+    const load = async () => {
+      try {
+        const res = await fetch('/api/office-logo', { headers: { Accept: 'image/*' }, cache: 'no-store' });
+        const type = res.headers.get('content-type') ?? '';
+        if (cancelled) return;
+        if (res.status !== 200 || !type.startsWith('image/')) {
+          setLogoChecked(true);
+          return;
+        }
+        const version = res.headers.get('x-office-logo-version') ?? res.headers.get('etag') ?? '';
+        const blob = await res.blob();
+        if (cancelled) return;
+        const url = URL.createObjectURL(blob);
+        setLogo((prev) => {
+          if (prev && prev.src === url) return prev;
+          if (logoUrl.current) URL.revokeObjectURL(logoUrl.current);
+          logoUrl.current = url;
+          return { src: url, version };
+        });
+        setLogoChecked(true);
+      } catch {
+        if (!cancelled) setLogoChecked(true);
+      }
+    };
+
+    void load();
+    const onFocus = () => void load();
+    window.addEventListener('focus', onFocus);
+    const t = window.setInterval(() => void load(), 20_000);
     return () => {
       cancelled = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      window.removeEventListener('focus', onFocus);
+      window.clearInterval(t);
+      if (logoUrl.current) URL.revokeObjectURL(logoUrl.current);
+      logoUrl.current = null;
     };
   }, []);
 
@@ -65,13 +87,16 @@ export default function HUD() {
       {sidebarVisible ? (
         <aside className="hud-sidebar" aria-label="Virtual office sidebar">
           <header className="sidebar-header">
-            <div className={logoSrc ? 'brand-mark brand-mark-logo' : 'brand-mark'}>
-              {logoSrc ? (
-                <img src={logoSrc} alt="Workspace logo" />
-              ) : (
-                'VO'
-              )}
-            </div>
+            {logo ? (
+              <div className="brand-mark brand-mark-logo">
+                <img src={logo.src} alt="Workspace logo" />
+              </div>
+            ) : logoChecked ? (
+              <div className="brand-mark">VO</div>
+            ) : (
+              /* Nothing drawn until the first answer: no green flash on reload. */
+              <div className="brand-mark brand-mark-pending" aria-hidden="true" />
+            )}
             <div className="brand-copy">
               <span>VIRTUAL OFFICE</span>
               <strong>Workspace</strong>
