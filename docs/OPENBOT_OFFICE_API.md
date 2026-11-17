@@ -194,18 +194,21 @@ seed alone gave them one shape, expression, hair and accessory. The avalanche is
 required — raw FNV-1a low bits are weak, so ids differing only near the end collided.
 
 **Tint is a pair, one per theme, measured against two named surfaces.** The face is
-painted on the **avatar tile** (`.avatar` background: two layers of `--ovo-surface`
-over the panel) and sits inside the **panel gutter** (`.panel.info` background over the
-page backdrop). They are different colours, and in the light theme the gutter is
-*darker* than the tile, so the gutter is the binding surface. `avatarTints()` returns
+painted on the **avatar tile** (`.avatar` background: `--ovo-avatar-tile`, opaque) and
+sits inside the **panel gutter** (`.panel.info` background: `--ovo-panel-bg`, blurred over
+the page backdrop). They are different colours, and in the light theme the gutter is
+*darker* than the tile, so the gutter is the binding surface. The tile is opaque on
+purpose — a frosted card behind a translucent tile would put the face on a blur whose
+colour depends on the office behind it, and the guaranteed ratio would be void. The gutter
+value is the nominal composite of the alpha the CSS paints. `avatarTints()` returns
 `{ dark, light }`; hue and saturation stay, lightness is clamped by bisection until the
 tint clears **3:1** against both surfaces and the ink (`#14121c`) inside it also clears
 **3:1**:
 
 | Theme | Avatar tile (composited) | Panel gutter (composited) | Tint luminance band |
 |---|---|---|---|
-| dark | `rgba(29,23,34,0.88)` over `#14121c` → `#1c1621` | `#1b1621` | `>= 0.15` |
-| light | `rgba(252,251,248,0.92)` over `#f4f1ea` → `#fbfaf7` | `#edebe9` | `0.145 – 0.2395` |
+| dark | `--ovo-avatar-tile` `#1c1621` | `rgba(25,21,32,0.55)` over `#14121c` → `#17141e` | `>= 0.15` |
+| light | `--ovo-avatar-tile` `#fbfaf7` | `rgba(250,248,243,0.74)` over `#f4f1ea` → `#f8f6f1` | `0.145 – 0.2395` |
 
 The light ceiling is not hand-tuned: it is `luminanceUnder(gutter, LIGHT_GUTTER_TARGET)`
 with `LIGHT_GUTTER_TARGET = 3.08`, so the band cannot drift away from what the UI
@@ -213,8 +216,8 @@ paints. Measured on the real 16-agent roster (`node scripts/verify-avatar.mjs`):
 
 | Check | Worst ratio |
 |---|---|
-| tint on avatar tile, both themes | **3.37:1** |
-| tint on panel gutter, both themes | **3.06:1** |
+| tint on avatar tile, both themes | **3.18:1** |
+| tint on panel gutter, both themes | **3.07:1** |
 | ink on tint, both themes | **3.43:1** |
 
 The two variants travel to the DOM as CSS custom properties
@@ -228,6 +231,18 @@ window pixel for pixel. The same seed + agent id still means the same face in ev
 client. A missing seed (mock roster, older payload) falls back to the agent id, so no
 row is faceless. Raw text cannot reach the DOM: `sanitizeSeed()` folds anything outside
 `[a-z0-9:-]` and clips to 128 chars.
+
+**Info card chrome.** `.panel.info` is the same glass as the sidebar: `border-radius: 0`,
+`--ovo-panel-bg`, `backdrop-filter: blur(18px) saturate(135%)`, and an opaque
+`--ovo-panel-solid` fallback under `@supports not (backdrop-filter)`. It is anchored to the
+bottom centre with `left`/`right` insets + `width: fit-content` + `margin-inline: auto`;
+on desktop (`.app-shell:has(.hud-sidebar)`, scoped to `min-width: 701px`) the band starts at
+`336px` so the card centres in the space the floating sidebar leaves. Desktop is one
+horizontal grid row — avatar, `.info-identity`, `.info-facts` `<dl>` — with
+`grid-template-columns: auto minmax(0, auto) minmax(0, 1fr)`. At `700px` and below it
+collapses to the stacked card, where the `<dl>` spans both columns behind a top hairline.
+The four `<dl>` columns are intrinsic (`auto auto auto auto`), so the card grows to its
+`max-width: 900px` instead of ellipsing an activity description.
 
 ---
 

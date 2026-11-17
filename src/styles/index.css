@@ -46,6 +46,10 @@
   --ovo-panel-solid: rgba(25, 21, 32, 0.94);
   --ovo-panel-mobile: rgba(25, 21, 32, 0.62);
   --ovo-surface: rgba(29, 23, 34, 0.88);
+  /* Opaque box behind the pixel face. Must stay solid: the info card is frosted
+     glass over the animated office, so a translucent tile would put the face on
+     an unpredictable backdrop and void the 3:1 tint guarantee in Avatar.ts. */
+  --ovo-avatar-tile: #1c1621;
   --ovo-card-bg: rgba(52, 44, 66, 0.4);
   --ovo-card-hover: rgba(52, 44, 66, 0.5);
   --ovo-control-bg: #30283a;
@@ -80,6 +84,7 @@
   --ovo-panel-solid: rgba(250, 248, 243, 0.96);
   --ovo-panel-mobile: rgba(250, 248, 243, 0.84);
   --ovo-surface: rgba(252, 251, 248, 0.92);
+  --ovo-avatar-tile: #fbfaf7;
   --ovo-card-bg: rgba(255, 255, 255, 0.62);
   --ovo-card-hover: rgba(255, 255, 255, 0.82);
   --ovo-control-bg: #e9e4db;
@@ -621,31 +626,82 @@ kbd {
   padding: 1px 5px;
   margin: 0 2px;
 }
+/* Character info card. Same square, frosted-glass treatment as the sidebar —
+   square corners, translucent background, backdrop blur — but anchored at the
+   bottom centre of the free area right of the sidebar instead of a corner.
+   Desktop: one horizontal row (face | identity | facts). Mobile: the stacked
+   card it has always been (see the max-width: 700px block). */
 .info {
   position: fixed;
   z-index: 11;
-  right: 12px;
-  bottom: 56px;
-  width: 260px;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  /* `left`/`right` + fit-content + auto margins = centred inside that band. */
+  width: fit-content;
+  max-width: min(900px, 100%);
+  margin-inline: auto;
+  display: grid;
+  grid-template-columns: auto minmax(0, auto) minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 16px;
+  /* Right padding leaves room for the close button. */
+  padding: 14px 44px 14px 16px;
+  border: 1px solid var(--ovo-border-strong);
+  border-radius: 0;
+  background: var(--ovo-panel-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(135%);
+  backdrop-filter: blur(18px) saturate(135%);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.28);
+}
+/* The sidebar floats over the left edge, so centre the card in the space it
+   leaves rather than in the whole viewport, where it would have overlapped.
+   Desktop only: below 700px the sidebar sits on top and the card keeps the
+   plain 8px insets instead of being pushed off the right edge. */
+@media (min-width: 701px) {
+  .app-shell:has(.hud-sidebar) .info {
+    left: 336px; /* 16 gap + 304 sidebar + 16 gap */
+  }
+}
+/* No blur support (or it was disabled): fall back to a near-opaque card instead
+   of translucent text floating over the office. */
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .info {
+    background: var(--ovo-panel-solid);
+  }
+}
+.info-identity {
+  min-width: 0;
 }
 .info h3 {
-  margin: 6px 0 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.2;
 }
 .info p {
-  margin: 4px 0;
+  margin: 3px 0 0;
 }
 .info dl {
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 3px 10px;
+  /* Four intrinsic columns so both value pairs size to their own text: the card
+     grows (up to max-width) instead of ellipsing an activity description. */
+  grid-template-columns: auto auto auto auto;
+  gap: 2px 12px;
   font-size: 12px;
-  margin: 10px 0;
+  margin: 0;
+  padding-left: 16px;
+  border-left: 1px solid var(--ovo-border-soft);
+  min-width: 0;
 }
 .info dt {
   color: var(--ovo-text-soft);
+  white-space: nowrap;
 }
 .info dd {
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .badge-row {
   display: flex;
@@ -677,7 +733,8 @@ kbd {
   border: 2px solid var(--ovo-ink);
   border-radius: 4px;
   line-height: 0;
-  background: var(--ovo-surface);
+  /* Opaque by design: the frosted card behind it is translucent and blurred. */
+  background: var(--ovo-avatar-tile);
   overflow: hidden;
   /* Per-agent tints are inlined by Avatar.tsx; this picks the active theme's. */
   --avatar-tint: var(--avatar-tint-dark, #6ab7ff);
@@ -756,9 +813,26 @@ kbd {
     padding: 10px 12px 12px;
   }
   .info {
-    bottom: 12px;
+    /* Mobile: the stacked card it has always been, still bottom-centre. */
+    left: 8px;
     right: 8px;
-    width: min(260px, calc(100vw - 16px));
+    bottom: 12px;
+    width: min(320px, 100%);
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 10px 12px;
+    padding: 14px 14px 12px;
+  }
+  .info h3 {
+    margin-top: 2px;
+  }
+  .info dl {
+    grid-column: 1 / -1;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding-left: 0;
+    border-left: 0;
+    padding-top: 8px;
+    border-top: 1px solid var(--ovo-border-soft);
   }
 }
 

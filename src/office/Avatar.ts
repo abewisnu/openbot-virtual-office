@@ -69,26 +69,27 @@ export const AVATAR_INK = '#14121c';
  * The two surfaces an avatar tile sits on, per theme. They are NOT the same
  * colour, so the names matter:
  *
- * - `tile`   the 56x56 box behind the face, `.avatar` background two layers of
- *            `--ovo-surface` over the panel.
- * - `gutter` the info-panel body around that box, `.panel.info` background over
- *            the page backdrop. The face never covers it, but it is the harder
- *            surface to clear in the light theme (`#edebe9` is darker than the
- *            tile), so it is the one the clamp is tuned against.
+ * - `tile`   the 56x56 box behind the face: `.avatar` background, an opaque
+ *            `--ovo-avatar-tile`. This is the surface the face is actually
+ *            painted on, and the one that must clear 3:1 unconditionally.
+ * - `gutter` the frosted info card around that box, `.panel.info`
+ *            (`--ovo-panel-bg` + `backdrop-filter: blur()`). Its nominal value
+ *            is the card composited over the page backdrop. It is *nominal*
+ *            because the blur puts the animated office behind it, so the real
+ *            pixels vary; the face never covers the gutter, and the opaque tile
+ *            is what keeps the guarantee honest.
  *
- * Both are already composited over whatever sits behind them:
- *
- *   dark   tile   rgba(29, 23, 34, 0.88) over #14121c -> #1c1621
- *          gutter #1b1621
- *   light  tile   rgba(252, 251, 248, 0.92) over #f4f1ea -> #fbfaf7
- *          gutter #edebe9
+ *   dark   tile   opaque #1c1621
+ *          gutter rgba(25, 21, 32, 0.55) over #14121c -> #17141e
+ *   light  tile   opaque #fbfaf7
+ *          gutter rgba(250, 248, 243, 0.74) over #f4f1ea -> #f8f6f1
  *
  * `scripts/verify-avatar.mjs` imports these constants and prints a ratio
  * column for each, so a report can say which surface was measured.
  */
 export const AVATAR_SURFACES: Record<ThemeName, { tile: string; gutter: string }> = {
-  dark: { tile: '#1c1621', gutter: '#1b1621' },
-  light: { tile: '#fbfaf7', gutter: '#edebe9' },
+  dark: { tile: '#1c1621', gutter: '#17141e' },
+  light: { tile: '#fbfaf7', gutter: '#f8f6f1' },
 };
 
 /** Minimum contrast ratio a face must keep against either surface. */

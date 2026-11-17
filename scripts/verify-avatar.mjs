@@ -92,14 +92,15 @@ const toHex = (c) =>
   `#${[c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 const surfaces = {
   dark: {
-    // .avatar background: two layers of --ovo-surface over the panel.
-    tile: composite('#1d1722', 0.88, '#14121c'),
-    // .panel.info background over the page backdrop.
-    gutter: hexToRgb('#1b1621'),
+    // `.avatar` background: an opaque --ovo-avatar-tile, not a composite.
+    tile: hexToRgb('#1c1621'),
+    // `.panel.info` frosted card over the page backdrop (nominal: blurred art
+    // sits behind it, the face never covers this surface).
+    gutter: composite('#191520', 0.55, '#14121c'),
   },
   light: {
-    tile: composite('#fcfbf8', 0.92, '#f4f1ea'),
-    gutter: hexToRgb('#edebe9'),
+    tile: hexToRgb('#fbfaf7'),
+    gutter: composite('#faf8f3', 0.74, '#f4f1ea'),
   },
 };
 for (const theme of ['dark', 'light']) {
@@ -208,6 +209,31 @@ check('avatar tint comes from the theme variable', /var\(--avatar-tint\)/.test(c
 
 const css = readFileSync(new URL('../src/styles/index.css', import.meta.url), 'utf8');
 check('CSS switches tint on data-theme', /:root\[data-theme='light'\] \.avatar/.test(css));
+
+// 10. The info card must keep the avatar tile OPAQUE and square. The card itself
+//     is frosted glass over the animated office, so a translucent tile would put
+//     the face on a backdrop this module cannot predict — and the 3:1 guarantee
+//     above would stop being a guarantee. The tile colours in CSS must also equal
+//     the constants the clamp is tuned against.
+const rootBlock = css.slice(css.indexOf(':root {'), css.indexOf(':root[data-theme='));
+const lightBlock = css.slice(css.indexOf(":root[data-theme='light'] {"));
+const tileVar = (block) => (block.match(/--ovo-avatar-tile:\s*(#[0-9a-f]{6})/i) || [])[1];
+check('dark avatar tile CSS matches AVATAR_SURFACES.tile', tileVar(rootBlock) === AVATAR_SURFACES.dark.tile, `${tileVar(rootBlock)} vs ${AVATAR_SURFACES.dark.tile}`);
+check('light avatar tile CSS matches AVATAR_SURFACES.tile', tileVar(lightBlock) === AVATAR_SURFACES.light.tile, `${tileVar(lightBlock)} vs ${AVATAR_SURFACES.light.tile}`);
+check('avatar tile is opaque, not --ovo-surface', /\.avatar\s*\{[^}]*background:\s*var\(--ovo-avatar-tile\)/.test(css) && !/\.avatar\s*\{[^}]*background:\s*var\(--ovo-surface\)/.test(css));
+
+// 11. Info-card chrome: square corners like the sidebar, frosted translucent
+//     background, bottom-centre anchor, horizontal on desktop, stacked on mobile.
+const infoBlock = css.slice(css.indexOf('\n.info {'), css.indexOf('.info h3'));
+check('info card has no border radius', /border-radius:\s*0/.test(infoBlock));
+check('info card is translucent glass with a backdrop blur', /background:\s*var\(--ovo-panel-bg\)/.test(infoBlock) && /backdrop-filter:\s*blur\(/.test(infoBlock));
+check('info card falls back to a solid background without blur support', /@supports not \(\(-webkit-backdrop-filter: blur\(1px\)\) or \(backdrop-filter: blur\(1px\)\)\) \{\s*\.info \{\s*background: var\(--ovo-panel-solid\)/.test(css));
+check('info card anchors to the bottom, centred by auto inline margins', /bottom:\s*16px/.test(infoBlock) && /left:\s*16px/.test(infoBlock) && /right:\s*16px/.test(infoBlock) && /margin-inline:\s*auto/.test(infoBlock) && /width:\s*fit-content/.test(infoBlock));
+check('info card centres in the space right of the sidebar', /\.app-shell:has\(\.hud-sidebar\) \.info/.test(css) && /left:\s*336px/.test(css));
+check('info card is a horizontal row on desktop', /grid-template-columns:\s*auto minmax\(0, auto\) minmax\(0, 1fr\)/.test(infoBlock));
+const mobileBlock = css.slice(css.indexOf('@media (max-width: 700px)'));
+check('info card collapses to a stacked card on mobile', /\.info \{[^}]*grid-template-columns:\s*auto minmax\(0, 1fr\)/.test(mobileBlock) && /\.info dl \{[^}]*grid-column:\s*1 \/ -1/.test(mobileBlock));
+check('info panel markup groups identity and facts', /className="info-identity"/.test(panel) && /className="info-facts"/.test(panel));
 
 console.log(fail === 0 ? '\nALL PASS' : `\n${fail} FAILED`);
 process.exit(fail === 0 ? 0 : 1);

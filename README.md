@@ -262,14 +262,19 @@ hex `hsl()` fallback. `sanitizeSeed()` folds anything outside `[a-z0-9:-]` and c
 chars, so a bad row cannot break the hash or reach the DOM raw.
 
 **Contrast is guaranteed, per theme, against two named surfaces.** The face is painted on the
-**avatar tile** (`.avatar` background, two layers of `--ovo-surface` over the info panel) but it
-lives inside the **panel gutter** (`.panel.info` background). Those are not the same colour, and
-in the light theme the gutter is the *darker* of the two, so it is the surface that binds:
+**avatar tile** (`--ovo-avatar-tile`) and sits inside the **panel gutter** (`--ovo-panel-bg`,
+blurred over the page). Those are not the same colour, and in the light theme the gutter is the
+*darker* of the two, so it is the surface that binds:
 
 | Theme | Avatar tile | Panel gutter |
 |---|---|---|
-| dark | `rgba(29,23,34,0.88)` over `#14121c` → `#1c1621` | `#1b1621` |
-| light | `rgba(252,251,248,0.92)` over `#f4f1ea` → `#fbfaf7` | `#edebe9` |
+| dark | `--ovo-avatar-tile` `#1c1621` (opaque) | `rgba(25,21,32,0.55)` over `#14121c` → `#17141e` |
+| light | `--ovo-avatar-tile` `#fbfaf7` (opaque) | `rgba(250,248,243,0.74)` over `#f4f1ea` → `#f8f6f1` |
+
+The tile is deliberately **opaque**: the info card is frosted glass, so a translucent tile would
+put the face on a backdrop blur whose colour depends on whatever the office paints behind it, and
+the guaranteed ratio would be void. The gutter value is the nominal composite of the same alpha
+the CSS paints, which is what the tint clamp is measured against.
 
 `avatarTints()` returns two variants of the same hue. The dark variant is lifted in HSL lightness
 until it reaches 3:1; the light variant is clamped to a luminance ceiling derived from the gutter
@@ -279,12 +284,22 @@ sky blue — only lightness moves. Worst case on the real 16-agent roster:
 
 | Surface | Worst ratio |
 |---|---|
-| tint on avatar tile | 3.37:1 |
-| tint on panel gutter | 3.06:1 |
+| tint on avatar tile | 3.18:1 |
+| tint on panel gutter | 3.07:1 |
 | ink on tint | 3.43:1 |
 
 `scripts/verify-avatar.mjs` prints a ratio column for each surface separately, so a report can say
 which one it measured.
+
+### Info card chrome
+The card is square-cornered glass like the sidebar: `border-radius: 0`, `--ovo-panel-bg`,
+`backdrop-filter: blur(18px) saturate(135%)`, and an opaque `--ovo-panel-solid` fallback under
+`@supports not (backdrop-filter)`. It is anchored to the bottom centre — `left`/`right` insets plus
+`width: fit-content` and `margin-inline: auto` — and on desktop the band starts at `336px` so it
+centres in the space the floating sidebar leaves; that override is scoped to `min-width: 701px`, so
+the mobile card keeps its plain 8px insets and never slides off the right edge. Desktop is one
+horizontal row (avatar · identity · facts); at `700px` and below it collapses to the stacked card,
+with the `<dl>` spanning both columns behind a top hairline.
 
 `src/components/Avatar.tsx` draws that spec as a 12×12 SVG with `shapeRendering="crispEdges"`:
 crisp at any size, zero network requests, zero new dependencies. The two tints arrive as CSS

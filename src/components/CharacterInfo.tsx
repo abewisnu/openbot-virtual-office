@@ -1,25 +1,26 @@
 import Avatar from './Avatar';
 import { useStore } from '../store/useStore';
 import { badgeFor } from '../constants';
-import type { Status } from '../types';
 
 export default function CharacterInfo() {
-  const { employees, selectedId, live, select, setStatus } = useStore();
+  const { employees, selectedId, live, select } = useStore();
   const emp = employees.find((e) => e.id === selectedId);
   if (!emp) return null;
   const badge = badgeFor(emp);
   return (
-    <aside className="panel info">
-      <button className="close" onClick={() => select(null)}>×</button>
+    <aside className="panel info" aria-label={`${emp.name} details`}>
+      <button className="close" onClick={() => select(null)} aria-label="Close details">×</button>
       <Avatar employee={emp} />
-      <h3>{emp.name}</h3>
-      <p className="muted">{emp.role}</p>
-      <div className="badge-row">
-        <span className="badge" style={{ background: badge.color }} title={badge.label} />
-        <span className="badge-label">{badge.label}</span>
-        {badge.note && <span className="badge-note">{badge.note}</span>}
+      <div className="info-identity">
+        <h3>{emp.name}</h3>
+        <p className="muted">{emp.role}</p>
+        <div className="badge-row">
+          <span className="badge" style={{ background: badge.color }} title={badge.label} />
+          <span className="badge-label">{badge.label}</span>
+          {badge.note && <span className="badge-note">{badge.note}</span>}
+        </div>
       </div>
-      <dl>
+      <dl className="info-facts">
         <dt>Activity</dt><dd>{live.task}</dd>
         <dt>Zone</dt><dd>{live.zone}</dd>
         <dt>Workstation</dt><dd>{emp.currentWorkstation ?? '—'}</dd>
