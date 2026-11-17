@@ -241,13 +241,17 @@ export function buildLayout(deskCount = 12): Layout {
     }
   }
   // --- Lounge (kiri)
+  // One seat per sofa cushion: `ks` are tile offsets from the sofa's left edge,
+  // so a 6-tile 3-seat sofa gets cushions at +1/+3/+5 and a 4-tile loveseat at
+  // +1/+3. Seat ids derive from the offset, keeping them stable per frame.
   const sofaSeats = (
     tx: number,
     ty: number,
     kind: Seat["kind"],
     id: string,
+    ks: number[] = [0.8, 2.2],
   ) => {
-    for (const k of [0.8, 2.2]) {
+    for (const k of ks) {
       const x = (tx + k) * TILE;
       seats.push({
         id: `${id}-${k}`,
@@ -260,24 +264,37 @@ export function buildLayout(deskCount = 12): Layout {
       });
     }
   };
-  place("sofa3Down", 3, 8, 3, 1, -10);
-  sofaSeats(3, 8, "lounge", "LS");
-  place("coffeeTable", 4, 10, 2, 1);
-  for (const tx of [3, 5]) {
-    place("sofa2Up", tx, 12, 2, 1);
-    seats.push({
-      id: `LU-${tx}`,
-      kind: "lounge",
-      pos: { x: (tx + 1) * TILE, y: 13 * TILE - 10 },
-      facing: "up",
-      approach: { tx, ty: 11 },
-      zOffset: -10,
-      occupant: null,
-    });
+  // Lounge seating bay, centred on the room (cols 1-13, centre 7):
+  // - 6-tile 3-seat sofa against the north wall (cols 4-9, row 9), facing down,
+  //   leaving row 8 free under the room plate.
+  // - 4x2 coffee table under it (cols 5-8, rows 11-12).
+  // - a 4-tile loveseat on each side of the table (cols 1-4 and 10-13, row 14)
+  //   facing up, so the three pieces ring the table without overlapping.
+  // - 10x6 rug under the whole bay, a tall plant flanking the sofa on row 9 so
+  //   each sprite stands fully inside the room instead of over the wall band.
+  // The door (col 14, rows 10-12) stays clear: row 10 and row 15 are open all
+  // the way across, so every seat is reachable from the doorway.
+  place("sofa3Down", 4, 9, 6, 1);
+  sofaSeats(4, 9, "lounge", "LS", [1, 3, 5]);
+  place("coffeeTable", 5, 11, 4, 2);
+  for (const [tx, id] of [[1, "LL"], [10, "LR"]] as const) {
+    place("sofa2Up", tx, 14, 4, 1);
+    for (const k of [1, 3]) {
+      const x = (tx + k) * TILE;
+      seats.push({
+        id: `${id}-${k}`,
+        kind: "lounge",
+        pos: { x, y: 15 * TILE - 10 },
+        facing: "up",
+        approach: { tx: Math.floor(x / TILE), ty: 15 },
+        zOffset: 0,
+        occupant: null,
+      });
+    }
   }
+  place("plant", 1, 9, 2, 1);
+  place("plant", 12, 9, 2, 1);
   dividerV(14, 5, 15, 13);
-  place("plant", 13, 12);
-  place("plant", 13, 14);
   dividerH(16, 0, 13, null, false, false);
   // Close the bottom-right T-junction: the vertical run (col 14) ends at row 15 and the horizontal band (row 16) ends at
   // col 13. Two 8x8 panes sit on the empty tile 14 band square to seal the corner — a half pane bridges the right half

@@ -17,6 +17,16 @@ const layout = buildLayout(12);
 const blocked = layout.blocked;
 const row = (ty) => blocked[ty].slice(1, 14).map((b) => (b ? '#' : '.')).join('');
 
+// --- Lounge (upper-left room, rows 6-15, cols 1-13)
+check('lounge sofa spans cols 4-9 with plants flanking', row(9) === '##.######..##', row(9));
+check('lounge coffee table is centred', row(11) === '....####.....', row(11));
+check('lounge loveseats sit on row 14', row(14) === '####.....####', row(14));
+check('lounge door lane is open on rows 10 and 15', row(10) === '.............' && row(15) === '.............');
+check(
+  'lounge has seven seats (3 sofa + 4 loveseat)',
+  layout.seats.filter((s) => s.kind === 'lounge' && s.id.startsWith('L')).length === 7,
+);
+
 // --- Pantry (upper-left room, rows 17-29, cols 1-13)
 check('pantry shelf row leaves gutters at col 5 and col 10', row(18) === '####.####.##.', row(18));
 check('pantry aisle under the shelves is walkable', row(20) === '.............', row(20));
@@ -77,4 +87,4 @@ if (failed) {
   console.error(`\n${failed} room check(s) failed.`);
   process.exit(1);
 }
-console.log('\nAll room checks passed: carpet moved, pantry evenly spaced, NOC dressed as a server room.');
+console.log('\nAll room checks passed: lounge ringed round its table, carpet moved, pantry evenly spaced, NOC dressed as a server room.');
