@@ -296,12 +296,13 @@ export function buildLayout(deskCount = 12): Layout {
   // (x 800-928), both ending at the chair line; table (x 672-928,
   // y 336-480) centred under them with four chairs per side.
 
-  // Whiteboard flush with the sofa's right arm, so the pair read as one band
-  // along the top wall: the sofa (x 592-784) is 192 px wide at PROP and the
-  // board 128 px at ART, so anchoring at x 850 leaves a 2 px seam and both
-  // sprites share the same base line (y 264).
-  furniture.push({ type: "whiteboard", x: 850, y: 264, z: 264 });
-  block(24, 8, 5, 1);
+  // Whiteboard at the right end of the top band, clear of the sofa: the sofa
+  // ends at x 784 and the board (128 px at ART) runs x 872-1000, a 88 px air
+  // gap that leaves room for the right arm to read on its own. It hangs a
+  // little higher than the sofa base line (y 252 vs 264) and stands 104 px tall
+  // (64x52 art), so it tops out level with the sofa back.
+  furniture.push({ type: "whiteboard", x: 936, y: 252, z: 252 });
+  block(27, 8, 4, 1);
   furniture.push({ type: "sofa3Down", x: 688, y: 264, z: 254 });
   block(20, 7, 3, 1);
   sofaSeats(20, 7, "meeting", "MS");
