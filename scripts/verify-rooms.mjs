@@ -71,6 +71,48 @@ for (const f of layout.furniture) {
     check(`${f.type} clears the NOC ceiling`, topRow >= 30.99, `top row ${topRow.toFixed(2)}`);
 }
 
+// --- Sofa z-order: a sitter on a down-facing sofa must draw in front of it
+for (const sofa of layout.furniture.filter((f) => f.type === 'sofa3Down')) {
+  const sitters = layout.seats.filter(
+    (s) => Math.abs(s.pos.x - sofa.x) <= 96 && s.pos.y < sofa.y && sofa.y - s.pos.y < 40,
+  );
+  check(
+    `down-facing sofa at (${sofa.x},${sofa.y}) has sitters`,
+    sitters.length >= 2,
+    `${sitters.length} seats`,
+  );
+  check(
+    `sitters on the (${sofa.x},${sofa.y}) sofa draw in front of the backrest`,
+    sitters.every((s) => s.facing === 'down' && s.pos.y + s.zOffset > sofa.z),
+    sitters.map((s) => `${s.id} z ${s.pos.y + s.zOffset} vs ${sofa.z}`).join(', '),
+  );
+}
+for (const sofa of layout.furniture.filter((f) => f.type === 'sofa2Up')) {
+  const sitters = layout.seats.filter(
+    (s) => Math.abs(s.pos.x - sofa.x) <= 64 && sofa.y - s.pos.y < 40,
+  );
+  check(
+    `sitters on the (${sofa.x},${sofa.y}) loveseat stay behind its backrest`,
+    sitters.length > 0 && sitters.every((s) => s.facing === 'up' && s.pos.y + s.zOffset < sofa.z),
+    sitters.map((s) => `${s.id} z ${s.pos.y + s.zOffset} vs ${sofa.z}`).join(', '),
+  );
+}
+
+// --- Pantry dining chairs: two per long side, one sprite apart, on the table
+const dining = layout.seats.filter((s) => s.id.startsWith('DT-') || s.id.startsWith('DB-'));
+const top = dining.filter((s) => s.id.startsWith('DT-')).sort((a, b) => a.pos.x - b.pos.x);
+const bottom = dining.filter((s) => s.id.startsWith('DB-')).sort((a, b) => a.pos.x - b.pos.x);
+check('pantry has two chairs on each long side', top.length === 2 && bottom.length === 2, `${top.length}/${bottom.length}`);
+const pitch = (list) => (list.length === 2 ? list[1].pos.x - list[0].pos.x : 0);
+check('pantry chairs are one 2-tile sprite apart', pitch(top) === 64 && pitch(bottom) === 64, `pitch ${pitch(top)}/${pitch(bottom)} px`);
+check('pantry chair pairs are centred on the 4-tile table', (top[0].pos.x + top[1].pos.x) / 2 === 224, `mid ${(top[0].pos.x + top[1].pos.x) / 2}`);
+check('pantry chair sprites do not overlap', pitch(top) >= 64 && pitch(bottom) >= 64);
+check(
+  'every pantry chair approach is a free tile',
+  dining.every((s) => blocked[s.approach.ty][s.approach.tx] === false),
+  dining.map((s) => `${s.id} (${s.approach.tx},${s.approach.ty})`).join(' '),
+);
+
 // --- Assets and background source guards
 const art = readFileSync(new URL('../src/office/AssetGenerator.ts', import.meta.url), 'utf8');
 const layoutSrc = readFileSync(new URL('../src/office/Layout.ts', import.meta.url), 'utf8');

@@ -44,7 +44,7 @@ const ROOM_LABELS: RoomLabel[] = [
   { name: "LOUNGE", tx: 8, ty: 14, span: 0 },
   { name: "MEETING ROOM", tx: 19, ty: 9, span: 1 },
   { name: "WORKSTATIONS", tx: 48, ty: 7 },
-  { name: "PANTRY & STORAGE", tx: 9, ty: 27, span: 1 },
+  { name: "PANTRY & STORAGE", tx: 10, ty: 22, span: 1 },
   { name: "NOC", tx: 8, ty: 33, span: 1 },
 ];
 const LABEL_SPAN = 2; // free tiles required on each side of the plate centre
@@ -244,6 +244,15 @@ export function buildLayout(deskCount = 12): Layout {
   // One seat per sofa cushion: `ks` are tile offsets from the sofa's left edge,
   // so a 6-tile 3-seat sofa gets cushions at +1/+3/+5 and a 4-tile loveseat at
   // +1/+3. Seat ids derive from the offset, keeping them stable per frame.
+  /**
+   * Seats on a down-facing sofa. The 3-seat sofa draws its backrest at the top
+   * of the sprite and its cushions below, so the person sits in front of the
+   * whole piece; `zOffset` lifts the body above the sofa sprite, otherwise the
+   * backrest overdraws the torso and only the head shows over it, which reads as
+   * the agent sitting the wrong way round. Up-facing loveseats keep the opposite
+   * order (backrest between the viewer and the sitter) and therefore `0`.
+   */
+  const SOFA_FRONT_Z = 8;
   const sofaSeats = (
     tx: number,
     ty: number,
@@ -259,7 +268,7 @@ export function buildLayout(deskCount = 12): Layout {
         pos: { x, y: (ty + 1) * TILE - 6 },
         facing: "down",
         approach: { tx: Math.floor(x / TILE), ty: ty + 1 },
-        zOffset: 0,
+        zOffset: SOFA_FRONT_Z,
         occupant: null,
       });
     }
@@ -382,30 +391,33 @@ export function buildLayout(deskCount = 12): Layout {
   // Dining nook in the pantry: a 4x2 table with two chairs on each long side.
   // The 4-tile `diningTable` sprite matches its footprint exactly, so the aisle
   // is not clipped by a table drawn wider than its collision.
+  // Four chairs, two per long side, pitched two tiles apart and centred on the
+  // 4-tile table (centres at x 192 and 256 = tiles 6 and 8): their 2-tile
+  // sprites sit side by side without overlapping and the pair reads symmetric.
+  // A chair is solid across two tiles, so each approach steps one row outside
+  // the chair — row 22 above, row 27 below — where the aisle is clear.
   place("diningTable", 5, 24, 4, 2);
-  for (const x of [6, 7]) {
-    const top = { x: (x + 0.5) * TILE, y: 24 * TILE - 2 };
+  for (const tx of [6, 8]) {
+    const cx = tx * TILE;
+    const top = { x: cx, y: 24 * TILE - 2 };
     chair("chairDown", top.x, top.y);
     seats.push({
-      id: `DT-${x}`,
+      id: `DT-${tx}`,
       kind: "lounge",
       pos: top,
       facing: "down",
-      // Chairs are solid across two tiles, and the nook is hemmed in by the
-      // table below and the wall above, so both dining chairs step in from the
-      // free end tiles of their row.
-      approach: { tx: x === 6 ? 4 : 8, ty: 23 },
+      approach: { tx, ty: 22 },
       zOffset: 0,
       occupant: null,
     });
-    const bot = { x: (x + 0.5) * TILE, y: 27 * TILE - 4 };
+    const bot = { x: cx, y: 27 * TILE - 4 };
     chair("chairUp", bot.x, bot.y, true);
     seats.push({
-      id: `DB-${x}`,
+      id: `DB-${tx}`,
       kind: "lounge",
       pos: bot,
       facing: "up",
-      approach: { tx: x === 6 ? 4 : 8, ty: 26 },
+      approach: { tx, ty: 27 },
       zOffset: 0,
       occupant: null,
     });
