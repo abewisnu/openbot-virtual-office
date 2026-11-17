@@ -1,4 +1,4 @@
-import { PROP, COLS, ROWS, TILE, MIN_WALK_ROW, RACK_COLS, RACK_ROWS, RACK_W, type Dir } from "../constants";
+import { PROP, COLS, ROWS, TILE, MIN_WALK_ROW, RACK_COLS, RACK_ROWS, RACK_W, DOOR_SPAN, type Dir } from "../constants";
 import type { FurnitureType } from "./AssetGenerator";
 
 export interface FurnitureDef {
@@ -42,7 +42,7 @@ export interface Layout {
 /** Plates sit on empty aisle tiles so they never cover furniture. */
 const ROOM_LABELS: RoomLabel[] = [
   { name: "LOUNGE", tx: 8, ty: 7 },
-  { name: "MEETING ROOM", tx: 31, ty: 10 },
+  { name: "MEETING ROOM", tx: 19, ty: 9, span: 1 },
   { name: "WORKSTATIONS", tx: 48, ty: 7 },
   { name: "PANTRY & STORAGE", tx: 11, ty: 37 },
   { name: "NOC", tx: 1, ty: 18, span: 0 },
@@ -53,7 +53,7 @@ export function zoneName(tx: number, ty: number): string {
   if (tx < 15 && ty < 16) return "Lounge";
   if (tx < 15 && ty < 30 && ty >= 17) return "NOC";
   if (tx < 15 && ty >= 30) return "Pantry & Storage";
-  if (tx >= 20 && tx <= 34 && ty < 19) return "Meeting Area";
+  if (tx >= 17 && tx <= 32 && ty < 19) return "Meeting Area";
   if (tx >= 39) return "Workstation Area";
   return "Sirkulasi";
 }
@@ -96,11 +96,13 @@ export function buildLayout(deskCount = 12): Layout {
     ty0: number,
     ty1: number,
     doorTy: number | null = null,
+    doorSpan = DOOR_SPAN,
   ) => {
     for (let ty = ty0; ty <= ty1; ty++) {
-      if (ty === doorTy) placeDoor("doorV", tx, ty);
-      else placePartition("partitionV", tx, ty);
+      if (doorTy !== null && ty > doorTy - doorSpan && ty <= doorTy) continue;
+      placePartition("partitionV", tx, ty);
     }
+    if (doorTy !== null) placeDoor("doorV", tx, doorTy);
   };
   const dividerH = (
     ty: number,
@@ -109,15 +111,17 @@ export function buildLayout(deskCount = 12): Layout {
     doorTx: number | null = null,
     startCorner = false,
     endCorner = false,
+    doorSpan = DOOR_SPAN,
   ) => {
     for (let tx = tx0; tx <= tx1; tx++) {
-      if (tx === doorTx) placeDoor("doorH", tx, ty);
-      else if (tx === tx0 && startCorner)
+      if (doorTx !== null && tx > doorTx - doorSpan && tx <= doorTx) continue;
+      if (tx === tx0 && startCorner)
         placePartition("partitionHHalf", tx, ty, TILE / 4);
       else if (tx === tx1 && endCorner)
         placePartition("partitionHHalf", tx, ty, -TILE / 4);
       else placePartition("partitionH", tx, ty);
     }
+    if (doorTx !== null) placeDoor("doorH", doorTx, ty);
     if (startCorner) placeCorner(tx0, ty);
     if (endCorner) placeCorner(tx1, ty);
   };
@@ -146,8 +150,17 @@ export function buildLayout(deskCount = 12): Layout {
       throw new Error(`Door overlaps an occupied tile at (${tx}, ${ty})`);
     if (type === "doorH") {
       const y = ty * TILE + 8;
-      furniture.push({ type, x: (tx + 0.5) * TILE, y, z: y });
+      // The sprite is centred on the whole `DOOR_SPAN` opening: `tx` is its
+      // rightmost tile, so the opening starts at `tx - DOOR_SPAN + 1`.
+      furniture.push({
+        type,
+        x: (tx + 1 - DOOR_SPAN / 2) * TILE,
+        y,
+        z: y,
+      });
     } else {
+      // `ty` is the lowest tile of the opening; the sprite is bottom-anchored
+      // and grows upward across the cleared rows.
       furniture.push({
         type,
         x: (tx + 0.5) * TILE,
@@ -257,40 +270,56 @@ export function buildLayout(deskCount = 12): Layout {
     y: loungeBandY,
     z: 17 * TILE + 2,
   });
-  // --- Meeting (tengah)
-  place("whiteboard", 24, 7, 3, 1);
-  place("meetingTable", 23, 11, 4, 2);
-  for (let x = 23; x < 27; x++) {
-    const top = { x: (x + 0.5) * TILE, y: 11 * TILE - 2 };
+  // --- Meeting (kiri-tengah)
+  // The room sits one room-width left of the workstation block: walls on
+  // columns 17 and 32, interior columns 18-31 and rows 6-15, which leaves a
+  // 3-tile aisle (33-35) between the glass and the first desk bay at column 36.
+  // Props are anchored in pixels, not tiles, because at the 2x default their
+  // sprites are much wider and taller than their collision footprint. The
+  // numbers keep a one-tile margin on every side and a visible gap between the
+  // pieces: top band = sofa (x 592-784) beside the whiteboard (x 800-896),
+  // sofa top flush with the window band at y 264 and the board at y 272;
+  // table (x 672-928, y 336-480) centred under them
+  // with four chairs per side; rug 21-30 / 10-16 under the whole bay.
+  furniture.push({ type: "whiteboard", x: 848, y: 272, z: 272 });
+  block(25, 8, 3, 1);
+  furniture.push({ type: "sofa3Down", x: 688, y: 264, z: 254 });
+  block(20, 7, 3, 1);
+  sofaSeats(20, 7, "meeting", "MS");
+  // Table sprite is 8 x 4.5 tiles; only the middle four rows collide, so the
+  // chair approach tiles at rows 10 and 15 stay walkable.
+  furniture.push({ type: "meetingTable", x: 800, y: 480, z: 480 });
+  block(21, 11, 8, 4);
+  for (const cx of [704, 768, 832, 896]) {
+    const tx = Math.floor(cx / TILE);
+    const top = { x: cx, y: 334 };
     chair("chairDown", top.x, top.y);
     seats.push({
-      id: `MT-${x}`,
+      id: `MT-${tx}`,
       kind: "meeting",
       pos: top,
       facing: "down",
-      approach: { tx: x, ty: 10 },
+      approach: { tx, ty: 10 },
       zOffset: 0,
       occupant: null,
     });
-    const bot = { x: (x + 0.5) * TILE, y: 14 * TILE - 4 };
+    const bot = { x: cx, y: 510 };
     chair("chairUp", bot.x, bot.y);
     seats.push({
-      id: `MB-${x}`,
+      id: `MB-${tx}`,
       kind: "meeting",
       pos: bot,
       facing: "up",
-      approach: { tx: x, ty: 13 },
+      approach: { tx, ty: 15 },
       zOffset: 0,
       occupant: null,
     });
   }
-  place("sofa3Down", 29, 8, 3, 1, -10);
-  sofaSeats(29, 8, "meeting", "MS");
-  dividerV(20, 5, 15);
-  dividerV(35, 5, 15, 11);
-  dividerH(16, 20, 35, null, true, true);
-  place("plant", 34, 10);
-  place("plant", 34, 12);
+  dividerV(17, 5, 15);
+  dividerV(32, 5, 15, 11);
+  dividerH(16, 17, 32, null, true, true);
+  place("plant", 19, 14);
+  place("plant", 30, 14);
   // --- NOC (kiri tengah): 12 rack server, 2 baris x 6 kolom.
   // One row was dropped so the 2x racks have air between them; the row gap is
   // 6 tiles (see RACK_ROWS) because a rack at PROP_SCALE 2 stands 6 tiles tall.

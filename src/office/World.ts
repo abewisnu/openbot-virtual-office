@@ -11,12 +11,14 @@ import { findPath, type Tile } from './Pathfinder';
 
 const STATUSES: Status[] = ['working', 'working', 'working', 'meeting', 'chatting', 'break', 'idle'];
 /**
- * Room shell: glass partitions and doors keep `ART` instead of `PROP`. They own
- * the tile grid, so enlarging them would hang a run a tile past its last tile
- * and eat the aisle; at `ART` a run ends exactly where the layout says.
+ * Room shell: glass partitions, doors and the wall-mounted whiteboard keep
+ * `ART` instead of `PROP`. They own the tile grid, so enlarging them would hang
+ * a run a tile past its last tile and eat the aisle; at `ART` a run ends
+ * exactly where the layout says, and a 48 x 40 art board stays 3 x 2.5 tiles
+ * on the meeting-room wall instead of eating half the room.
  */
 const SHELL: ReadonlySet<FurnitureType> = new Set<FurnitureType>([
-  'partitionH', 'partitionHHalf', 'partitionV', 'partitionCorner', 'doorH', 'doorV',
+  'partitionH', 'partitionHHalf', 'partitionV', 'partitionCorner', 'doorH', 'doorV', 'whiteboard',
 ]);
 /** How long one animated monitor frame stays on screen (ms). */
 const MONITOR_FRAME_MS = 220;

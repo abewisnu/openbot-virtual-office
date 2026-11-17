@@ -98,13 +98,20 @@ node scripts/verify-workspace.mjs      # workspace-folder size walker + no path 
 WASD / arrow keys / drag = camera · scroll or `+`/`-` = zoom (`0.70x`–`3x`, starts at `0.75x`) · click a
 character **or its workstation computer** = info panel · `E` = randomise simulation status · `Esc` = close panel.
 
-URL `?props=<n>` scales props by `n` (0.5–4, default `2`); the floor, glass partitions and doors stay on the tile grid so nothing overshoots.
+URL `?props=<n>` scales props by `n` (0.5–4, default `2`); the floor, glass partitions and doors stay on the tile grid so nothing overshoots. A door opening is `DOOR_SPAN` tiles wide (`src/constants.ts`, 3) and its leaf is one sprite centred on the opening.
+
+### Rooms
+| Room | Walls | Interior | Door |
+|---|---|---|---|
+| Meeting | column 17 and column 32 | columns 18–31, rows 6–15 | 3-tile opening in column 32, rows 9–11, facing the 3-tile aisle (33–35) before the first desk bay |
+
+The Meeting Room sits one room-width left of the workstation block. Its interior is laid out in pixels so each prop keeps a margin from the glass at 2×: sofa and whiteboard along the top band, an 8-seat table under them, a rug beneath the whole bay, and a plant in each bottom corner.
 
 ## Architecture
 | File | Role |
 |---|---|
-| `src/office/AssetGenerator.ts` | All pixel art (floor, walls, windows + day/night skyline, glass partitions, furniture, lit/unlit monitors, 4-direction characters + walk/sit frames, speech bubble) is drawn on a Canvas 2D → `Texture` (filter `nearest`). One pixel-art pixel = 2 screen px on the floor and glass partitions, and 4 screen px (2×) on props: desks, monitors, racks, plants, characters. `?props=1` restores the 1× prop size; `?props=` takes 0.5–4. |
-| `src/office/Layout.ts` | Room layout (Lounge, Meeting, Workstation, NOC with 12 racks in 2 rows × 6, Pantry/Storage), collision grid, seat and chat-spot lists. Desk count `buildLayout(deskCount)` follows the agent roster, clamped to 12–16, seats `WS-01…WS-N`. Workstation bays start on column 37 and sit on a 6-tile column pitch (4-tile desk + 2-tile aisle on the right of each bay) with a 6-tile row pitch, first row at tile row 9, clear of the window band and one tile short of the right wall. `DESK_W = max(2, round(32 × PROP / TILE))` blocks the desk's full sprite width (4 tiles at the 2× default, 2 at `?props=1`), so a walker only crosses a bay through an aisle, never over the desk. A workstation is desk + monitor + chair only — there is no filing cabinet sprite on the bay. |
+| `src/office/AssetGenerator.ts` | All pixel art (floor, walls, windows + day/night skyline, glass partitions, furniture, lit/unlit monitors, 4-direction characters + walk/sit frames, speech bubble) is drawn on a Canvas 2D → `Texture` (filter `nearest`). One pixel-art pixel = 2 screen px on the floor, glass partitions, doors and the whiteboard, and 4 screen px (2×) on the other props: desks, monitors, racks, plants, characters. `?props=1` restores the 1× prop size; `?props=` takes 0.5–4. |
+| `src/office/Layout.ts` | Room layout (Lounge, Meeting, Workstation, NOC with 12 racks in 2 rows × 6, Pantry/Storage), collision grid, seat and chat-spot lists. Desk count `buildLayout(deskCount)` follows the agent roster, clamped to 12–16, seats `WS-01…WS-N`. The Meeting Room takes columns 17–32 (interior 18–31, rows 6–15) with a 3-tile door in its right wall; workstation bays start on column 37 and sit on a 6-tile column pitch (4-tile desk + 2-tile aisle on the right of each bay) with a 6-tile row pitch, first row at tile row 9, clear of the window band and one tile short of the right wall. `DESK_W = max(2, round(32 × PROP / TILE))` blocks the desk's full sprite width (4 tiles at the 2× default, 2 at `?props=1`), so a walker only crosses a bay through an aisle, never over the desk. A workstation is desk + monitor + chair only — there is no filing cabinet sprite on the bay. |
 | `src/office/Pathfinder.ts` | BFS over the tile grid so characters walk around furniture. |
 | `src/office/Character.ts` | Sprite, idle/walk/sit animations plus typing variants and speech bubble, name label, status indicator. |
 | `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`/`waiting`: the "seated first, then lit" gate, used by `World.ts` and covered by `scripts/verify-monitor.mjs`. `waiting` is the grey screen a seated `blocked` agent waits behind. |
@@ -366,7 +373,7 @@ proxy and CSP work, and it can point at personal photos.
   drops to `idle` (Standby) — a quiet board is correct, not a bug.
 - Canvas window scenery follows the local clock (night 18:00–06:00); this is pixel art, unrelated to
   the UI **Settings → Theme** mode.
-- Size/speed/colour constants live in `src/constants.ts`.
+- Size/speed/colour constants live in `src/constants.ts`, including `DOOR_SPAN` (door opening in tiles, 3) and `PROP_SCALE` (`?props=` default 2).
 - `dist/` is immutable per build; never edit build output, rebuild instead.
 
 ## License

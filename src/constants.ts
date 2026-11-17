@@ -28,6 +28,12 @@ export const RACK_ROWS = [22, 28];
 export const RACK_COLS = [2, 4, 6, 8, 10, 12];
 /** Tiles a rack footprint spans: rack art is 16 art px = 1 tile at `ART`. */
 export const RACK_W = Math.max(1, Math.round(PROP_SCALE));
+/**
+ * Clear tiles a door spans in a partition wall. Doors are drawn at `ART`, so a
+ * `24 art px` door is 3 tiles; the divider leaves that many cells for it and
+ * every door in the office uses the same opening.
+ */
+export const DOOR_SPAN = 3;
 export const TILE = 32; // px per screen tile (16 pixel art)
 export const COLS = 60;
 export const ROWS = 40;
