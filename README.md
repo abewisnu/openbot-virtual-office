@@ -49,6 +49,38 @@ Start here: [`docs/OPENBOT_OFFICE_API.md`](docs/OPENBOT_OFFICE_API.md) (data con
 [`docs/OPENBOT_OFFICE_RUNTIME.md`](docs/OPENBOT_OFFICE_RUNTIME.md) (runtime & operations),
 [`docs/OpenBot-OFFICE-API-GUIDE.md`](docs/OpenBot-OFFICE-API-GUIDE.md) (implementation map).
 
+## Screenshots
+
+Everything in `screenshot/` was captured from the running app at **1600 × 1000**, dark theme,
+2× pixel density, fed by a **dummy roster of 10 agents** (the same field set as `/api/agents`,
+seeded straight into the store, so the sidebar badge reads `Mock`). No mock is hardcoded into a
+component — the world, the sidebar and the info card all read the same store shape they read live.
+
+<!-- Side-by-side on GitHub, stacked on narrow screens: two cells, one image each. -->
+| <img src="screenshot/office-overview.png" alt="Full office canvas with the sidebar hidden" width="100%"> | <img src="screenshot/sidebar.png" alt="Floating sidebar with the team activity list" width="100%"> |
+|:--:|:--:|
+| **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), Meeting Area, Lounge, Pantry & Storage and the raised-floor NOC on the left. Hiding the sidebar reserves no layout space, so the office is pixel-for-pixel identical behind it. | **2 · Sidebar menu** — the frosted panel floats 16 px from every edge. It carries the source badge and clock, one row per phase with a clickable count, the recent-updates feed, and Settings / Help / Exit controls. |
+
+<img src="screenshot/info-panel.png" alt="Info panel for the selected agent" width="100%">
+
+**3 · Info panel** — clicking an agent (or a name in the `Working` row) focuses it in the office and
+opens the bottom info strip. It shows the name and role, the live `phase` badge with the single
+highest-priority `activity` note, then the placement (`Zone`, workstation id), the workspace
+footprint on disk, the world `Position` and the `Unread` count. The pixel face is drawn from
+`avatarSeed`, so the same agent keeps the same face on every reload.
+
+<img src="screenshot/office-activity.gif" alt="Ten seconds of office activity" width="100%">
+
+**4 · Ten seconds of activity** — `screenshot/office-activity.gif`: 10 s, 10 fps, 640 × 400,
+looped, ~1.8 MB. Agents walk to their desks and type while `Working`, pair up on the Lounge sofas,
+the Meeting Area and the Pantry when idle, and the name plate under a working workstation rides
+along below the chair.
+
+> Regenerating these: start `npm run dev`, open the app, seed the store with any fixture array that
+> matches the `/api/agents` field set, let the agents settle for a few seconds, then capture — full
+> page with the sidebar hidden, the sidebar alone, one agent selected, and a 10 s screen recording
+> converted to GIF (`ffmpeg -ss 7 -t 10 -i capture.webm -vf "fps=10,scale=640:-1" office-activity.gif`).
+
 ## Integration with OpenBot
 
 <img src="https://avatars.githubusercontent.com/u/100160810?s=60&v=4" alt="nightly-labs logo" width="28">
