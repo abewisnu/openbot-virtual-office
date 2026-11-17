@@ -52,14 +52,30 @@ Start here: [`docs/OPENBOT_OFFICE_API.md`](docs/OPENBOT_OFFICE_API.md) (data con
 ## Screenshots
 
 Everything in `screenshot/` was captured from the running app at **1600 × 1000**, dark theme,
-2× pixel density, fed by a **dummy roster of 10 agents** (the same field set as `/api/agents`,
-seeded straight into the store, so the sidebar badge reads `Mock`). No mock is hardcoded into a
-component — the world, the sidebar and the info card all read the same store shape they read live.
+2× pixel density, fed by a **dummy roster of 10 agents** served on the normal `/api/agents` route
+(same field set as the real endpoint, so the sidebar badge reads `Live`). The workspace identity is
+a demo one — name **Nusantara Studio**, custom pixel logo — so the documentation never shows a real
+account name. No mock lives in a component: the world, the sidebar and the info card all read the
+same store shape they read in production.
 
 <!-- Side-by-side on GitHub, stacked on narrow screens: two cells, one image each. -->
 | <img src="screenshot/office-overview.png" alt="Full office canvas with the sidebar hidden" width="100%"> | <img src="screenshot/sidebar.png" alt="Floating sidebar with the team activity list" width="100%"> |
 |:--:|:--:|
-| **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), Meeting Area, Lounge, Pantry & Storage and the raised-floor NOC on the left. Hiding the sidebar reserves no layout space, so the office is pixel-for-pixel identical behind it. | **2 · Sidebar menu** — the frosted panel floats 16 px from every edge. It carries the source badge and clock, one row per phase with a clickable count, the recent-updates feed, and Settings / Help / Exit controls. |
+| **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), Meeting Area, Lounge, Pantry & Storage and the raised-floor NOC on the left. Hiding the sidebar reserves no layout space, so the office is pixel-for-pixel identical behind it. | **2 · Sidebar menu** — the frosted panel floats 16 px from every edge, here showing the demo workspace **Nusantara Studio** with its own pixel logo. It carries the source badge and clock, one row per phase with a clickable count, the recent-updates feed, and Settings / Help / Exit controls. |
+
+**2b · Sidebar anatomy** — every part of the panel captured on its own, same seed and identity as above:
+
+| <img src="screenshot/sidebar-header.png" alt="Sidebar header with workspace logo, name and live indicator" width="100%"> | <img src="screenshot/sidebar-clock.png" alt="Office time card" width="100%"> |
+|:--:|:--:|
+| **Header** — workspace logo (38 × 38), `VIRTUAL OFFICE` eyebrow, the workspace name, the live indicator and the hide button. | **Office time** — local clock with seconds, the `LIVE` badge and today's date in `id-ID`. |
+
+| <img src="screenshot/sidebar-status.png" alt="Team activity list grouped per phase" width="100%"> | <img src="screenshot/sidebar-updates.png" alt="Recent updates feed" width="100%"> |
+|:--:|:--:|
+| **Team activity** — one row per phase (`Standby`, `Starting`, `Ready`, `Working`, `Restarting`, `Blocked`, `Stopped`) with a clickable count and a 5-segment gauge, plus the member count and source badge in the heading. | **Recent updates** — the last three status changes, newest first, with a counter in the heading; falls back to `No recent updates.` on a quiet board. |
+
+| <img src="screenshot/sidebar-settings.png" alt="Expanded settings section" width="100%"> | <img src="screenshot/sidebar-footer.png" alt="Sidebar footer actions" width="100%"> |
+|:--:|:--:|
+| **Settings** — expanded: label toggle, theme (`System` / `Light` / `Dark`) and sidebar font (`Monospace` / `Geist Pixel`). | **Footer** — `? Help` and `⏻ Exit` actions plus the `CAMERA CONTROLS` legend (`WASD`/arrows, drag, scroll) pinned to the bottom of the panel. |
 
 <img src="screenshot/info-panel.png" alt="Info panel for the selected agent" width="100%">
 
@@ -76,10 +92,11 @@ looped, ~1.8 MB. Agents walk to their desks and type while `Working`, pair up on
 the Meeting Area and the Pantry when idle, and the name plate under a working workstation rides
 along below the chair.
 
-> Regenerating these: start `npm run dev`, open the app, seed the store with any fixture array that
-> matches the `/api/agents` field set, let the agents settle for a few seconds, then capture — full
-> page with the sidebar hidden, the sidebar alone, one agent selected, and a 10 s screen recording
-> converted to GIF (`ffmpeg -ss 7 -t 10 -i capture.webm -vf "fps=10,scale=640:-1" office-activity.gif`).
+> Regenerating these: start `npm run dev`, answer `/api/agents` with any fixture array that matches
+> the real field set, answer `/api/office-logo` and `/api/office-profile` with the demo identity, let
+> the agents settle for a few seconds, then capture — full page with the sidebar hidden, the sidebar
+> alone plus one crop per section, one agent selected, and a 10 s screen recording converted to GIF
+> (`ffmpeg -ss 7 -t 10 -i capture.webm -vf "fps=10,scale=640:-1" office-activity.gif`).
 
 ## Integration with OpenBot
 
