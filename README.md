@@ -90,6 +90,22 @@ character = info panel · `E` = randomise simulation status · `Esc` = close pan
 | `vite-plugin-openbot.ts` | Dev-only middleware: `GET /api/agents` (Host/method guards, security headers, strips `provider`/`model`/`threadId`), `GET /api/office-logo` streaming the workspace logo from OpenBot's app-support folder (`204` when none), and `GET /api/office-profile` returning the OpenBot profile name as JSON. |
 | `src/components/*` | HUD, character info panel, canvas host (React overlay on top of Pixi). |
 
+## Typography
+The sidebar uses **Geist Pixel** for its pixel feel. The font is self-hosted from
+`public/fonts/` (`geist-pixel-latin-400.woff2`, `geist-pixel-latin-ext-400.woff2`), so the app
+makes no request to `fonts.googleapis.com` and keeps working offline. Only the single 400 cut
+that Google Fonts publishes is shipped (latin + latin-ext subsets), and `.hud-sidebar` sets
+`font-synthesis: none`, so heavy text is differentiated by size and letterspacing instead of a
+faux-bold. Two deliberate exceptions:
+
+- `.sidebar-controls` stays `ui-monospace`: the arrow glyphs (`↑↓←→`) have no pixel cut and would
+  otherwise mix two typefaces on one line.
+- Text the browser paints outside the canvas (names in the 3D scene, HUD chips on the canvas) is
+  not part of the sidebar.
+
+Licence: SIL Open Font License 1.1, `Copyright 2026 The Geist Project Authors`
+(<https://github.com/vercel/geist-font>); the full text ships as `public/fonts/OFL.txt`.
+
 ## Ground rules
 - **Name**: OpenBot Virtual Office, **OVO** for short.
 - **Purpose**: a 2D pixel-art visualisation of the work already happening in OpenBot — not a work app.
