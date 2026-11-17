@@ -99,9 +99,9 @@ character = info panel · `E` = randomise simulation status · `Esc` = close pan
 | `src/office/Layout.ts` | Room layout (Lounge, Meeting, Workstation, Pantry/Storage), collision grid, seat and chat-spot lists. Desk count `buildLayout(deskCount)` follows the agent roster, clamped to 12–16, seats `WS-01…WS-N`. |
 | `src/office/Pathfinder.ts` | BFS over the tile grid so characters walk around furniture. |
 | `src/office/Character.ts` | Sprite, idle/walk/sit animations plus typing variants and speech bubble, name label, status indicator. |
-| `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`: the "seated first, then lit" gate, used by `World.ts` and covered by `scripts/verify-monitor.mjs`. |
+| `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`/`waiting`: the "seated first, then lit" gate, used by `World.ts` and covered by `scripts/verify-monitor.mjs`. `waiting` is the grey screen a seated `blocked` agent waits behind. |
 | `src/office/Lounge.ts` | Pure Lounge box (`LOUNGE_ROOM`, `isInLounge`) plus the phase rule `staysInLounge(phase)`. Imports nothing, so `scripts/verify-lounge.mjs` runs it directly with `node`. |
-| `src/office/World.ts` | Pixi scene, Y-sorting (`zIndex` = bottom edge of an object), camera + bounds, input, agent placement: `working`/`ready` sit at a desk, agents with unread/waiting walk to their own desk. An agent still in `starting` is confined to the Lounge room — it sits on a lounge sofa or stands/walks between lounge floor tiles, takes no desk, meeting chair or chat spot, and a pending instruction cannot pull it out. `updateMonitors()` lights a desk screen only when the agent is genuinely seated on that chair (`seat.occupant` **and** `Character.state === 'sit'` on the same `seat`) with `phase` `working`/`ready`; `working` uses animated frames, `ready` a still frame. A chair is already reserved the moment an agent starts walking, so `seat.occupant` alone is not enough — the screen stays dark while the agent is still walking. |
+| `src/office/World.ts` | Pixi scene, Y-sorting (`zIndex` = bottom edge of an object), camera + bounds, input, agent placement: `working`/`ready` sit at a desk, agents with unread/waiting walk to their own desk. An agent still in `starting` is confined to the Lounge room — it sits on a lounge sofa or stands/walks between lounge floor tiles, takes no desk, meeting chair or chat spot, and a pending instruction cannot pull it out. `updateMonitors()` lights a desk screen only when the agent is genuinely seated on that chair (`seat.occupant` **and** `Character.state === 'sit'` on the same `seat`) with `phase` `working`/`ready`/`blocked`; `working` uses animated frames, `ready` a still frame, `blocked` the grey waiting frame while the human answers. A `blocked` agent stays at that desk and stops typing until the phase moves on. A chair is already reserved the moment an agent starts walking, so `seat.occupant` alone is not enough — the screen stays dark while the agent is still walking. |
 | `src/store/useStore.ts` | Zustand: employees derived from the API, selection, notifications, UI settings, 3 s polling loop. |
 | `src/data/openbotSource.node.ts` | Node side: opens SQLite `readonly`, 11 queries, derives `phase` + `activity`. |
 | `src/data/openbotSource.ts` | Type contract + Zod `agentProfileSchema` + fetch client. |
@@ -157,11 +157,14 @@ Licence: SIL Open Font License 1.1, `Copyright 2026 The Geist Project Authors`
   break → lounge, chat → chat spot, idle → wandering). This is simulation `Status`, separate from the
   real agent `phase`, so the office stays alive when the database cannot be read.
 - A desk monitor lights up only if the agent is **already seated** on that chair (state `sit` on the
-  same `seat`) and its `phase` is `working` or `ready`. The chair is reserved from the moment the agent
-  starts walking, so an agent still walking to its desk = screen stays dark.
+  same `seat`) and its `phase` is `working`, `ready` or `blocked`. The chair is reserved from the
+  moment the agent starts walking, so an agent still walking to its desk = screen stays dark.
   `working` = screen **moving** (4 frames, code rows scroll one pixel per frame, caret moves, swap
-  every 220 ms); `ready` = screen **still**. `idle`/`blocked`/`restarting`/`stopped` = dark screen
-  (`World.ts` → `updateMonitors`, `AssetGenerator.ts` → `makeMonitor(on, frame?)`).
+  every 220 ms); `ready` = screen **still**; `blocked` = screen **grey with pause bars**, because the
+  agent is parked in front of the computer until a human answers its prompt/approval or the usage
+  limit resets — it stays there and starts typing again the moment the phase moves on.
+  `idle`/`restarting`/`stopped` = dark screen
+  (`World.ts` → `updateMonitors`, `AssetGenerator.ts` → `makeMonitor(mode, frame?)`).
 - `phase` is recomputed from the database on every request. An agent with no traffic for > 30 minutes
   drops to `idle` (Standby) — a quiet board is correct, not a bug.
 - Window theme follows the local clock (night 18:00–06:00).

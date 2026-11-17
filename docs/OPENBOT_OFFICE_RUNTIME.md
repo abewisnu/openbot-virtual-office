@@ -308,8 +308,9 @@ npm run build
 # 2. source gate: phase rules, schema, bundle hygiene
 node scripts/verify-openbot-source.mjs
 
-# 2b. desk-screen gate: 12 phase × seated cases + source guards
+# 2b. desk-screen gate: 13 phase × seated cases + source guards
 node scripts/verify-monitor.mjs
+node scripts/verify-lounge.mjs
 
 # 3. endpoint reality (must be JSON, not HTML)
 curl -s -o /dev/null -w 'status=%{http_code} bytes=%{size_download} time=%{time_total}\n' \

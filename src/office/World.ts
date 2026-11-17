@@ -261,8 +261,9 @@ export class World {
     if (seat) seat.occupant = ch.id;
     if (spot) spot.occupant = ch.id;
     // An agent that walked to its computer for a pending instruction is really
-    // in front of the screen, so it types even while the phase stays idle.
-    ch.typing = ch.typing || (owesDesk && seat?.kind === 'desk');
+    // in front of the screen, so it types even while the phase stays idle. A
+    // blocked agent is parked there waiting for a human, so it does not type.
+    ch.typing = ch.typing || (owesDesk && seat?.kind === 'desk' && emp?.phase !== 'blocked');
     if (instant) {
       if (seat) ch.sitAt(seat);
       else if (spot) ch.placeAt(centerOf(spot), spot.facing);
@@ -372,7 +373,7 @@ export class World {
       if (ch) {
         const t = tileOf(ch.x, ch.y), emp = this.empOf(ch.id)!;
         const starting = staysInLounge(emp.phase);
-        st.setLive({ zone: zoneName(t.tx, t.ty), task: starting ? (ch.path.length ? 'Starting up — walking in Lounge' : 'Starting up — waiting in Lounge') : ch.path.length ? (this.instructions.get(ch.id) ? 'Walking to desk — new instruction' : 'Walking…') : this.instructions.get(ch.id) && emp.status === 'idle' ? 'At desk — reviewing new instruction' : this.taskText(emp.status, emp.currentWorkstation), x: Math.round(ch.x), y: Math.round(ch.y) });
+        st.setLive({ zone: zoneName(t.tx, t.ty), task: starting ? (ch.path.length ? 'Starting up — walking in Lounge' : 'Starting up — waiting in Lounge') : emp.phase === 'blocked' ? (ch.path.length ? 'Blocked — walking to desk' : 'Blocked — waiting for your answer') : ch.path.length ? (this.instructions.get(ch.id) ? 'Walking to desk — new instruction' : 'Walking…') : this.instructions.get(ch.id) && emp.status === 'idle' ? 'At desk — reviewing new instruction' : this.taskText(emp.status, emp.currentWorkstation), x: Math.round(ch.x), y: Math.round(ch.y) });
       }
     }
     this.updateRackLeds();
@@ -381,12 +382,13 @@ export class World {
   }
   /**
    * Screen on = the agent is actually sitting at that desk (`Character.state`
-   * `sit` on the same seat) and its phase is `working` or `ready`. A desk is
-   * reserved for the whole walk over, so the seat occupant alone is not enough:
-   * the screen must stay dark until the body has arrived. A `working` agent gets
-   * the animated frames (code rows scroll); `ready` gets the still screen.
-   * Everyone else, including an agent still walking to the desk, leaves the
-   * monitor dark.
+   * `sit` on the same seat) and its phase is `working`, `ready` or `blocked`. A
+   * desk is reserved for the whole walk over, so the seat occupant alone is not
+   * enough: the screen must stay dark until the body has arrived. A `working`
+   * agent gets the animated frames (code rows scroll); `ready` gets the still
+   * screen; `blocked` gets the grey waiting screen, because the agent is parked
+   * in front of the computer until a human answers. Everyone else, including an
+   * agent still walking to the desk, leaves the monitor dark.
    */
   private updateMonitors() {
     if (!this.monitors.length) return;
@@ -396,7 +398,14 @@ export class World {
       const ch = seat.occupant ? this.chars.find((c) => c.id === seat.occupant) : undefined;
       const seated = !!ch && ch.state === 'sit' && ch.seat === seat;
       const state = monitorStateFor(seated && ch ? this.empOf(ch.id)?.phase : undefined, seated);
-      const tex = state === 'moving' ? frame : state === 'still' ? this.assets.monitorOn : this.assets.monitorOff;
+      const tex =
+        state === 'moving'
+          ? frame
+          : state === 'still'
+            ? this.assets.monitorOn
+            : state === 'waiting'
+              ? this.assets.monitorWaiting
+              : this.assets.monitorOff;
       if (sprite.texture !== tex) sprite.texture = tex;
     }
   }

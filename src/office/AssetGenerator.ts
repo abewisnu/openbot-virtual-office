@@ -34,7 +34,9 @@ export interface Assets {
   monitorOn: Texture;
   /** Workstation monitor screens, animated: a `working` agent sits there. */
   monitorWorking: Texture[];
-  /** Workstation monitor screen, dark: no working/ready agent at that desk. */
+  /** Workstation monitor screen, grey with pause bars: a `blocked` agent waits there. */
+  monitorWaiting: Texture;
+  /** Workstation monitor screen, dark: no working/ready/blocked agent at that desk. */
   monitorOff: Texture;
   chars: CharFrames[];
 }
@@ -313,15 +315,20 @@ export const MONITOR_WORK_FRAMES = 4;
 /**
  * Workstation monitor drawn separately from the desk so the screen can go dark
  * when nobody is working or ready at that computer. 16x14 art px, anchor top-center.
- * `frame` omitted = still screen (`ready`); `frame` 0..3 = moving screen (`working`).
+ * `mode` picks the screen: `off` dark, `still` lit (`ready`), `moving` scrolling
+ * code (`working`), `waiting` grey with pause bars (`blocked`).
  */
-function makeMonitor(on: boolean, frame?: number): Texture {
+function makeMonitor(mode: 'off' | 'still' | 'moving' | 'waiting', frame = 0): Texture {
   return make(16, 14, (c) => {
     B(c, 1, 0, 14, 12, '#2b2f3a');
-    if (!on) {
+    if (mode === 'off') {
       R(c, '#1b1f27', 2, 1, 12, 9);
       R(c, '#2a3040', 4, 2, 5, 1); R(c, '#242a36', 8, 4, 4, 1);
-    } else if (frame === undefined) {
+    } else if (mode === 'waiting') {
+      R(c, '#6f7887', 2, 1, 12, 9);
+      for (let y = 3; y < 10; y += 2) R(c, '#808a99', 2, y, 12, 1);
+      R(c, '#3c434f', 5, 4, 2, 3); R(c, '#3c434f', 9, 4, 2, 3);
+    } else if (mode === 'still') {
       R(c, '#4aa3d8', 2, 1, 12, 9);
       for (let y = 2; y < 10; y += 2) R(c, '#6fc0e8', 2, y, 12, 1);
       R(c, '#9ad6f5', 3, 2, 6, 1); R(c, '#e8f4ff', 3, 6, 4, 1);
@@ -345,9 +352,10 @@ export function generateAssets(night: boolean, looks: Look[]): Assets {
     background: makeBackground(night),
     furn: makeFurniture(),
     bubble: makeBubble(),
-    monitorOn: makeMonitor(true),
-    monitorWorking: Array.from({ length: MONITOR_WORK_FRAMES }, (_, f) => makeMonitor(true, f)),
-    monitorOff: makeMonitor(false),
+    monitorOn: makeMonitor('still'),
+    monitorWorking: Array.from({ length: MONITOR_WORK_FRAMES }, (_, f) => makeMonitor('moving', f)),
+    monitorWaiting: makeMonitor('waiting'),
+    monitorOff: makeMonitor('off'),
     chars: looks.map(makeCharFrames),
   };
 }

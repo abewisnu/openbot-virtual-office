@@ -259,10 +259,12 @@ desk-walk behaviour (§6).
 | Rule | Implementation |
 |---|---|
 | Simulated position | `statusForPhase(phase)`: `working`/`ready` are seated, everything else walks |
-| Typing animation | only `phase === 'working'`, or an agent that owes its desk |
+| Typing animation | only `phase === 'working'`, or an agent that owes its desk and is not `blocked` |
 | Desk walk | `owesDesk = unreadCount > 0 || activity.kind ∈ {unread, waiting}` (`World.ts`) |
+| Desk screen | `monitorStateFor(phase, seated)`: `working` moving, `ready` still, `blocked` grey with pause bars, everything else dark (`src/office/Monitor.ts`) |
+| Blocked at the computer | `blocked` always carries `activity.kind === 'waiting'`, so `owesDesk` walks it to its own desk and it sits there with the grey screen until the prompt is answered, the approval is granted or the usage limit resets |
 | Desk id | `WS-01 … WS-N`, one per agent in roster order (`useStore.ts`, `Layout.ts`) |
-| Live caption | `Walking to desk — new instruction`, `At desk — reviewing new instruction`, or the status text |
+| Live caption | `Blocked — walking to desk` / `Blocked — waiting for your answer`, `Walking to desk — new instruction`, `At desk — reviewing new instruction`, or the status text |
 
 The simulation `Status` (`idle | working | meeting | chatting | break`) drives *where* a
 character stands. It is deliberately separate from `phase`, so the office keeps moving
