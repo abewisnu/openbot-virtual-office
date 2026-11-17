@@ -158,6 +158,30 @@ Two consequences worth naming:
 - `blocked` outranks everything except `waiting` itself (they are the same evidence), so an agent
   that is both restarting and waiting on a human shows `blocked`, not `restarting`.
 
+### What each phase does per activity
+The two layers meet in `World.assign()`: the phase decides the room (Lounge pen, or the normal
+floor), and only then does the activity decide whether the agent owes its desk a visit. The table
+below is that interaction, cell by cell. "Note only" means the note beside the phase label changes
+and nothing else moves.
+
+| Phase | `waiting` (100) | `unread` (80) | `responded` (60) | `working` (20) | `limited` (90) / `routine` (40) |
+| --- | --- | --- | --- | --- | --- |
+| `working` | Cannot show — the same row makes the phase `blocked` | Note only: already seated at its desk, screen scrolling, typing | Note only: this usage row is also the evidence that made the phase `working` | Note only: the active turn is the evidence that made the phase `working` | Note only |
+| `ready` | Cannot show — the phase becomes `blocked` | Walks to its own desk and types the review; the screen keeps the still `ready` image | Cannot co-occur — recent usage forces `working` | Cannot co-occur — an active turn forces `working` | Note only |
+| `blocked` | The cause: walks to its own desk, sits, no typing, grey screen | Never surfaces — `waiting` weighs more | Never surfaces — `waiting` weighs more | Never surfaces — `waiting` weighs more | Never surfaces — `waiting` weighs more |
+| `idle` | Cannot show — the phase becomes `blocked` | Walks to its own desk and types; the screen stays dark | Cannot co-occur — recent usage forces `working` | Cannot co-occur — an active turn forces `working` | Note only |
+| `stopped` | Cannot show — the phase becomes `blocked` | Walks to its own desk and types; the screen stays dark | Cannot co-occur — no session, no usage | Cannot co-occur — no session, no turn | Note only |
+| `starting` / `restarting` | Ignored — penned in the Lounge, no desk visit | Ignored — penned in the Lounge, no desk visit | Ignored | Ignored | Ignored |
+
+- The pen is checked before the desk: `assign()` calls `assignLounge()` and returns for a
+  `starting`/`restarting` agent, so no activity can move it out of the room.
+- Everywhere else a desk is granted to `status === 'working'` **or** `owedDesk()`, which is
+  `unreadCount > 0 || activity.kind === 'unread' || 'waiting'`. That is why `unread` is the only
+  activity that changes a body's position without changing its phase.
+- The indicator dot is always `PHASE_COLORS[phase]`; activity never tints it.
+- The `limited` / `routine` column is a placeholder: no query emits those kinds yet, so real agents
+  only ever arrive with the other four.
+
 ## Typography
 The sidebar font is a theme picked in **Settings → Sidebar font**, with two options:
 
