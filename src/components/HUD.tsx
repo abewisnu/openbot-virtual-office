@@ -10,6 +10,8 @@ export default function HUD() {
     employees,
     showLabels,
     toggleLabels,
+    sidebarFont,
+    setSidebarFont,
     helpOpen,
     setHelp,
     settingsOpen,
@@ -107,7 +109,7 @@ export default function HUD() {
   return (
     <>
       {sidebarVisible ? (
-        <aside className="hud-sidebar" aria-label="Virtual office sidebar">
+        <aside className="hud-sidebar" data-font={sidebarFont} aria-label="Virtual office sidebar">
           <header className="sidebar-header">
             {logo ? (
               <div className="brand-mark brand-mark-logo">
@@ -216,14 +218,28 @@ export default function HUD() {
                 </span>
               </button>
               {settingsOpen && (
-                <label className="settings-option">
-                  <input
-                    type="checkbox"
-                    checked={showLabels}
-                    onChange={toggleLabels}
-                  />
-                  <span>Show names &amp; status</span>
-                </label>
+                <>
+                  <label className="settings-option">
+                    <input
+                      type="checkbox"
+                      checked={showLabels}
+                      onChange={toggleLabels}
+                    />
+                    <span>Show names &amp; status</span>
+                  </label>
+                  <label className="settings-option settings-select">
+                    <span>Sidebar font</span>
+                    <select
+                      value={sidebarFont}
+                      onChange={(e) =>
+                        setSidebarFont(e.target.value === 'pixel' ? 'pixel' : 'mono')
+                      }
+                    >
+                      <option value="mono">Monospace</option>
+                      <option value="pixel">Geist Pixel</option>
+                    </select>
+                  </label>
+                </>
               )}
             </section>
           </div>

@@ -59,13 +59,22 @@ body,
   flex-direction: column;
   height: 100%;
   overflow: hidden;
-  /* Pixel type for the whole sidebar. Geist Pixel ships one 400 cut, so heavy
-     headings stay readable by size and letterspacing, not by synthetic weight. */
-  font-family: 'Geist Pixel', ui-monospace, Menlo, Consolas, monospace;
-  font-synthesis: none;
+  /* Font theme, chosen in Settings. The default is the plain monospace the
+     project shipped with; `data-font="pixel"` opts into Geist Pixel below. */
+  font-family: ui-monospace, Menlo, Consolas, monospace;
   background: #191520;
   border-right: 1px solid #352b40;
   box-shadow: 8px 0 28px rgba(0, 0, 0, 0.22);
+}
+/* Geist Pixel ships one 400 cut, so heavy headings stay readable by size and
+   letterspacing, not by synthetic weight — hence font-synthesis off. The two
+   badges sit one pixel larger because the pixel cut reads thinner at 8/9px. */
+.hud-sidebar[data-font='pixel'] {
+  font-family: 'Geist Pixel', ui-monospace, Menlo, Consolas, monospace;
+  font-synthesis: none;
+}
+.hud-sidebar[data-font='pixel'] .section-eyebrow .live-badge {
+  font-size: 9px;
 }
 .sidebar-header {
   display: flex;
@@ -198,7 +207,7 @@ body,
   color: #a7f078;
   background: rgba(167, 240, 120, 0.1);
   border-radius: 3px;
-  font-size: 9px;
+  font-size: 8px;
   letter-spacing: 0.6px;
 }
 .clock-time {
@@ -234,7 +243,7 @@ body,
   margin-left: 0;
   padding: 1px 6px;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -347,6 +356,23 @@ body,
 }
 .settings-option input {
   accent-color: #a7f078;
+}
+.settings-select {
+  justify-content: space-between;
+}
+.settings-select select {
+  flex: 0 0 118px;
+  padding: 4px 6px;
+  background: #221d2b;
+  border: 1px solid #41354d;
+  border-radius: 6px;
+  color: #efe7f7;
+  font: inherit;
+  font-size: 11px;
+}
+.settings-select select:focus-visible {
+  outline: 1px solid #a7f078;
+  outline-offset: 1px;
 }
 .sidebar-footer {
   flex: 0 0 auto;

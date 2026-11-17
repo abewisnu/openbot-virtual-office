@@ -6,6 +6,8 @@ import { STATUS_LABEL } from '../constants';
 import { fetchAgentProfilesAsync, closeOpenBotDbAsync, shirtColorFor } from '../data/openbotSource';
 
 export interface Notice { id: number; text: string; ts: number }
+/** Sidebar font themes. Kept in memory only, like every other UI toggle. */
+export type SidebarFont = 'mono' | 'pixel';
 export interface Live { zone: string; task: string; x: number; y: number }
 export interface SourceState {
   /** Where the employees came from. */
@@ -22,6 +24,8 @@ interface State {
   live: Live;
   notices: Notice[];
   showLabels: boolean;
+  /** Font theme for the sidebar: the original monospace, or Geist Pixel. */
+  sidebarFont: SidebarFont;
   helpOpen: boolean;
   settingsOpen: boolean;
   exited: boolean;
@@ -30,6 +34,7 @@ interface State {
   setStatus: (id: string, status: Status) => void;
   setLive: (l: Live) => void;
   toggleLabels: () => void;
+  setSidebarFont: (f: SidebarFont) => void;
   setHelp: (v: boolean) => void;
   setSettings: (v: boolean) => void;
   setExited: (v: boolean) => void;
@@ -70,6 +75,7 @@ export const useStore = create<State>((set, get) => ({
   live: { zone: '-', task: '-', x: 0, y: 0 },
   notices: [],
   showLabels: true,
+  sidebarFont: 'mono',
   helpOpen: false,
   settingsOpen: false,
   exited: false,
@@ -86,6 +92,7 @@ export const useStore = create<State>((set, get) => ({
   },
   setLive: (live) => set({ live }),
   toggleLabels: () => set((s) => ({ showLabels: !s.showLabels })),
+  setSidebarFont: (sidebarFont) => set({ sidebarFont }),
   setHelp: (helpOpen) => set({ helpOpen }),
   setSettings: (settingsOpen) => set({ settingsOpen }),
   setExited: (exited) => set({ exited }),

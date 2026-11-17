@@ -91,15 +91,27 @@ character = info panel · `E` = randomise simulation status · `Esc` = close pan
 | `src/components/*` | HUD, character info panel, canvas host (React overlay on top of Pixi). |
 
 ## Typography
-The sidebar uses **Geist Pixel** for its pixel feel. The font is self-hosted from
-`public/fonts/` (`geist-pixel-latin-400.woff2`, `geist-pixel-latin-ext-400.woff2`), so the app
-makes no request to `fonts.googleapis.com` and keeps working offline. Only the single 400 cut
-that Google Fonts publishes is shipped (latin + latin-ext subsets), and `.hud-sidebar` sets
-`font-synthesis: none`, so heavy text is differentiated by size and letterspacing instead of a
-faux-bold. Two deliberate exceptions:
+The sidebar font is a theme picked in **Settings → Sidebar font**, with two options:
 
-- `.sidebar-controls` stays `ui-monospace`: the arrow glyphs (`↑↓←→`) have no pixel cut and would
-  otherwise mix two typefaces on one line.
+| Value | Typeface | Notes |
+| --- | --- | --- |
+| `mono` (default) | `ui-monospace, Menlo, Consolas, monospace` | The plain monospace the project shipped with; no download. |
+| `pixel` | **Geist Pixel** | Self-hosted, pixel feel. |
+
+The choice is held in memory by the store (`sidebarFont`) and applied as
+`<aside class="hud-sidebar" data-font="mono|pixel">`; CSS keys everything off `[data-font='pixel']`.
+Like every other UI toggle in this app, it resets on reload — OVO stores nothing.
+
+Geist Pixel is self-hosted from `public/fonts/` (`geist-pixel-latin-400.woff2`,
+`geist-pixel-latin-ext-400.woff2`), so the app makes no request to `fonts.googleapis.com` and keeps
+working offline. Only the single 400 cut Google Fonts publishes is shipped (latin + latin-ext
+subsets), and pixel mode sets `font-synthesis: none`, so heavy text is differentiated by size and
+letterspacing instead of a faux-bold. The two badges step up one pixel in pixel mode
+(`.live-badge` 8→9px, `.source-badge` 9→10px) because the pixel cut reads thinner. Two deliberate
+exceptions:
+
+- `.sidebar-controls` stays `ui-monospace` in both modes: the arrow glyphs (`↑↓←→`) have no pixel
+  cut and would otherwise mix two typefaces on one line.
 - Text the browser paints outside the canvas (names in the 3D scene, HUD chips on the canvas) is
   not part of the sidebar.
 
