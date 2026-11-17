@@ -1,0 +1,1014 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#14121c" />
+    <meta
+      name="description"
+      content="OpenBot Virtual Office (OVO) mengubah aktivitas AI teammate OpenBot menjadi kantor virtual 2D bergaya pixel-art. Viewer lokal, read-only, dan open source."
+      data-i18n-content="metaDescription"
+    />
+    <meta property="og:type" content="website" />
+    <meta
+      property="og:title"
+      content="OpenBot Virtual Office — A place to see work happen"
+      data-i18n-content="pageTitle"
+    />
+    <meta
+      property="og:description"
+      content="Lihat aktivitas AI teammate OpenBot dalam kantor virtual 2D bergaya pixel-art."
+      data-i18n-content="ogDescription"
+    />
+    <meta property="og:url" content="https://abewisnu.github.io/openbot-virtual-office/" />
+    <meta
+      property="og:image"
+      content="https://abewisnu.github.io/openbot-virtual-office/assets/office-overview.png"
+    />
+    <link rel="icon" type="image/png" href="./assets/logo.png" />
+    <link rel="stylesheet" href="./site.css" />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+      integrity="sha384-nRgPTkuX86pH8yjPJUAFuASXQSSl2/bBUiNV47vSYpKFxHJhbcrGnmlYpYJMeD7a"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <script>
+      (() => {
+        const validThemes = ['system', 'light', 'dark'];
+        const savedTheme = localStorage.getItem('ovo-site-theme');
+        const themeMode = validThemes.includes(savedTheme) ? savedTheme : 'system';
+        const systemPrefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+        const language = localStorage.getItem('ovo-site-language') === 'en' ? 'en' : 'id';
+        const theme =
+          themeMode === 'system' ? (systemPrefersLight ? 'light' : 'dark') : themeMode;
+        document.documentElement.dataset.themeMode = themeMode;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.lang = language;
+        document.querySelector('meta[name="theme-color"]').content =
+          theme === 'light' ? '#f4f1ea' : '#14121c';
+      })();
+    </script>
+    <title data-i18n="pageTitle">OpenBot Virtual Office — A place to see work happen</title>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="OpenBot Virtual Office, halaman utama" data-i18n-aria-label="homeLabel">
+        <img src="./assets/logo.png" alt="" width="40" height="40" />
+        <span>openbot<span class="brand-light">.office</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Navigasi utama" data-i18n-aria-label="navLabel">
+        <a href="#fitur" aria-label="Fitur" data-i18n-aria-label="navFeatures">
+          <i class="fa-solid fa-lightbulb" aria-hidden="true"></i>
+          <span class="nav-link-label" data-i18n="navFeatures">Fitur</span>
+        </a>
+        <a href="#cara-kerja" aria-label="Cara kerja" data-i18n-aria-label="navHow">
+          <i class="fa-solid fa-diagram-project" aria-hidden="true"></i>
+          <span class="nav-link-label" data-i18n="navHow">Cara kerja</span>
+        </a>
+        <a href="#mulai" aria-label="Mulai" data-i18n-aria-label="navStart">
+          <i class="fa-solid fa-rocket" aria-hidden="true"></i>
+          <span class="nav-link-label" data-i18n="navStart">Mulai</span>
+        </a>
+      </nav>
+      <div class="header-actions">
+        <a
+          class="header-link"
+          href="https://github.com/abewisnu/openbot-virtual-office"
+          target="_blank"
+          rel="noreferrer"
+          aria-label="GitHub"
+          data-i18n-aria-label="githubLabel"
+        >
+          <i class="fa-brands fa-github" aria-hidden="true"></i>
+        </a>
+        <button
+          class="theme-toggle"
+          id="theme-toggle"
+          type="button"
+          aria-label="Tema: sistem. Beralih ke tema terang"
+          title="Tema: sistem. Beralih ke tema terang"
+        >
+          <i class="fa-solid fa-sun" aria-hidden="true"></i>
+          <i class="fa-solid fa-moon" aria-hidden="true"></i>
+        </button>
+        <button
+          class="language-toggle"
+          id="language-toggle"
+          type="button"
+          aria-label="Ubah bahasa ke Inggris"
+          title="Ubah bahasa ke Inggris"
+          aria-pressed="false"
+        >
+          ID
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero page-width" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="eyebrow">
+            <span class="status-dot"></span>
+            <span data-i18n="heroEyebrow">Teman pendamping OpenBot</span>
+          </div>
+          <h1 id="hero-title">
+            <span data-i18n="heroTitleLead">Lihat pekerjaan</span>
+            <span><span class="keep-word" data-i18n="heroTitleFocus">AI-mu</span> <span data-i18n="heroTitleEnd">menjadi nyata.</span></span>
+          </h1>
+          <p class="hero-lede" data-i18n="heroDescription">
+            OpenBot Virtual Office mengubah aktivitas teammate OpenBot menjadi kantor virtual 2D
+            yang hidup. Lihat siapa yang sedang bekerja, beristirahat, atau menunggu jawaban—sekilas
+            pandang saja.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#mulai">
+              <i class="fa-solid fa-play" aria-hidden="true"></i>
+              <span data-i18n="runLocally">Jalankan secara lokal</span>
+            </a>
+            <a
+              class="button button-secondary"
+              href="https://github.com/abewisnu/openbot-virtual-office"
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span data-i18n="browseSource">Jelajahi source</span>
+              <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            </a>
+          </div>
+          <div class="hero-meta">
+            <span><i class="fa-solid fa-star meta-spark" aria-hidden="true"></i> <span data-i18n="openSource">Open source · MIT</span></span>
+            <span class="meta-divider" aria-hidden="true"></span>
+            <span data-i18n="builtFor">Dirancang untuk OpenBot</span>
+          </div>
+        </div>
+
+        <figure class="hero-visual">
+          <div class="visual-frame">
+            <div class="frame-bar" aria-hidden="true">
+              <span class="frame-lights"><i></i><i></i><i></i></span>
+              <span class="frame-title">abewisnu-studio / office</span>
+              <span class="frame-live"><i></i> <span data-i18n="demo">DEMO</span></span>
+            </div>
+            <img
+              class="office-preview"
+              src="./assets/office-overview.png"
+              alt="Tampilan kantor pixel-art OVO dengan workstation, lounge, ruang meeting, dan area NOC"
+              data-i18n-alt="officeAlt"
+              fetchpriority="high"
+            />
+            <div class="preview-caption">
+              <i class="fa-solid fa-laptop-code caption-icon" aria-hidden="true"></i>
+              <span data-i18n="previewCaption">Ruang kerja virtual, dibangun dari aktivitas nyata</span>
+              <span class="caption-status"><i></i> <span data-i18n="preview">Preview</span></span>
+            </div>
+          </div>
+          <figcaption class="sr-only" data-i18n="heroCaption">
+            Cuplikan demo kantor OVO dengan roster contoh; bukan koneksi langsung ke OpenBot.
+          </figcaption>
+          <span class="visual-note" aria-hidden="true" data-i18n="visualNote">RUANG KECIL UNTUK IDE BESAR</span>
+        </figure>
+      </section>
+
+      <section
+        class="signal-strip"
+        aria-label="Ringkasan project"
+        data-i18n-aria-label="summaryLabel"
+      >
+        <div class="page-width signal-inner">
+          <p><span class="signal-icon">01</span> <span data-i18n="signalObserve">AMATI, JANGAN MENGGANGGU</span></p>
+          <p><span class="signal-icon">02</span> <span data-i18n="signalLocal">DATA TETAP LOKAL</span></p>
+          <p><span class="signal-icon">03</span> <span data-i18n="signalPixel">PIXEL DEMI PIXEL</span></p>
+        </div>
+      </section>
+
+      <section class="features section-space page-width" id="fitur">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow section-eyebrow" data-i18n="featuresEyebrow">RUANG KERJA YANG BERCERITA</p>
+            <h2 data-i18n="featuresTitle">Lebih dari sekadar status.</h2>
+          </div>
+          <p class="section-intro" data-i18n="featuresIntro">
+            Aktivitas OpenBot diterjemahkan menjadi ruang yang mudah dipahami—tanpa mengambil alih
+            cara kamu bekerja.
+          </p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card feature-card-wide">
+            <picture class="feature-art" aria-hidden="true">
+              <source
+                media="(prefers-reduced-motion: reduce)"
+                srcset="./assets/office-overview.png"
+              />
+              <img src="./assets/office-activity.gif" alt="" loading="lazy" decoding="async" />
+            </picture>
+            <div class="feature-copy">
+              <span class="feature-index" data-i18n="featureVisualIndex">01 / VISUALISASI</span>
+              <h3 data-i18n="featureVisualTitle">Satu kantor, banyak cerita.</h3>
+              <p data-i18n="featureVisualDescription">
+                Saksikan agent bergerak di antara workstation, lounge, ruang meeting, pantry, dan
+                NOC. Setiap agent mempertahankan avatar pixel-art yang konsisten.
+              </p>
+            </div>
+          </article>
+          <article class="feature-card">
+            <div class="feature-symbol symbol-pulse" aria-hidden="true">
+              <i class="fa-solid fa-chart-line"></i>
+            </div>
+            <span class="feature-index" data-i18n="featureContextIndex">02 / KONTEKS</span>
+            <h3 data-i18n="featureContextTitle">Tahu apa yang sedang terjadi.</h3>
+            <p>
+              <span data-i18n="phasePrefix">Fase</span> <i>working</i>, <i>ready</i>, <i>blocked</i>,
+              <span data-i18n="phaseAnd">dan</span> <i>idle</i>
+              <span data-i18n="phaseSuffix">tampil langsung di ruang kerja dan panel aktivitas.</span>
+            </p>
+          </article>
+          <article class="feature-card">
+            <div class="feature-symbol symbol-shield" aria-hidden="true">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <span class="feature-index" data-i18n="featureReadOnlyIndex">03 / READ-ONLY</span>
+            <h3 data-i18n="featureReadOnlyTitle">Melihat saja. Tetap di kendalimu.</h3>
+            <p data-i18n="featureReadOnlyDescription">
+              OVO membaca snapshot SQLite dalam mode read-only. Tak ada chat, instruksi, atau
+              pengiriman task dari dalam kantor.
+            </p>
+          </article>
+        </div>
+      </section>
+
+      <section class="how-section" id="cara-kerja">
+        <div class="page-width how-layout">
+          <div class="how-copy">
+            <p class="eyebrow section-eyebrow" data-i18n="howEyebrow">SEDERHANA &amp; LOKAL</p>
+            <h2><span data-i18n="howTitleLead">OpenBot bekerja.</span><br /><span data-i18n="howTitleAccent">OVO memberi perspektif.</span></h2>
+            <p data-i18n="howDescription">
+              OVO berjalan sebagai companion lokal di mesin yang sama dengan OpenBot. Server
+              development membaca database OpenBot dan menyajikan snapshot agent ke visualisasi.
+              Project site ini hanya halaman informasi statis.
+            </p>
+            <a class="text-link" href="./OPENBOT_OFFICE_RUNTIME.md">
+              <span data-i18n="runtimeLink">Pelajari runtime &amp; operasi</span>
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
+          </div>
+          <div class="flow-card" aria-label="Alur data OVO" data-i18n-aria-label="flowLabel">
+            <div class="flow-node">
+              <span class="flow-icon flow-openbot" aria-hidden="true">
+                <i class="fa-solid fa-robot"></i>
+              </span>
+              <span><b>OpenBot</b><small data-i18n="flowOpenBot">Agent dan workspace</small></span>
+              <span class="flow-node-tag" data-i18n="flowLocal">LOKAL</span>
+            </div>
+            <div class="flow-connector">
+              <span><i class="fa-solid fa-arrow-down" aria-hidden="true"></i> <span data-i18n="flowSqlite">SQLite · hanya-baca</span></span>
+            </div>
+            <div class="flow-node">
+              <span class="flow-icon flow-data" aria-hidden="true">
+                <i class="fa-solid fa-database"></i>
+              </span>
+              <span><b>OVO API</b><small data-i18n="flowSnapshot">Snapshot agent</small></span>
+              <span class="flow-node-tag">GET</span>
+            </div>
+            <div class="flow-connector">
+              <span><i class="fa-solid fa-arrow-down" aria-hidden="true"></i> <span data-i18n="flowStatus">Status &amp; aktivitas</span></span>
+            </div>
+            <div class="flow-node flow-node-highlight">
+              <span class="flow-icon flow-office" aria-hidden="true">
+                <i class="fa-solid fa-building"></i>
+              </span>
+              <span><b>Virtual Office</b><small data-i18n="flowOffice">Kantor pixel-art</small></span>
+              <span class="flow-node-tag" data-i18n="flowView">LIHAT</span>
+            </div>
+            <p class="flow-footnote">
+              <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+              <span data-i18n="flowFootnote">Tidak ada data yang dikirim kembali ke OpenBot.</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="gallery section-space page-width"
+        aria-labelledby="gallery-title"
+        aria-label="Galeri kantor"
+        data-i18n-aria-label="galleryLabel"
+      >
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow section-eyebrow" data-i18n="galleryEyebrow">DI DALAM KANTOR</p>
+            <h2 id="gallery-title" data-i18n="galleryTitle">Dibuat untuk dilihat sekilas.</h2>
+          </div>
+          <p class="section-intro" data-i18n="galleryIntro">
+            Navigasi sederhana, info yang relevan, dan detail pixel-art.
+          </p>
+        </div>
+        <div class="gallery-grid">
+          <figure class="gallery-card gallery-main">
+            <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
+              <img
+                src="./assets/office-overview.png"
+                alt="Pemandangan penuh kantor virtual dengan agent dan beberapa zona"
+                data-i18n-alt="galleryOverviewAlt"
+                loading="lazy"
+              />
+              <span class="gallery-preview-indicator" aria-hidden="true">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+              </span>
+            </button>
+            <figcaption><span>01</span> <span data-i18n="galleryOverviewCaption">Satu kantor yang terus bergerak</span></figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
+              <img
+                src="./assets/sidebar.png"
+                alt="Panel aktivitas tim dan status agent"
+                data-i18n-alt="gallerySidebarAlt"
+                loading="lazy"
+              />
+              <span class="gallery-preview-indicator" aria-hidden="true">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+              </span>
+            </button>
+            <figcaption><span>02</span> <span data-i18n="gallerySidebarCaption">Aktivitas tim, sekilas pandang</span></figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
+              <img
+                src="./assets/info-panel.png"
+                alt="Panel informasi agent dengan fase dan aktivitas"
+                data-i18n-alt="galleryInfoAlt"
+                loading="lazy"
+              />
+              <span class="gallery-preview-indicator" aria-hidden="true">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+              </span>
+            </button>
+            <figcaption><span>03</span> <span data-i18n="galleryInfoCaption">Detail saat kamu membutuhkannya</span></figcaption>
+          </figure>
+        </div>
+        <dialog
+          class="gallery-lightbox"
+          id="gallery-lightbox"
+          aria-labelledby="gallery-preview-caption"
+        >
+          <button
+            class="gallery-lightbox-close"
+            id="gallery-lightbox-close"
+            type="button"
+            aria-label="Tutup pratinjau gambar"
+            data-i18n-aria-label="galleryPreviewClose"
+          >
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+          <button
+            class="gallery-lightbox-nav gallery-lightbox-previous"
+            id="gallery-lightbox-previous"
+            type="button"
+            aria-label="Gambar sebelumnya"
+            data-i18n-aria-label="galleryPreviewPrevious"
+          >
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <figure class="gallery-lightbox-figure">
+            <img id="gallery-preview-image" alt="" />
+            <figcaption class="gallery-lightbox-caption">
+              <span id="gallery-preview-counter" aria-live="polite"></span>
+              <span id="gallery-preview-caption"></span>
+            </figcaption>
+          </figure>
+          <button
+            class="gallery-lightbox-nav gallery-lightbox-next"
+            id="gallery-lightbox-next"
+            type="button"
+            aria-label="Gambar berikutnya"
+            data-i18n-aria-label="galleryPreviewNext"
+          >
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </dialog>
+        <p class="gallery-note" data-i18n="galleryNote">
+          Cuplikan visual menggunakan roster demo, bukan data live.
+        </p>
+      </section>
+
+      <section class="start-section" id="mulai">
+        <div class="page-width start-layout">
+          <div class="start-copy">
+            <p class="eyebrow section-eyebrow" data-i18n="startEyebrow">SIAP MELIHATNYA?</p>
+            <h2 data-i18n="startTitle">Mulai dari mesinmu sendiri.</h2>
+            <p data-i18n="startDescription">
+              OVO dirancang untuk berjalan berdampingan dengan OpenBot yang terpasang secara lokal.
+              GitHub Pages menyajikan landing page statis ini—bukan runtime viewer.
+            </p>
+            <ul class="requirements">
+              <li><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="requirementNode">Node.js 20 atau lebih baru</span></li>
+              <li><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="requirementOpenBot">OpenBot terpasang di mesin yang sama</span></li>
+              <li><i class="fa-solid fa-check" aria-hidden="true"></i> <span data-i18n="requirementNpm">npm untuk menjalankan Vite</span></li>
+            </ul>
+            <a class="text-link" href="./OPENBOT_OFFICE_API.md">
+              <span data-i18n="apiLink">Baca kontrak data &amp; API</span>
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+            </a>
+          </div>
+          <div
+            class="terminal"
+            aria-label="Perintah untuk menjalankan OVO"
+            data-i18n-aria-label="terminalLabel"
+          >
+            <div class="terminal-top">
+              <span class="terminal-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+              <span>terminal</span>
+              <span class="terminal-label" data-i18n="localOnly">HANYA LOKAL</span>
+            </div>
+            <div class="terminal-body">
+              <p><span class="terminal-comment" data-i18n="terminalInstallComment"># Ambil source dan pasang dependency</span></p>
+              <p><span class="terminal-prompt">$</span> git clone <span class="terminal-value">https://github.com/abewisnu/openbot-virtual-office.git</span></p>
+              <p><span class="terminal-prompt">$</span> cd openbot-virtual-office</p>
+              <p><span class="terminal-prompt">$</span> npm install</p>
+              <p class="terminal-gap"><span class="terminal-comment" data-i18n="terminalRunComment"># Jalankan viewer lokal dengan API read-only</span></p>
+              <p><span class="terminal-prompt">$</span> npm run dev</p>
+              <p class="terminal-success">
+                <i class="fa-solid fa-check" aria-hidden="true"></i>
+                <span data-i18n="terminalReady">OVO siap di http://localhost:5173</span>
+              </p>
+            </div>
+            <div class="terminal-bottom">
+              <div class="terminal-note">
+                <span class="terminal-status-dot" aria-hidden="true"></span>
+                <span data-i18n="terminalFootnote">Bukan koneksi cloud. Data tetap lokal.</span>
+              </div>
+              <div class="terminal-bottom-actions">
+                <span id="terminal-copy-status" class="sr-only" aria-live="polite" aria-atomic="true"></span>
+                <button
+                  class="terminal-copy"
+                  id="terminal-copy"
+                  type="button"
+                  aria-label="Salin perintah terminal"
+                  title="Salin perintah terminal"
+                  data-i18n-aria-label="terminalCopyLabel"
+                  data-i18n-title="terminalCopyLabel"
+                >
+                  <i class="fa-solid fa-copy" aria-hidden="true"></i>
+                  <span class="terminal-copy-label" data-i18n="copyCommands">Salin perintah</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="support-section page-width" aria-labelledby="support-title">
+        <div class="support-card">
+          <div class="support-emblem" aria-hidden="true">
+            <i class="fa-brands fa-paypal"></i>
+          </div>
+          <div class="support-copy">
+            <p class="eyebrow section-eyebrow" data-i18n="supportEyebrow">SUKA DENGAN OVO?</p>
+            <h2 id="support-title" data-i18n="supportTitle">Bantu OVO terus berkembang.</h2>
+            <p data-i18n="supportDescription">
+              Dukunganmu membantu merawat project ini dan mengembangkan fitur berikutnya. Donasi
+              bersifat sukarela dan diproses melalui PayPal.
+            </p>
+            <div class="support-highlights">
+              <span><i class="fa-solid fa-heart" aria-hidden="true"></i> <span data-i18n="supportCommunity">Dukungan sukarela</span></span>
+              <span><i class="fa-solid fa-code-branch" aria-hidden="true"></i> <span data-i18n="supportDevelopment">Untuk pengembangan berikutnya</span></span>
+            </div>
+          </div>
+          <a
+            class="button support-button"
+            href="https://paypal.me/abewisnu"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Donasi untuk OpenBot Virtual Office melalui PayPal"
+            data-i18n-aria-label="supportButtonLabel"
+          >
+            <i class="fa-brands fa-paypal" aria-hidden="true"></i>
+            <span data-i18n="supportButton">Donasi via PayPal</span>
+            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          </a>
+        </div>
+      </section>
+
+      <section
+        class="docs-strip page-width"
+        aria-label="Dokumentasi"
+        data-i18n-aria-label="docsLabel"
+      >
+        <div>
+          <p class="eyebrow section-eyebrow" data-i18n="docsEyebrow">INGIN TAHU LEBIH BANYAK?</p>
+          <h2 data-i18n="docsTitle">Dokumentasi yang jelas, dari setup sampai detail teknis.</h2>
+        </div>
+        <div class="docs-links">
+          <a href="https://github.com/abewisnu/openbot-virtual-office/blob/main/README.md">
+            <span data-i18n="readmeLink">README</span>
+            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          </a>
+          <a href="./OPENBOT_OFFICE_API.md">
+            <span data-i18n="dataLink">API &amp; data</span>
+            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          </a>
+          <a href="./OpenBot-OFFICE-API-GUIDE.md">
+            <span data-i18n="guideLink">Panduan implementasi</span>
+            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          </a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="page-width footer-inner">
+        <a
+          class="brand footer-brand"
+          href="#"
+          aria-label="Kembali ke atas"
+          data-i18n-aria-label="backToTop"
+        >
+          <img src="./assets/logo.png" alt="" width="32" height="32" loading="lazy" />
+          <span>openbot<span class="brand-light">.office</span></span>
+        </a>
+        <p data-i18n="footerTagline">Teman visual untuk pekerjaan yang dilakukan OpenBot.</p>
+        <div class="footer-links">
+          <a href="https://github.com/abewisnu/openbot-virtual-office" target="_blank" rel="noreferrer">
+            <i class="fa-brands fa-github" aria-hidden="true"></i>
+            <span data-i18n="githubLabel">GitHub</span>
+            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          </a>
+          <a href="https://github.com/nightly-labs/openbot" target="_blank" rel="noreferrer">
+            <i class="fa-solid fa-robot" aria-hidden="true"></i>
+            <span data-i18n="openBotLink">OpenBot</span>
+            <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+          </a>
+          <a href="https://github.com/abewisnu/openbot-virtual-office/blob/main/LICENSE" data-i18n="licenseLink">
+            Lisensi MIT
+          </a>
+          <a href="https://fontawesome.com/license/free" target="_blank" rel="noreferrer">
+            <span data-i18n="iconCredit">Ikon: Font Awesome</span>
+          </a>
+        </div>
+      </div>
+      <p class="disclaimer page-width">
+        <span data-i18n="disclaimerPrefix">OpenBot Virtual Office adalah project independen untuk</span>
+        <a href="https://github.com/nightly-labs/openbot">nightly-labs/openbot</a>.
+        <span data-i18n="disclaimerSuffix">Tidak terkait dengan CopilotKit/OpenBot.</span>
+      </p>
+    </footer>
+    <script>
+      const translations = {
+        id: {
+          pageTitle: 'OpenBot Virtual Office — Ruang untuk melihat pekerjaan',
+          metaDescription:
+            'OpenBot Virtual Office (OVO) memvisualisasikan aktivitas AI teammate OpenBot dalam kantor virtual 2D bergaya pixel-art. Viewer lokal, hanya-baca, dan open source.',
+          ogDescription: 'Lihat aktivitas AI teammate OpenBot dalam kantor virtual 2D bergaya pixel-art.',
+          homeLabel: 'OpenBot Virtual Office, halaman utama',
+          navLabel: 'Navigasi utama',
+          navFeatures: 'Fitur',
+          navHow: 'Cara kerja',
+          navStart: 'Mulai',
+          themeModeSystem: 'Tema: sistem',
+          themeModeLight: 'Tema: terang',
+          themeModeDark: 'Tema: gelap',
+          themeNextLight: 'Beralih ke tema terang',
+          themeNextDark: 'Beralih ke tema gelap',
+          themeNextSystem: 'Beralih ke tema sistem',
+          languageSwitchToEnglish: 'Ubah bahasa ke Inggris',
+          languageSwitchToIndonesian: 'Ubah bahasa ke Indonesia',
+          githubLabel: 'GitHub',
+          heroEyebrow: 'Teman pendamping OpenBot',
+          heroTitleLead: 'Lihat pekerjaan',
+          heroTitleFocus: 'AI-mu',
+          heroTitleEnd: 'menjadi nyata.',
+          heroDescription:
+            'OpenBot Virtual Office mengubah aktivitas teammate OpenBot menjadi kantor virtual 2D yang hidup. Lihat siapa yang sedang bekerja, beristirahat, atau menunggu jawaban—sekilas pandang saja.',
+          runLocally: 'Jalankan secara lokal',
+          browseSource: 'Jelajahi source',
+          openSource: 'Open source · MIT',
+          builtFor: 'Dirancang untuk OpenBot',
+          demo: 'DEMO',
+          officeAlt: 'Tampilan kantor pixel-art OVO dengan workstation, lounge, ruang meeting, dan area NOC',
+          previewCaption: 'Ruang kerja virtual, dibangun dari aktivitas nyata',
+          preview: 'Pratinjau',
+          heroCaption: 'Cuplikan demo kantor OVO dengan roster contoh; bukan koneksi langsung ke OpenBot.',
+          visualNote: 'RUANG KECIL UNTUK IDE BESAR',
+          summaryLabel: 'Ringkasan project',
+          signalObserve: 'AMATI, JANGAN MENGGANGGU',
+          signalLocal: 'DATA TETAP LOKAL',
+          signalPixel: 'PIXEL DEMI PIXEL',
+          featuresEyebrow: 'RUANG KERJA YANG BERCERITA',
+          featuresTitle: 'Lebih dari sekadar status.',
+          featuresIntro:
+            'Aktivitas OpenBot diterjemahkan menjadi ruang yang mudah dipahami—tanpa mengambil alih cara kamu bekerja.',
+          featureVisualIndex: '01 / VISUALISASI',
+          featureVisualTitle: 'Satu kantor, banyak cerita.',
+          featureVisualDescription:
+            'Saksikan agent bergerak di antara workstation, lounge, ruang meeting, pantry, dan NOC. Setiap agent mempertahankan avatar pixel-art yang konsisten.',
+          featureContextIndex: '02 / KONTEKS',
+          featureContextTitle: 'Tahu apa yang sedang terjadi.',
+          phasePrefix: 'Fase',
+          phaseAnd: 'dan',
+          phaseSuffix: 'tampil langsung di ruang kerja dan panel aktivitas.',
+          featureReadOnlyIndex: '03 / HANYA-BACA',
+          featureReadOnlyTitle: 'Melihat saja. Tetap di kendalimu.',
+          featureReadOnlyDescription:
+            'OVO membaca snapshot SQLite dalam mode hanya-baca. Tak ada chat, instruksi, atau pengiriman task dari dalam kantor.',
+          howEyebrow: 'SEDERHANA & LOKAL',
+          howTitleLead: 'OpenBot bekerja.',
+          howTitleAccent: 'OVO memberi perspektif.',
+          howDescription:
+            'OVO berjalan sebagai companion lokal di mesin yang sama dengan OpenBot. Server development membaca database OpenBot dan menyajikan snapshot agent ke visualisasi. Project site ini hanya halaman informasi statis.',
+          runtimeLink: 'Pelajari runtime & operasi',
+          flowLabel: 'Alur data OVO',
+          flowOpenBot: 'Agent dan workspace',
+          flowLocal: 'LOKAL',
+          flowSqlite: 'SQLite · hanya-baca',
+          flowSnapshot: 'Snapshot agent',
+          flowStatus: 'Status & aktivitas',
+          flowOffice: 'Kantor pixel-art',
+          flowView: 'LIHAT',
+          flowFootnote: 'Tidak ada data yang dikirim kembali ke OpenBot.',
+          galleryLabel: 'Galeri kantor',
+          galleryEyebrow: 'DI DALAM KANTOR',
+          galleryTitle: 'Dibuat untuk dilihat sekilas.',
+          galleryIntro: 'Navigasi sederhana, info yang relevan, dan detail pixel-art.',
+          galleryOverviewAlt: 'Pemandangan penuh kantor virtual dengan agent dan beberapa zona',
+          galleryOverviewCaption: 'Satu kantor yang terus bergerak',
+          gallerySidebarAlt: 'Panel aktivitas tim dan status agent',
+          gallerySidebarCaption: 'Aktivitas tim, sekilas pandang',
+          galleryInfoAlt: 'Panel informasi agent dengan fase dan aktivitas',
+          galleryInfoCaption: 'Detail saat kamu membutuhkannya',
+          galleryNote: 'Cuplikan visual menggunakan roster demo, bukan data live.',
+          galleryPreviewClose: 'Tutup pratinjau gambar',
+          galleryPreviewPrevious: 'Gambar sebelumnya',
+          galleryPreviewNext: 'Gambar berikutnya',
+          startEyebrow: 'SIAP MELIHATNYA?',
+          startTitle: 'Mulai dari mesinmu sendiri.',
+          startDescription:
+            'OVO dirancang untuk berjalan berdampingan dengan OpenBot yang terpasang secara lokal. GitHub Pages menyajikan landing page statis ini—bukan runtime viewer.',
+          requirementNode: 'Node.js 20 atau lebih baru',
+          requirementOpenBot: 'OpenBot terpasang di mesin yang sama',
+          requirementNpm: 'npm untuk menjalankan Vite',
+          apiLink: 'Baca kontrak data & API',
+          terminalLabel: 'Perintah untuk menjalankan OVO',
+          localOnly: 'HANYA LOKAL',
+          terminalInstallComment: '# Ambil source dan pasang dependency',
+          terminalRunComment: '# Jalankan viewer lokal dengan API read-only',
+          terminalReady: 'OVO siap di http://localhost:5173',
+          terminalFootnote: 'Bukan koneksi cloud. Data tetap lokal.',
+          terminalCopyLabel: 'Salin perintah terminal',
+          copyCommands: 'Salin perintah',
+          commandsCopied: 'Tersalin!',
+          copyFailedLabel: 'Gagal menyalin',
+          copyCommandsFailed: 'Gagal menyalin perintah. Silakan salin secara manual.',
+          docsLabel: 'Dokumentasi',
+          docsEyebrow: 'INGIN TAHU LEBIH BANYAK?',
+          docsTitle: 'Dokumentasi yang jelas, dari setup sampai detail teknis.',
+          readmeLink: 'README',
+          dataLink: 'API & data',
+          guideLink: 'Panduan implementasi',
+          supportEyebrow: 'SUKA DENGAN OVO?',
+          supportTitle: 'Bantu OVO terus berkembang.',
+          supportDescription:
+            'Dukunganmu membantu merawat project ini dan mengembangkan fitur berikutnya. Donasi bersifat sukarela dan diproses melalui PayPal.',
+          supportCommunity: 'Dukungan sukarela',
+          supportDevelopment: 'Untuk pengembangan berikutnya',
+          supportButton: 'Donasi via PayPal',
+          supportButtonLabel: 'Donasi untuk OpenBot Virtual Office melalui PayPal',
+          backToTop: 'Kembali ke atas',
+          footerTagline: 'Teman visual untuk pekerjaan yang dilakukan OpenBot.',
+          openBotLink: 'OpenBot',
+          licenseLink: 'Lisensi MIT',
+          iconCredit: 'Ikon: Font Awesome',
+          disclaimerPrefix: 'OpenBot Virtual Office adalah project independen untuk',
+          disclaimerSuffix: 'Tidak terkait dengan CopilotKit/OpenBot.',
+        },
+        en: {
+          pageTitle: 'OpenBot Virtual Office — A place to see work happen',
+          metaDescription:
+            'OpenBot Virtual Office (OVO) turns OpenBot AI teammate activity into a 2D pixel-art office. A local, read-only, open-source viewer.',
+          ogDescription: 'See OpenBot AI teammate activity in a 2D pixel-art virtual office.',
+          homeLabel: 'OpenBot Virtual Office home',
+          navLabel: 'Main navigation',
+          navFeatures: 'Features',
+          navHow: 'How it works',
+          navStart: 'Get started',
+          themeModeSystem: 'Theme: system',
+          themeModeLight: 'Theme: light',
+          themeModeDark: 'Theme: dark',
+          themeNextLight: 'Switch to light theme',
+          themeNextDark: 'Switch to dark theme',
+          themeNextSystem: 'Switch to system theme',
+          languageSwitchToEnglish: 'Switch language to English',
+          languageSwitchToIndonesian: 'Switch language to Indonesian',
+          githubLabel: 'GitHub',
+          heroEyebrow: 'Your OpenBot companion',
+          heroTitleLead: 'See your AI’s work',
+          heroTitleFocus: 'come',
+          heroTitleEnd: 'to life.',
+          heroDescription:
+            'OpenBot Virtual Office turns teammate activity into a living 2D office. See who’s working, taking a break, or waiting for an answer—all at a glance.',
+          runLocally: 'Run locally',
+          browseSource: 'Browse source',
+          openSource: 'Open source · MIT',
+          builtFor: 'Built for OpenBot',
+          demo: 'DEMO',
+          officeAlt: 'OVO pixel-art office with workstations, lounge, meeting room, and NOC area',
+          previewCaption: 'A virtual office, built from real activity',
+          preview: 'Preview',
+          heroCaption: 'A demo office with a sample roster; it is not connected to a live OpenBot instance.',
+          visualNote: 'A LITTLE SPACE FOR BIG IDEAS',
+          summaryLabel: 'Project highlights',
+          signalObserve: 'OBSERVE, DON’T INTERRUPT',
+          signalLocal: 'YOUR DATA STAYS LOCAL',
+          signalPixel: 'PIXEL BY PIXEL',
+          featuresEyebrow: 'A WORKSPACE THAT TELLS A STORY',
+          featuresTitle: 'More than a status.',
+          featuresIntro:
+            'OVO turns OpenBot activity into a space you can understand—without taking over how you work.',
+          featureVisualIndex: '01 / VISUALIZATION',
+          featureVisualTitle: 'One office, many stories.',
+          featureVisualDescription:
+            'Watch agents move between workstations, the lounge, meeting room, pantry, and NOC. Each agent keeps a consistent pixel-art avatar.',
+          featureContextIndex: '02 / CONTEXT',
+          featureContextTitle: 'Know what’s happening.',
+          phasePrefix: 'Phases',
+          phaseAnd: 'and',
+          phaseSuffix: 'show up right in the office and activity panel.',
+          featureReadOnlyIndex: '03 / READ-ONLY',
+          featureReadOnlyTitle: 'Observe only. Stay in control.',
+          featureReadOnlyDescription:
+            'OVO reads a SQLite snapshot in read-only mode. There’s no chat, instruction box, or task submission from the office.',
+          howEyebrow: 'SIMPLE & LOCAL',
+          howTitleLead: 'OpenBot does the work.',
+          howTitleAccent: 'OVO adds perspective.',
+          howDescription:
+            'OVO runs alongside OpenBot on the same machine. Its development server reads OpenBot’s database and serves an agent snapshot to the visualization. This project site is static information only.',
+          runtimeLink: 'Explore runtime & operations',
+          flowLabel: 'OVO data flow',
+          flowOpenBot: 'Agents and workspaces',
+          flowLocal: 'LOCAL',
+          flowSqlite: 'SQLite · read-only',
+          flowSnapshot: 'Agent snapshot',
+          flowStatus: 'Status & activity',
+          flowOffice: 'Pixel-art office',
+          flowView: 'VIEW',
+          flowFootnote: 'No data is sent back to OpenBot.',
+          galleryLabel: 'Office gallery',
+          galleryEyebrow: 'INSIDE THE OFFICE',
+          galleryTitle: 'A closer look.',
+          galleryIntro: 'Simple navigation, useful context, and pixel-art details.',
+          galleryOverviewAlt: 'Full view of the virtual office with agents and several zones',
+          galleryOverviewCaption: 'One office in motion',
+          gallerySidebarAlt: 'Team activity panel and agent statuses',
+          gallerySidebarCaption: 'Team activity, at a glance',
+          galleryInfoAlt: 'Agent information panel with phase and activity details',
+          galleryInfoCaption: 'Details when you need them',
+          galleryNote: 'Screenshots show a demo roster, not live data.',
+          galleryPreviewClose: 'Close image preview',
+          galleryPreviewPrevious: 'Previous image',
+          galleryPreviewNext: 'Next image',
+          startEyebrow: 'READY TO TAKE A LOOK?',
+          startTitle: 'Get started on your machine.',
+          startDescription:
+            'OVO is designed to run beside a local OpenBot installation. GitHub Pages hosts this static landing page—not the live viewer.',
+          requirementNode: 'Node.js 20 or later',
+          requirementOpenBot: 'OpenBot installed on the same machine',
+          requirementNpm: 'npm to run Vite',
+          apiLink: 'Read the data contract & API',
+          terminalLabel: 'Commands to run OVO',
+          localOnly: 'LOCAL ONLY',
+          terminalInstallComment: '# Clone the repo and install dependencies',
+          terminalRunComment: '# Run the local viewer with the read-only API',
+          terminalReady: 'OVO is ready at http://localhost:5173',
+          terminalFootnote: 'No cloud connection. Your data stays local.',
+          terminalCopyLabel: 'Copy terminal commands',
+          copyCommands: 'Copy commands',
+          commandsCopied: 'Copied!',
+          copyFailedLabel: 'Copy failed',
+          copyCommandsFailed: 'Could not copy commands. Please copy them manually.',
+          docsLabel: 'Documentation',
+          docsEyebrow: 'WANT TO KNOW MORE?',
+          docsTitle: 'Clear documentation, from setup to technical details.',
+          readmeLink: 'README',
+          dataLink: 'API & data',
+          guideLink: 'Implementation guide',
+          supportEyebrow: 'ENJOYING OVO?',
+          supportTitle: 'Help OVO keep growing.',
+          supportDescription:
+            'Your support helps maintain this project and build what comes next. Donations are voluntary and processed through PayPal.',
+          supportCommunity: 'Voluntary support',
+          supportDevelopment: 'For future development',
+          supportButton: 'Donate with PayPal',
+          supportButtonLabel: 'Donate to OpenBot Virtual Office through PayPal',
+          backToTop: 'Back to top',
+          footerTagline: 'A visual companion for the work OpenBot is doing.',
+          openBotLink: 'OpenBot',
+          licenseLink: 'MIT License',
+          iconCredit: 'Icons: Font Awesome',
+          disclaimerPrefix: 'OpenBot Virtual Office is an independent project for',
+          disclaimerSuffix: 'Not affiliated with CopilotKit/OpenBot.',
+        },
+      };
+
+      const themeModes = ['system', 'light', 'dark'];
+      const nextThemeMode = { system: 'light', light: 'dark', dark: 'system' };
+      const themeModeLabelKey = {
+        system: 'themeModeSystem',
+        light: 'themeModeLight',
+        dark: 'themeModeDark',
+      };
+      const themeNextLabelKey = {
+        system: 'themeNextLight',
+        light: 'themeNextDark',
+        dark: 'themeNextSystem',
+      };
+      const systemTheme = window.matchMedia('(prefers-color-scheme: light)');
+      const themeToggle = document.querySelector('#theme-toggle');
+      const languageToggle = document.querySelector('#language-toggle');
+      const themeColor = document.querySelector('meta[name="theme-color"]');
+      const terminalCopy = document.querySelector('#terminal-copy');
+      const terminalCopyLabel = terminalCopy.querySelector('.terminal-copy-label');
+      const terminalCopyStatus = document.querySelector('#terminal-copy-status');
+      const galleryPreview = document.querySelector('#gallery-lightbox');
+      const galleryPreviewImage = document.querySelector('#gallery-preview-image');
+      const galleryPreviewCaption = document.querySelector('#gallery-preview-caption');
+      const galleryPreviewCounter = document.querySelector('#gallery-preview-counter');
+      const galleryPreviewClose = document.querySelector('#gallery-lightbox-close');
+      const galleryPreviewPrevious = document.querySelector('#gallery-lightbox-previous');
+      const galleryPreviewNext = document.querySelector('#gallery-lightbox-next');
+      const galleryPreviewTriggers = [...document.querySelectorAll('.gallery-preview-trigger')];
+      let themeMode = document.documentElement.dataset.themeMode || 'system';
+      let language = document.documentElement.lang === 'en' ? 'en' : 'id';
+      let copyFeedbackTimeout;
+      let galleryPreviewReturnFocus = null;
+      let activeGalleryIndex = 0;
+
+      function translate(key) {
+        const value = translations[language][key];
+        if (typeof value !== 'string') {
+          throw new Error(`Missing ${language} translation for "${key}"`);
+        }
+        return value;
+      }
+
+      function setLanguage(nextLanguage) {
+        if (!Object.hasOwn(translations, nextLanguage)) {
+          throw new RangeError(`Unsupported language: ${nextLanguage}`);
+        }
+        language = nextLanguage;
+        document.documentElement.lang = language;
+        window.clearTimeout(copyFeedbackTimeout);
+        terminalCopy.removeAttribute('data-state');
+        terminalCopyStatus.textContent = '';
+        document.querySelectorAll('[data-i18n]').forEach((element) => {
+          element.textContent = translate(element.dataset.i18n);
+        });
+        for (const [dataAttribute, attribute] of [
+          ['i18nAriaLabel', 'aria-label'],
+          ['i18nTitle', 'title'],
+          ['i18nAlt', 'alt'],
+          ['i18nContent', 'content'],
+        ]) {
+          document.querySelectorAll(`[data-${dataAttribute.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)}]`).forEach((element) => {
+            element.setAttribute(attribute, translate(element.dataset[dataAttribute]));
+          });
+        }
+        document.title = translate('pageTitle');
+        const languageActionKey =
+          language === 'id' ? 'languageSwitchToEnglish' : 'languageSwitchToIndonesian';
+        languageToggle.textContent = language.toUpperCase();
+        languageToggle.setAttribute('aria-label', translate(languageActionKey));
+        languageToggle.title = translate(languageActionKey);
+        languageToggle.setAttribute('aria-pressed', String(language === 'en'));
+        updateThemeToggleLabel();
+        localStorage.setItem('ovo-site-language', language);
+      }
+
+      function updateThemeToggleLabel() {
+        const label = `${translate(themeModeLabelKey[themeMode])}. ${translate(themeNextLabelKey[themeMode])}`;
+        themeToggle.setAttribute('aria-label', label);
+        themeToggle.title = label;
+      }
+
+      function applyTheme() {
+        const resolvedTheme =
+          themeMode === 'system' ? (systemTheme.matches ? 'light' : 'dark') : themeMode;
+        document.documentElement.dataset.themeMode = themeMode;
+        document.documentElement.dataset.theme = resolvedTheme;
+        themeColor.content = resolvedTheme === 'light' ? '#f4f1ea' : '#14121c';
+        updateThemeToggleLabel();
+      }
+
+      function setTheme(nextTheme) {
+        if (!themeModes.includes(nextTheme)) {
+          throw new RangeError(`Unsupported theme: ${nextTheme}`);
+        }
+        themeMode = nextTheme;
+        localStorage.setItem('ovo-site-theme', themeMode);
+        applyTheme();
+      }
+
+      function showCopyFailure(error) {
+        console.error('Unable to copy terminal commands.', error);
+        window.clearTimeout(copyFeedbackTimeout);
+        terminalCopy.dataset.state = 'error';
+        terminalCopyLabel.textContent = translate('copyFailedLabel');
+        terminalCopyStatus.textContent = translate('copyCommandsFailed');
+      }
+
+      async function copyTerminalCommands() {
+        const commands = [...document.querySelectorAll('.terminal-body p')]
+          .filter((line) => line.querySelector('.terminal-prompt'))
+          .map((line) => line.textContent.trim().replace(/^\$\s*/, ''));
+
+        if (commands.length === 0) {
+          showCopyFailure(new Error('No terminal commands are available to copy.'));
+          return;
+        }
+
+        try {
+          await navigator.clipboard.writeText(commands.join('\n'));
+        } catch (error) {
+          showCopyFailure(error);
+          return;
+        }
+
+        window.clearTimeout(copyFeedbackTimeout);
+        terminalCopy.dataset.state = 'success';
+        terminalCopyLabel.textContent = translate('commandsCopied');
+        terminalCopyStatus.textContent = translate('commandsCopied');
+        copyFeedbackTimeout = window.setTimeout(() => {
+          terminalCopy.removeAttribute('data-state');
+          terminalCopyLabel.textContent = translate('copyCommands');
+          terminalCopyStatus.textContent = '';
+        }, 2000);
+      }
+
+      function renderGalleryPreview(index) {
+        activeGalleryIndex = (index + galleryPreviewTriggers.length) % galleryPreviewTriggers.length;
+        const trigger = galleryPreviewTriggers[activeGalleryIndex];
+        const thumbnail = trigger.querySelector('img');
+        const caption = trigger
+          .closest('.gallery-card')
+          .querySelector('figcaption [data-i18n]')
+          ?.textContent.trim();
+
+        galleryPreviewImage.src = thumbnail.currentSrc || thumbnail.src;
+        galleryPreviewImage.alt = thumbnail.alt;
+        galleryPreviewCaption.textContent = caption || thumbnail.alt;
+        galleryPreviewCounter.textContent =
+          `${String(activeGalleryIndex + 1).padStart(2, '0')} / ${String(galleryPreviewTriggers.length).padStart(2, '0')}`;
+      }
+
+      function openGalleryPreview(index) {
+        galleryPreviewReturnFocus = galleryPreviewTriggers[index];
+        renderGalleryPreview(index);
+        galleryPreview.showModal();
+        galleryPreviewClose.focus();
+      }
+
+      setLanguage(language);
+      applyTheme();
+
+      themeToggle.addEventListener('click', () => setTheme(nextThemeMode[themeMode]));
+      languageToggle.addEventListener('click', () =>
+        setLanguage(language === 'id' ? 'en' : 'id'),
+      );
+      terminalCopy.addEventListener('click', copyTerminalCommands);
+      galleryPreviewTriggers.forEach((trigger, index) => {
+        trigger.addEventListener('click', () => openGalleryPreview(index));
+      });
+      galleryPreviewClose.addEventListener('click', () => galleryPreview.close());
+      galleryPreviewPrevious.addEventListener('click', () =>
+        renderGalleryPreview(activeGalleryIndex - 1),
+      );
+      galleryPreviewNext.addEventListener('click', () =>
+        renderGalleryPreview(activeGalleryIndex + 1),
+      );
+      galleryPreview.addEventListener('click', (event) => {
+        if (event.target === galleryPreview) galleryPreview.close();
+      });
+      galleryPreview.addEventListener('keydown', (event) => {
+        if (event.key === 'ArrowLeft') {
+          event.preventDefault();
+          renderGalleryPreview(activeGalleryIndex - 1);
+        } else if (event.key === 'ArrowRight') {
+          event.preventDefault();
+          renderGalleryPreview(activeGalleryIndex + 1);
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          galleryPreview.close();
+        }
+      });
+      galleryPreview.addEventListener('close', () => {
+        galleryPreviewReturnFocus?.focus();
+        galleryPreviewReturnFocus = null;
+      });
+      systemTheme.addEventListener('change', () => {
+        if (themeMode === 'system') applyTheme();
+      });
+    </script>
+  </body>
+</html>

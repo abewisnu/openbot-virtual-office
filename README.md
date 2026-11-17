@@ -1,5 +1,9 @@
 # OpenBot Virtual Office (OVO)
 
+🌐 **Project site:** [abewisnu.github.io/openbot-virtual-office](https://abewisnu.github.io/openbot-virtual-office/) — an overview of OVO, its local-only data flow, and setup instructions, with dark/light/system themes and Indonesian/English language options. The static site source is in `docs/` and is deployed by GitHub Actions. To enable deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
+
+💙 **Support OVO:** If you find this project useful, you can support its maintenance and future development with a voluntary donation via [PayPal](https://paypal.me/abewisnu).
+
 <p align="center">
   <img src="public/logo.png" alt="OpenBot Virtual Office (OVO) logo" width="50%">
 </p>
