@@ -59,7 +59,7 @@ account name or logo. No mock lives in a component: the world, the sidebar and t
 read the same store shape they read in production.
 
 <!-- Side-by-side on GitHub, stacked on narrow screens: two cells, one image each. -->
-| <img src="screenshot/office-overview.png" alt="Full office canvas with the sidebar hidden" width="100%"> | <img src="screenshot/sidebar.png" alt="Floating sidebar with the team activity list" width="100%"> |
+| <img src="screenshot/office-overview.png" alt="Full office canvas with the sidebar hidden" width="100%"> | <img src="screenshot/sidebar.png" alt="Floating sidebar with the team activity list" width="40%"> |
 |:--:|:--:|
 | **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), Meeting Area, Lounge, Pantry & Storage and the raised-floor NOC on the left. Hiding the sidebar reserves no layout space, so the office is pixel-for-pixel identical behind it. | **2 · Sidebar** — the frosted panel floats 16 px from every edge, showing the demo workspace **Nusantara Studio** with its own pixel logo, the `Live` source badge and clock, one row per phase with a clickable count, the recent-updates feed, and the Settings / Help / Exit controls. |
 
