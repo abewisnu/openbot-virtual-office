@@ -31,6 +31,23 @@ Start here: [`docs/OPENBOT_OFFICE_API.md`](docs/OPENBOT_OFFICE_API.md) (data con
 [`docs/OPENBOT_OFFICE_RUNTIME.md`](docs/OPENBOT_OFFICE_RUNTIME.md) (runtime & operations),
 [`docs/OpenBot-OFFICE-API-GUIDE.md`](docs/OpenBot-OFFICE-API-GUIDE.md) (implementation map).
 
+## Integration with OpenBot
+
+<img src="https://avatars.githubusercontent.com/u/100160810?s=60&v=4" alt="nightly-labs logo" width="28">
+
+OVO is a companion viewer for **[OpenBot](https://github.com/nightly-labs/openbot)** — the local-first
+desktop workspace for persistent AI teammates, built by
+**[nightly-labs](https://github.com/nightly-labs)** ([openbot.run](https://openbot.run/)). OpenBot does
+the work: it runs the agents, their workspaces, the task queue and the conversation. OVO never
+duplicates that — it only **reads** the SQLite database OpenBot already writes (a handful of tables
+per request, `readonly: true`, no writes, no calls back into OpenBot) and turns the result into a room
+you can watch.
+
+> **This is not the CopilotKit project.** OVO integrates with `nightly-labs/openbot`. It is unrelated
+> to [`CopilotKit/OpenBot`](https://github.com/CopilotKit/openbot) ([open.bot](https://open.bot)), a
+> different product from CopilotKit. Both happen to share the name "OpenBot"; only
+> `nightly-labs/openbot` is the application this office visualises.
+
 ## Prerequisites
 
 - **Node.js 20+** (tested on Node 24) and npm.
