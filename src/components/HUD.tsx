@@ -20,6 +20,34 @@ export default function HUD() {
   } = useStore();
   const [now, setNow] = useState(Date.now());
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  const [logoSrc, setLogoSrc] = useState<string | null>(null);
+
+  // The workspace logo lives in OpenBot's own app-support folder and is exposed
+  // by the dev API only as image bytes. A 204 (no logo) or a static host that
+  // answers with HTML leaves the plain "VO" mark in place.
+  useEffect(() => {
+    let objectUrl: string | null = null;
+    let cancelled = false;
+    fetch('/api/office-logo', { headers: { Accept: 'image/*' } })
+      .then((r) => {
+        const type = r.headers.get('content-type') ?? '';
+        if (r.status !== 200 || !type.startsWith('image/')) return null;
+        return r.blob();
+      })
+      .then((blob) => {
+        if (!blob || cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setLogoSrc(objectUrl);
+      })
+      .catch(() => {
+        /* keep the built-in mark */
+      });
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, []);
+
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
@@ -37,7 +65,13 @@ export default function HUD() {
       {sidebarVisible ? (
         <aside className="hud-sidebar" aria-label="Virtual office sidebar">
           <header className="sidebar-header">
-            <div className="brand-mark">VO</div>
+            <div className={logoSrc ? 'brand-mark brand-mark-logo' : 'brand-mark'}>
+              {logoSrc ? (
+                <img src={logoSrc} alt="Workspace logo" />
+              ) : (
+                'VO'
+              )}
+            </div>
             <div className="brand-copy">
               <span>VIRTUAL OFFICE</span>
               <strong>Workspace</strong>

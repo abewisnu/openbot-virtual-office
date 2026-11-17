@@ -19,7 +19,7 @@ Vite **dev-only** plugin. The production design (`/api/office` on port 8099, `/h
 
 | Item | Reality |
 |---|---|
-| Endpoint | `GET /api/agents` (and `HEAD`) |
+| Endpoint | `GET /api/agents` (and `HEAD`) — plus `GET /api/office-logo` for the workspace logo (§2.3) |
 | Host | the Vite dev server itself, default `http://localhost:5173` |
 | Provider | `vite-plugin-openbot.ts` → `configureServer` middleware |
 | Availability | **dev only**. `vite preview` and any static host do **not** serve it |
@@ -81,6 +81,24 @@ Exactly these eight keys, in this order. `provider`, `model`, `threadId` and raw
 `activity` is either `null` or an object (§4).
 
 Measured: `count 15`, keys as above, phases `{idle: 14, working: 1}` at capture time.
+
+---
+
+### 2.3 Workspace logo — `GET /api/office-logo`
+
+| Item | Reality |
+|---|---|
+| Source | `openbot-team-server-v2.json` (same folder as `openbot.db`), field `hosts[].serverLogo` (`version`, `mimeType`) |
+| File | `<app-support>/openbot-team-server-v2.json.assets/logo/<version>.<ext>` |
+| Response | raw image bytes, `Content-Type` taken from the config, `Cache-Control: no-store` |
+| No logo on disk | `204 No Content`, empty body — the UI keeps its own mark |
+| Allowed types | `image/webp`, `image/png`, `image/jpeg`, `image/gif`; SVG is refused on purpose |
+| Guards | Host allowlist → `421`, non-`GET`/`HEAD` → `405`, file stem re-validated, resolved path must stay inside the logo directory |
+| Never leaves the process | the JSON config itself, because it also holds team-server private keys |
+
+The sidebar renders this image only when the answer is `200` with an `image/*`
+`Content-Type`; anything else keeps the built-in `VO` mark. Static hosts answer
+`/api/office-logo` with `index.html`, so that content-type check is what holds the fallback.
 
 ---
 
