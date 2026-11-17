@@ -52,6 +52,12 @@ export interface AgentProfile {
   avatarHue: number;
   /** OpenBot's `agent_json.avatarSeed`; drives the derived pixel face. */
   avatarSeed: string | null;
+  /**
+   * Disk used by the agent's workspace folder, in bytes. Measured server-side
+   * from the folder named in the agent record; that path never reaches the
+   * browser. `null` when the folder is missing or unmeasurable.
+   */
+  workspaceBytes: number | null;
   phase: AgentPhase;
   /** The single highest-priority activity, or null when there is none. */
   activity: AgentActivity | null;
@@ -96,6 +102,7 @@ const agentProfileSchema = z.object({
   avatarColor: z.string().nullable(),
   avatarHue: z.number(),
   avatarSeed: z.string().max(128).nullable().default(null),
+  workspaceBytes: z.number().int().nonnegative().nullable().default(null),
   phase: z.enum(AGENT_PHASES),
   activity: activitySchema.nullable(),
   unreadCount: z.number().int().nonnegative(),
@@ -147,6 +154,7 @@ export async function fetchAgentProfilesAsync(): Promise<AgentProfile[]> {
       avatarColor: a.avatarColor,
       avatarHue: a.avatarHue,
       avatarSeed: a.avatarSeed,
+      workspaceBytes: a.workspaceBytes,
       phase: a.phase,
       activity: a.activity,
       unreadCount: a.unreadCount,

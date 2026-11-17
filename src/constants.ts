@@ -62,6 +62,24 @@ export function shirtColorFor(emp: { avatarColor: string | null; avatarHue: numb
 }
 
 /**
+ * Human size for the agent's workspace folder. `null`/invalid means the source
+ * could not measure it, so the info card shows an em dash rather than a guess.
+ */
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes === null || bytes === undefined || !Number.isFinite(bytes) || bytes < 0) return '—';
+  if (bytes < 1024) return `${Math.round(bytes)} B`;
+  const units = ['KB', 'MB', 'GB', 'TB'];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  const shown = value >= 10 ? Math.round(value) : Math.round(value * 10) / 10;
+  return `${shown} ${units[unit]}`;
+}
+
+/**
  * The single badge to draw for an employee: the phase colour + phase label.
  * The activity never recolours the dot, because the dot is the *status*
  * indicator next to the agent name; activity is shown as a separate note.

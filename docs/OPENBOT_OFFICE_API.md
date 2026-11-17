@@ -71,6 +71,7 @@ source policy turns into the mock fallback (§2.2.1).
     "avatarColor": null,
     "avatarHue": 30,
     "avatarSeed": "agent-00000000-0000-0000-0000-000000000000:face:41",
+    "workspaceBytes": 136593408,
     "phase": "idle",
     "activity": null,
     "unreadCount": 0
@@ -78,11 +79,13 @@ source policy turns into the mock fallback (§2.2.1).
 ]
 ```
 
-Exactly these nine keys, in this order. `avatarSeed` is OpenBot's face seed
+Exactly these ten keys, in this order. `avatarSeed` is OpenBot's face seed
 (`projection_agents.agent_json.avatarSeed`, `/^[a-z0-9:-]{1,128}$/`); OVO derives the
 pixel face from it (§2.5). `provider`, `model`, `threadId` and raw
 `agent_json` are stripped server-side (`vite-plugin-openbot.ts:70-79`) before serialisation.
-`activity` is either `null` or an object (§4).
+`activity` is either `null` or an object (§4). `workspaceBytes` is the measured
+disk usage of the agent's workspace folder (§2.2.2); the folder path itself is never
+sent.
 
 Measured: `count 15`, keys as above, phases `{idle: 14, working: 1}` at capture time.
 
@@ -113,6 +116,28 @@ Rules that follow from the table:
 - Verified by `node scripts/verify-store.mjs`: every row of the table as a unit test, plus
   source guards that the store boots empty, that `mockEmployees` is not the initial
   roster, and that the HUD renders the `Connecting` label.
+
+---
+
+### 2.2.2 Workspace footprint — `workspaceBytes`
+
+`projection_agents.agent_json.workspacePath` names the agent's own folder under
+`~/OpenBot/Agents/agent-<uuid>`. The browser never receives that string; it receives
+`workspaceBytes`, an integer or `null`.
+
+| Rule | Value |
+| --- | --- |
+| Accepted path | absolute and strictly inside `$HOME/OpenBot/Agents/` — the root itself, relatives and `..` are rejected |
+| Symlinks | never followed; a folder whose realpath leaves the root is rejected |
+| Walk | `readdirSync` + `lstatSync`, regular files only, max `20000` entries, depth ≤ 24 |
+| Cache | 60 s per folder, bounded to 64 entries, so the 3 s poll does not re-walk 16 folders |
+| Missing | `null` → the info card shows `—`, never a fabricated size |
+| Payload | `workspaceBytes` only; `workspacePath` is measured in `src/data/workspaceSize.node.ts` and stays in the process |
+
+Verified by `node scripts/verify-workspace.mjs`: boundary rejects (relative, `/etc`,
+`../Secrets`, root), a temp folder proves symlinks are skipped, all 16 live rows carry a
+count, and the serialised roster contains neither `workspacePath` nor an absolute Agents
+path.
 
 ---
 
@@ -502,7 +527,9 @@ origin so no CORS or token is needed; `/health` must run a real query so it dist
 5. Validate the payload at the client boundary with Zod
    (`agentProfileSchema`, `src/data/openbotSource.ts:99-108`). A schema mismatch is treated
    as "no data", never rendered as partial truth.
-6. No DB path, SQL text, credential, or raw `agent_json` in any response body or client log.
+6. No DB path, SQL text, credential, raw `agent_json`, or workspace folder path in any
+   response body or client log. `workspaceBytes` is the only footprint field that leaves
+   the server.
 7. No write endpoint exists, and none should be added to this database: it is OpenBot's
    live store.
 8. Keep secrets and machine paths out of `VITE_`-prefixed variables — they are inlined into
@@ -546,6 +573,7 @@ node scripts/verify-openbot-source.mjs
 # client gates: first paint must never show the mock roster
 node scripts/verify-store.mjs          # pending/openbot/mock transitions + boot state
 node scripts/verify-avatar.mjs         # tint contrast on avatar tile AND panel gutter, 16 × 2
+node scripts/verify-workspace.mjs      # folder-size walker boundary + symlink skip + no path leak
 
 # raw DB truth, read-only
 sqlite3 "file:$HOME/Library/Application Support/OpenBot/openbot.db?mode=ro" \

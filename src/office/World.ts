@@ -135,10 +135,10 @@ export class World {
         const dx = e.clientX - this.drag.lx, dy = e.clientY - this.drag.ly, z = ZOOM_STEPS[this.cam.zi];
         this.drag.moved += Math.abs(dx) + Math.abs(dy); this.drag.lx = e.clientX; this.drag.ly = e.clientY;
         this.cam.x -= dx / z; this.cam.y -= dy / z; cv.style.cursor = 'grabbing';
-      } else cv.style.cursor = this.pick(e) ? 'pointer' : 'default';
+      } else cv.style.cursor = this.pickEmployeeId(e) ? 'pointer' : 'default';
     });
     on(cv, 'pointerup', (e: PointerEvent) => {
-      if (this.drag.active && this.drag.moved < 5) useStore.getState().select(this.pick(e)?.id ?? null);
+      if (this.drag.active && this.drag.moved < 5) useStore.getState().select(this.pickEmployeeId(e));
       this.drag.active = false; cv.style.cursor = 'default';
     });
     on(cv, 'wheel', (e: WheelEvent) => { e.preventDefault(); this.zoomBy(e.deltaY < 0 ? 1 : -1); }, { passive: false });
@@ -153,10 +153,44 @@ export class World {
     on(window, 'keyup', (e: KeyboardEvent) => this.keys.delete(e.code));
   }
   private zoomBy(d: number) { this.cam.zi = Math.max(0, Math.min(ZOOM_STEPS.length - 1, this.cam.zi + d)); }
-  private pick(e: PointerEvent): Character | null {
+  /** Canvas pointer → world coordinates, through the camera transform. */
+  private worldPoint(e: PointerEvent): { x: number; y: number } {
     const r = this.app.canvas.getBoundingClientRect();
-    const wx = (e.clientX - r.left - this.root.x) / this.root.scale.x, wy = (e.clientY - r.top - this.root.y) / this.root.scale.y;
+    return {
+      x: (e.clientX - r.left - this.root.x) / this.root.scale.x,
+      y: (e.clientY - r.top - this.root.y) / this.root.scale.y,
+    };
+  }
+  private pick(e: PointerEvent): Character | null {
+    const { x: wx, y: wy } = this.worldPoint(e);
     return [...this.chars].sort((a, b) => b.y - a.y).find((c) => Math.abs(wx - c.x) <= 14 && wy <= c.y + 4 && wy >= c.y - 50) ?? null;
+  }
+  /**
+   * The workstation computer under the pointer: monitor screen first, then the
+   * desk and chair footprint. Returns the seat, so a click can resolve to the
+   * agent that owns that computer even while the agent is walking elsewhere.
+   */
+  private pickDesk(e: PointerEvent): Seat | null {
+    const { x: wx, y: wy } = this.worldPoint(e);
+    const desks = this.layout.seats.filter((s) => s.kind === 'desk');
+    for (const s of desks) {
+      if (!s.monitor) continue;
+      // Monitor art is 16x14 art px, anchored top-center.
+      if (Math.abs(wx - s.monitor.x) <= 16 * ART + 4 && wy >= s.monitor.y - 4 && wy <= s.monitor.y + 14 * ART + 6) return s;
+    }
+    for (const s of desks) {
+      if (Math.abs(wx - s.pos.x) <= 34 && wy >= s.pos.y - 48 && wy <= s.pos.y + 16) return s;
+    }
+    return null;
+  }
+  /** Character under the pointer, else the agent whose computer was clicked. */
+  private pickEmployeeId(e: PointerEvent): string | null {
+    const ch = this.pick(e);
+    if (ch) return ch.id;
+    const seat = this.pickDesk(e);
+    if (!seat) return null;
+    if (seat.occupant) return seat.occupant;
+    return useStore.getState().employees.find((x) => x.currentWorkstation === seat.id)?.id ?? null;
   }
   private applyCamera() {
     const vw = this.app.screen.width, vh = this.app.screen.height, z = ZOOM_STEPS[this.cam.zi];

@@ -13,6 +13,7 @@ import {
   type AgentActivity,
   type AgentProfile,
 } from './openbotSource.ts';
+import { measureWorkspaceFootprint } from './workspaceSize.node.ts';
 
 // ---------------------------------------------------------------------------
 // Environment
@@ -83,6 +84,9 @@ const agentJsonSchema = z.object({
   avatarHue: z.coerce.number().nullish(),
   // OpenBot's own seed shape; anything else is folded to a safe slug later.
   avatarSeed: z.string().max(128).nullish(),
+  // Input for the disk measurement only. Never forwarded to the browser; the
+  // payload carries the resulting `workspaceBytes` instead.
+  workspacePath: z.string().max(1024).nullish(),
 });
 
 // ---------------------------------------------------------------------------
@@ -318,6 +322,7 @@ export function fetchAgentProfiles(): AgentProfile[] {
       avatarColor: json.avatarColor ?? null,
       avatarHue: json.avatarHue ?? 0,
       avatarSeed: json.avatarSeed ?? null,
+      workspaceBytes: measureWorkspaceFootprint(json.workspacePath ?? null),
       phase,
       activity,
       unreadCount,

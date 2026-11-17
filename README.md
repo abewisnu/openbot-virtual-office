@@ -88,6 +88,7 @@ node scripts/verify-monitor.mjs        # phase × seated matrix + monitor source
 node scripts/verify-openbot-source.mjs # check the SQL queries stay read-only
 node scripts/verify-lounge.mjs         # `starting`/`restarting` agents stay inside the Lounge room
 node scripts/verify-store.mjs          # roster source states: never mock before a failed fetch
+node scripts/verify-workspace.mjs      # workspace-folder size walker + no path leak to the browser
 ```
 
 `npm run preview` and any other static host do not serve `/api/agents`: the request falls through to
@@ -95,7 +96,7 @@ node scripts/verify-store.mjs          # roster source states: never mock before
 
 ## Controls
 WASD / arrow keys / drag = camera · scroll or `+`/`-` = zoom (`0.70x`–`3x`, starts at `0.75x`) · click a
-character = info panel · `E` = randomise simulation status · `Esc` = close panel.
+character **or its workstation computer** = info panel · `E` = randomise simulation status · `Esc` = close panel.
 
 ## Architecture
 | File | Role |
@@ -111,6 +112,7 @@ character = info panel · `E` = randomise simulation status · `Esc` = close pan
 | `src/store/useStore.ts` | Zustand: employees derived from the API, selection, notifications, UI settings, 3 s polling loop. Boots empty with `source: 'pending'`, never with the mock roster. |
 | `src/store/sourcePolicy.ts` | Pure roster-source policy: `resolveSource()` maps each fetch outcome to `{ employees, source }`. Starts `pending`, fills `openbot`, falls back to `mock` only when a fetch fails with no live snapshot to keep. No runtime imports, so `scripts/verify-store.mjs` runs it with `node`. |
 | `src/data/openbotSource.node.ts` | Node side: opens SQLite `readonly`, 11 queries, derives `phase` + `activity`. |
+| `src/data/workspaceSize.node.ts` | Measures an agent workspace folder from `<Agents>/…` only: no symlinks, 20 000-entry budget, 60 s cache. Returns bytes; the path stays in the process. |
 | `src/data/openbotSource.ts` | Type contract + Zod `agentProfileSchema` + fetch client. |
 | `vite-plugin-openbot.ts` | Dev-only middleware: `GET /api/agents` (Host/method guards, security headers, strips `provider`/`model`/`threadId`), `GET /api/office-logo` streaming the workspace logo from OpenBot's app-support folder (`204` when none), and `GET /api/office-profile` returning the OpenBot profile name as JSON. |
 | `src/components/*` | HUD, character info panel, canvas host (React overlay on top of Pixi). |
@@ -307,6 +309,22 @@ custom properties (`--avatar-tint-dark`, `--avatar-tint-light`) and `:root[data-
 .avatar` picks the active one, so a theme switch repaints the face without a re-render. A row
 with no seed (mock roster, older payload) falls back to the agent id, so no character is
 faceless.
+
+### Workspace footprint
+Each agent has its own folder at `~/OpenBot/Agents/agent-<uuid>`, so the info card shows how much
+disk that agent actually holds. Clicking the agent **or its workstation computer** opens the same
+card, and the `Disk` row is that folder's total size (`4.2 MB`, `33 MB`).
+
+The number is measured server-side, in `src/data/workspaceSize.node.ts`, from
+`projection_agents.agent_json.workspacePath`. That path never reaches the browser: `/api/agents`
+forwards only `workspaceBytes`, an integer or `null`. The walk is read-only and bounded — absolute
+folders strictly inside `$HOME/OpenBot/Agents/` only, no symlinks followed, 20 000 entries max,
+depth ≤ 24, 60 s cache so the 3 s poll does not re-walk 16 folders. A missing folder yields `null`
+and the card prints `—` rather than a guess. `scripts/verify-workspace.mjs` covers the boundary,
+the symlink skip and the no-path-leak guarantee.
+
+The office doesn't multiplex the shared state: `openbot.db` (event log, messages, provider history)
+is not attributable to one agent folder, so the card reports the workspace folder only and says so.
 
 The feature lists are OVO's own: OpenBot's sprite order is not readable from its bundle, so the
 silhouette is similar in spirit but not identical to the OpenBot window. Nothing is copied from

@@ -22,6 +22,8 @@ export interface Employee {
    * Null on the mock roster and on payloads that predate the field.
    */
   avatarSeed: string | null;
+  /** Agent workspace disk usage in bytes; null when unknown (mock roster too). */
+  workspaceBytes: number | null;
   /** Live agent runtime phase from the real source, when available. */
   phase: import('./data/openbotSource').AgentPhase;
   /** Single highest-priority activity, or null when there is none. */

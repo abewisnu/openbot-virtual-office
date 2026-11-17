@@ -8,7 +8,7 @@ const profiles = fetchAgentProfiles();
 
 console.log(`Found ${profiles.length} agents from the real DB.\n`);
 console.log(
-  ['name', 'phase', 'activity', 'shirt', 'unread'].map((h) => h.padEnd(20)).join(''),
+  ['name', 'phase', 'activity', 'shirt', 'unread', 'disk'].map((h) => h.padEnd(20)).join(''),
 );
 console.log('-'.repeat(90));
 
@@ -33,6 +33,7 @@ for (const p of sorted) {
       act.padEnd(20),
       (p.avatarColor ?? `hue ${p.avatarHue}`).padEnd(20),
       String(p.unreadCount).padEnd(20),
+      (p.workspaceBytes === null ? '—' : `${(p.workspaceBytes / 1024 / 1024).toFixed(1)} MB`).padEnd(20),
     ].join(''),
   );
 }
@@ -52,6 +53,12 @@ if (profiles.length === 0) {
 }
 if (profiles.length > 0 && (byPhase.working ?? 0) === 0 && (byPhase.ready ?? 0) === 0) {
   console.error('\nFAIL: live DB produced no working/ready agent — phase derivation is broken');
+  failed = true;
+}
+const sized = profiles.filter((p) => typeof p.workspaceBytes === 'number' && p.workspaceBytes > 0).length;
+console.log(`Agents with a measured workspace: ${sized}/${profiles.length}`);
+if (profiles.length > 0 && sized === 0) {
+  console.error('\nFAIL: no workspace folder could be measured');
   failed = true;
 }
 if (!failed) console.log('\nPASS');
