@@ -21,8 +21,8 @@ const cases = [
   [0, 10, false], // west wall
   [7, 5, false], // north wall
   [24, 12, false], // meeting room
-  [7, 22, false], // NOC
-  [6, 37, false], // pantry / storage
+  [7, 22, false], // pantry (upper-left room)
+  [6, 37, false], // NOC (lower-left room)
 ];
 
 let failed = 0;

@@ -44,15 +44,15 @@ const ROOM_LABELS: RoomLabel[] = [
   { name: "LOUNGE", tx: 8, ty: 7 },
   { name: "MEETING ROOM", tx: 19, ty: 9, span: 1 },
   { name: "WORKSTATIONS", tx: 48, ty: 7 },
-  { name: "PANTRY & STORAGE", tx: 11, ty: 37 },
-  { name: "NOC", tx: 1, ty: 18, span: 0 },
+  { name: "PANTRY & STORAGE", tx: 7, ty: 20 },
+  { name: "NOC", tx: 8, ty: 33, span: 1 },
 ];
 const LABEL_SPAN = 2; // free tiles required on each side of the plate centre
 
 export function zoneName(tx: number, ty: number): string {
   if (tx < 15 && ty < 16) return "Lounge";
-  if (tx < 15 && ty < 30 && ty >= 17) return "NOC";
-  if (tx < 15 && ty >= 30) return "Pantry & Storage";
+  if (tx < 15 && ty < 30 && ty >= 17) return "Pantry & Storage";
+  if (tx < 15 && ty >= 30) return "NOC";
   if (tx >= 17 && tx <= 32 && ty < 19) return "Meeting Area";
   if (tx >= 39) return "Workstation Area";
   return "Sirkulasi";
@@ -356,28 +356,22 @@ export function buildLayout(deskCount = 12): Layout {
   dividerH(18, 17, 32, null, true, true);
   place("plant", 19, 16);
   place("plant", 30, 16);
-  // --- NOC (kiri tengah): 2 rack server, satu baris x 2 kolom.
-  // A rack sprite holds four server units (16x38 art px) and stands 4.75 tiles
-  // tall at PROP_SCALE 2; the two footprints sit 2 tiles apart on row 22.
+  // --- Pantry & Storage (kiri tengah, ruang atas): shelves and storage along
+  // the room's top wall, dining nook below them. The NOC used to live here and
+  // the two rooms have swapped places, so the upper room now holds the pantry.
   dividerV(14, 16, 29, 23);
-  for (const ty of RACK_ROWS) {
-    for (const tx of RACK_COLS) {
-      place("serverRack", tx, ty, RACK_W, 1);
-    }
-  }
-  // --- Facilities & storage (kiri bawah)
-  place("bookshelf", 1.5, 33, 2, 1);
-  place("bookshelf", 3, 33, 3, 1);
-  place("cabinet", 6, 33);
-  place("fridge", 7, 33);
-  place("dispenser", 8, 33);
-  place("storageTable", 10, 33, 3, 1);
-  place("plant", 13, 33);
-  place("plant", 13, 35);
+  place("bookshelf", 1.5, 18, 2, 1);
+  place("bookshelf", 3, 18, 3, 1);
+  place("cabinet", 6, 18);
+  place("fridge", 7, 18);
+  place("dispenser", 8, 18);
+  place("storageTable", 10, 18, 3, 1);
+  place("plant", 13, 18);
+  place("plant", 13, 28);
   // Dining nook in the pantry: a 4x2 table with two chairs on each long side.
-  place("meetingTable", 5, 36, 4, 2);
+  place("meetingTable", 5, 24, 4, 2);
   for (const x of [6, 7]) {
-    const top = { x: (x + 0.5) * TILE, y: 36 * TILE - 2 };
+    const top = { x: (x + 0.5) * TILE, y: 24 * TILE - 2 };
     chair("chairDown", top.x, top.y);
     seats.push({
       id: `DT-${x}`,
@@ -387,21 +381,30 @@ export function buildLayout(deskCount = 12): Layout {
       // Chairs are solid across two tiles, and the nook is hemmed in by the
       // table below and the wall above, so both dining chairs step in from the
       // free end tiles of their row.
-      approach: { tx: x === 6 ? 4 : 8, ty: 35 },
+      approach: { tx: x === 6 ? 4 : 8, ty: 23 },
       zOffset: 0,
       occupant: null,
     });
-    const bot = { x: (x + 0.5) * TILE, y: 39 * TILE - 4 };
+    const bot = { x: (x + 0.5) * TILE, y: 27 * TILE - 4 };
     chair("chairUp", bot.x, bot.y, true);
     seats.push({
       id: `DB-${x}`,
       kind: "lounge",
       pos: bot,
       facing: "up",
-      approach: { tx: x === 6 ? 4 : 8, ty: 38 },
+      approach: { tx: x === 6 ? 4 : 8, ty: 26 },
       zOffset: 0,
       occupant: null,
     });
+  }
+  // --- NOC (kiri bawah, ruang bawah): 2 rack server, satu baris x 2 kolom.
+  // A rack sprite holds four server units (16x38 art px) and stands 4.75 tiles
+  // tall at PROP_SCALE 2; the two footprints sit 2 tiles apart on row 36, two
+  // free rows in front of them for the walkers.
+  for (const ty of RACK_ROWS) {
+    for (const tx of RACK_COLS) {
+      place("serverRack", tx, ty, RACK_W, 1);
+    }
   }
   dividerH(30, 0, 13);
   dividerV(14, 30, 39, 34);
@@ -456,10 +459,10 @@ export function buildLayout(deskCount = 12): Layout {
     spot(25, 27, "left"),
     spot(30, 22, "right"),
     spot(31, 22, "left"),
-    spot(14, 29, "right"),
-    spot(15, 29, "left"),
-    spot(3, 36, "right"),
-    spot(4, 36, "left"),
+    spot(15, 29, "right"),
+    spot(16, 29, "left"),
+    spot(3, 22, "right"),
+    spot(4, 22, "left"),
   ];
   return { furniture, seats, chatSpots, roomLabels: ROOM_LABELS, blocked };
 }
