@@ -293,8 +293,9 @@ export function buildLayout(deskCount = 12): Layout {
   // sprites are much wider and taller than their collision footprint. The
   // numbers keep a one-tile margin on every side and a visible gap between the
   // pieces: top band = sofa (x 592-784) then the 128 px whiteboard
-  // (x 800-928), both ending at the chair line; table (x 672-928,
-  // y 336-480) centred under them with four chairs per side.
+  // (x 872-1000), which hangs above the chair line at the right end of the
+  // wall; table (x 672-928, y 336-480) centred under the sofa with four
+  // chairs per side.
 
   // Whiteboard at the right end of the top band, clear of the sofa: the sofa
   // ends at x 784 and the board (128 px at ART) runs x 872-1000, a 88 px air
