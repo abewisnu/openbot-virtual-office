@@ -39,13 +39,18 @@ export interface Layout {
   blocked: boolean[][];
 }
 
-/** Plates sit on empty aisle tiles so they never cover furniture. */
+/** Plates sit on empty floor tiles so they never cover furniture. */
 const ROOM_LABELS: RoomLabel[] = [
   { name: "LOUNGE", tx: 8, ty: 14, span: 0 },
-  { name: "MEETING ROOM", tx: 19, ty: 9, span: 1 },
-  { name: "WORKSTATIONS", tx: 48, ty: 7 },
-  { name: "PANTRY & STORAGE", tx: 10, ty: 22, span: 1 },
-  { name: "NOC", tx: 8, ty: 33, span: 1 },
+  { name: "MEETING ROOM", tx: 25, ty: 17, span: 1 },
+  // Directly under the window band (the band ends on row 5, the first free row
+  // is 6), centred on the third window over the desk block.
+  { name: "WORKSTATIONS", tx: 48, ty: 6 },
+  // Bottom row of the pantry rug (rows 22-27).
+  { name: "PANTRY & STORAGE", tx: 7, ty: 27, span: 1 },
+  // Open lane between the racks and the CRAC: the rack sprites end at x 192 and
+  // the CRAC starts at x 256, so a plate centred on column 7 is never overdrawn.
+  { name: "NOC", tx: 7, ty: 33, span: 1 },
 ];
 const LABEL_SPAN = 2; // free tiles required on each side of the plate centre
 
@@ -460,21 +465,18 @@ export function buildLayout(deskCount = 12): Layout {
     z: 31 * TILE + 2,
   });
 
+  // The plate is 14 px tall and centred on its tile, so it only ever covers its
+  // own row. Checking that row is enough to keep a plate off furniture art, and
+  // it lets a plate sit on the bottom row of a rug (the rows above/below may be
+  // a table or a plant).
   const ensureRoomLabelsClear = () => {
     for (const label of ROOM_LABELS) {
       const span = label.span ?? LABEL_SPAN;
-      for (let ty = label.ty - 1; ty <= label.ty + 1; ty++) {
-        for (
-          let tx = label.tx - span;
-          tx <= label.tx + span;
-          tx++
-        ) {
-          const inBounds = ty >= 0 && ty < ROWS && tx >= 0 && tx < COLS;
-          if (!inBounds || blocked[ty][tx]) {
-            throw new Error(
-              `Room label "${label.name}" overlaps an occupied tile at (${tx}, ${ty})`,
-            );
-          }
+      for (let tx = label.tx - span; tx <= label.tx + span; tx++) {
+        if (label.ty < 0 || label.ty >= ROWS || tx < 0 || tx >= COLS || blocked[label.ty][tx]) {
+          throw new Error(
+            `Room label "${label.name}" overlaps an occupied tile at (${tx}, ${label.ty})`,
+          );
         }
       }
     }

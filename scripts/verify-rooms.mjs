@@ -50,6 +50,40 @@ check(
   layout.roomLabels.some((l) => l.name.startsWith('PANTRY') && !blocked[l.ty][l.tx]),
 );
 
+// --- Room plates: each one on a free row, the three asked-for rows exact
+const plate = (name) => layout.roomLabels.find((l) => l.name === name);
+for (const label of layout.roomLabels) {
+  const span = label.span ?? 2;
+  check(
+    `plate "${label.name}" sits on free floor`,
+    Array.from({ length: span * 2 + 1 }, (_, i) => label.tx - span + i).every(
+      (tx) => !blocked[label.ty][tx],
+    ),
+    `row ${label.ty} cols ${label.tx - span}-${label.tx + span}`,
+  );
+}
+check('workstations plate sits under the window band on row 6', plate('WORKSTATIONS')?.ty === 6, `ty ${plate('WORKSTATIONS')?.ty}`);
+check(
+  'pantry plate sits on the bottom rug row (row 27, rug cols 4-10)',
+  plate('PANTRY & STORAGE')?.ty === 27 && plate('PANTRY & STORAGE')?.tx >= 4 && plate('PANTRY & STORAGE')?.tx <= 10,
+  `(${plate('PANTRY & STORAGE')?.tx},${plate('PANTRY & STORAGE')?.ty})`,
+);
+check(
+  'meeting plate sits on the bottom rug row (row 17, rug cols 20-29)',
+  plate('MEETING ROOM')?.ty === 17 && plate('MEETING ROOM')?.tx >= 20 && plate('MEETING ROOM')?.tx <= 29,
+  `(${plate('MEETING ROOM')?.tx},${plate('MEETING ROOM')?.ty})`,
+);
+check(
+  'NOC plate sits in the open lane between the racks and the CRAC',
+  plate('NOC')?.tx === 7 && plate('NOC')?.ty === 33 && !blocked[33][7],
+  `(${plate('NOC')?.tx},${plate('NOC')?.ty})`,
+);
+const world = readFileSync(new URL('../src/office/World.ts', import.meta.url), 'utf8');
+check(
+  'room plates draw above the furniture layer',
+  /addChild\(bg, this\.hands, this\.sortLayer, this\.roomLabelLayer, this\.labelLayer\)/.test(world),
+);
+
 // --- NOC (lower-left room, rows 31-38, cols 1-13)
 check('NOC has two racks, a CRAC and a UPS on row 36', row(36) === '.####..##.##.', row(36));
 check('NOC walk lanes stay open on row 36', [6, 7, 10, 13].every((tx) => !blocked[36][tx]));

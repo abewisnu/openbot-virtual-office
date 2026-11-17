@@ -91,7 +91,9 @@ export class World {
     const bg = new Sprite(this.assets.background);
     bg.scale.set(ART);
     this.sortLayer.sortableChildren = true;
-    this.root.addChild(bg, this.hands, this.roomLabelLayer, this.sortLayer, this.labelLayer);
+    // Room plates sit above the furniture: a plate that lands on a tall prop
+    // (the NOC CRAC, a rack) would otherwise be hidden behind its sprite.
+    this.root.addChild(bg, this.hands, this.sortLayer, this.roomLabelLayer, this.labelLayer);
     this.rackLeds = makeRackLeds(PROP, RACK_W);
     this.root.addChild(this.rackLedGraphics);
     this.app.stage.addChild(this.root);
