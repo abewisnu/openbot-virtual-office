@@ -113,18 +113,24 @@ export function buildLayout(deskCount = 12): Layout {
     const tx = Math.floor(x / TILE), ty = Math.floor((y + 1) / TILE);
     block(tx - 1, ty, 2, 1);
   };
+  /**
+   * `door` controls the door leaf, not the opening: `doorTy` always leaves the
+   * gap walkable, and a `false` flag just skips the sprite, so an open-plan room
+   * keeps a passage without a glass door.
+   */
   const dividerV = (
     tx: number,
     ty0: number,
     ty1: number,
     doorTy: number | null = null,
     doorSpan = DOOR_SPAN,
+    door = true,
   ) => {
     for (let ty = ty0; ty <= ty1; ty++) {
       if (doorTy !== null && ty > doorTy - doorSpan && ty <= doorTy) continue;
       placePartition("partitionV", tx, ty);
     }
-    if (doorTy !== null) placeDoor("doorV", tx, doorTy);
+    if (doorTy !== null && door) placeDoor("doorV", tx, doorTy);
   };
   const dividerH = (
     ty: number,
@@ -294,25 +300,13 @@ export function buildLayout(deskCount = 12): Layout {
   }
   place("plant", 1, 8, 2, 1);
   place("plant", 12, 8, 2, 1);
-  dividerV(14, 5, 15, 13);
-  dividerH(16, 0, 13, null, false, false);
-  // Close the bottom-right T-junction: the vertical run (col 14) ends at row 15 and the horizontal band (row 16) ends at
-  // col 13. Two 8x8 panes sit on the empty tile 14 band square to seal the corner — a half pane bridges the right half
-  // (x 440..448) into the vertical run, and a corner pane fills the left half (x 432..440). Both render after the
-  // first vertical pane (z above 17 * TILE) so the frame lines stay joined and the corner no longer overhangs.
-  const loungeBandY = 16 * TILE + 8;
-  furniture.push({
-    type: "partitionHHalf",
-    x: (14 + 0.5) * TILE,
-    y: loungeBandY,
-    z: 17 * TILE + 1,
-  });
-  furniture.push({
-    type: "partitionCorner",
-    x: (14 + 0.5) * TILE - TILE / 4,
-    y: loungeBandY,
-    z: 17 * TILE + 2,
-  });
+  // Open plan on the left: Lounge and Pantry share one floor plate with no
+  // horizontal glass between them (the old row-16 band and its T-junction
+  // corner panes are gone), and neither room keeps a glass door leaf — the
+  // openings at rows 11-13 and 21-23 in the column-14 wall stay as plain
+  // walk-through passages. The NOC below keeps its glass box and door, and the
+  // Meeting Room keeps its partitions unchanged.
+  dividerV(14, 5, 15, 13, DOOR_SPAN, false);
   // --- Meeting (kiri-tengah)
   // The room sits one room-width left of the workstation block: walls on
   // columns 17 and 32, interior columns 18-31 and rows 6-17, which leaves a
@@ -378,7 +372,7 @@ export function buildLayout(deskCount = 12): Layout {
   // --- Pantry & Storage (kiri tengah, ruang atas): shelves and storage along
   // the room's top wall, dining nook below them. The NOC used to live here and
   // the two rooms have swapped places, so the upper room now holds the pantry.
-  dividerV(14, 16, 29, 23);
+  dividerV(14, 16, 29, 23, DOOR_SPAN, false);
   // Shelf wall along row 20, in three clusters with a one-tile gutter on each
   // side of it (col 5 and col 10) so the run reads evenly across the room. It
   // sits on row 21, three tiles below the top wall, so the tallest bookcase
