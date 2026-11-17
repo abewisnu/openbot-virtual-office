@@ -130,8 +130,11 @@ const guards = [
   ['pantry carpet moved to the upper room', /rug\(c, 4, 22, 7, 6, '#7a8a5a', '#4e5a38'\)/.test(art)],
   ['pantry shelves sit two tiles below the top wall', /place\("bookshelf", 1, 20, 4, 1\)/.test(layoutSrc)],
   ['no carpet left in the old pantry spot', !/rug\(c, 3, 35, 8, 4/.test(art)],
-  ['NOC draws a raised floor', /NOC raised floor/.test(art) && /for \(let ty = 30; ty <= 38; ty\+\+\)/.test(art)],
-  ['NOC carpet reaches the partition lines (row 30, col 14)', /for \(let tx = 1; tx <= 14; tx\+\+\)/.test(art)],
+  ['NOC draws a raised floor', /NOC raised floor/.test(art) && /for \(let ty = 30; ty <= 39; ty\+\+\)/.test(art)],
+  [
+    'NOC carpet stops at the right glass (col 13) and fills the bottom row',
+    /for \(let tx = 1; tx <= 13; tx\+\+\)/.test(art) && !/tx <= 14; tx\+\+/.test(art),
+  ],
   ['CRAC sprite is 2x4 tiles at the prop scale', /crac: make\(16, 32/.test(art)],
   ['UPS sprite is 2x2 tiles at the prop scale', /ups: make\(16, 16/.test(art)],
   ['patch panel sprite is 2x1 tiles at the prop scale', /switchBox: make\(16, 8/.test(art)],

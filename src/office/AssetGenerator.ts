@@ -113,11 +113,14 @@ function makeBackground(night: boolean): Texture {
     rug(c, 4, 22, 7, 6, '#7a8a5a', '#4e5a38');
     // NOC raised floor: 1-tile access panels, every other one perforated for
     // cold-aisle airflow, so the lower-left room reads as a server room. The
-    // panel field runs from the top glass (row 30) to the right partition
-    // (col 14) so the carpet meets both walls instead of stopping a tile short
-    // and leaving a bare floor strip along the glass.
-    for (let ty = 30; ty <= 38; ty++) {
-      for (let tx = 1; tx <= 14; tx++) {
+    // field starts on the top glass (row 30) and runs down to the last floor row
+    // (39) so no bare strip is left along the bottom edge. It stops on column
+    // 13: the right partition at column 14 is a 16 px glass line drawn on the
+    // tile boundary, while a panel is 32 px wide, so a column-14 panel would
+    // push half the carpet past the glass into the corridor and through the open
+    // door rows 32-34.
+    for (let ty = 30; ty <= 39; ty++) {
+      for (let tx = 1; tx <= 13; tx++) {
         const x = tx * 16, y = ty * 16;
         B(c, x, y, 16, 16, '#2e3340');
         R(c, '#39404f', x + 1, y + 1, 14, 14);
