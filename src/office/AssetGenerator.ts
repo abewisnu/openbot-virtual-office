@@ -3,7 +3,7 @@
  * Image unit = "pixel art"; sprites are scaled 2x on screen with nearest filter.
  */
 import { Texture } from 'pixi.js';
-import { COLS, ROWS, TILE } from '../constants';
+import { ART, COLS, ROWS, TILE } from '../constants';
 
 const OL = '#1d1722';
 // Semi-transparent glass partitions: pane tint keeps floor visible through the texture.
@@ -361,7 +361,11 @@ export function generateAssets(night: boolean, looks: Look[]): Assets {
 }
 
 export interface RackLed { x: number; y: number; phase: number; }
-export function makeRackLeds(): RackLed[] {
+/**
+ * LED dots on the NOC racks. `scale` is the prop pixel scale, so the dots stay
+ * on the rack face when `?props=` enlarges the rack sprites.
+ */
+export function makeRackLeds(scale = ART): RackLed[] {
   const cols = [2, 4, 6, 8, 10, 12];
   const rows = [20, 24, 28];
   const leds: RackLed[] = [];
@@ -369,9 +373,9 @@ export function makeRackLeds(): RackLed[] {
   for (const ty of rows) {
     for (const tx of cols) {
       const x = (tx + 0.5) * TILE;
-      const spriteTop = (ty + 1) * TILE - 48;
+      const spriteTop = (ty + 1) * TILE - 48 * scale;
       for (let j = 0; j < 5; j++) {
-        const y = spriteTop + 2 + j * 9;
+        const y = spriteTop + (2 + j * 9) * scale;
         leds.push({ x, y, phase: idx * 0.5 + j * 0.3 });
       }
       idx++;

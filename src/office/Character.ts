@@ -1,5 +1,5 @@
 import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
-import { ART, CHAR_SPEED, type Dir } from '../constants';
+import { PROP, PROP_SCALE, CHAR_SPEED, type Dir } from '../constants';
 import type { CharFrames } from './AssetGenerator';
 import type { Seat } from './Layout';
 import type { Status } from '../types';
@@ -11,8 +11,8 @@ export class Character {
   readonly container = new Container();
   readonly tag = new Container();
   private sprite = new Sprite();
-  private shadow = new Graphics().ellipse(0, -2, 10, 4).fill({ color: 0x000000, alpha: 0.28 });
-  private ring = new Graphics().ellipse(0, -2, 14, 6).stroke({ width: 2, color: 0xfff3a0 });
+  private shadow = new Graphics().ellipse(0, -2 * PROP_SCALE, 10 * PROP_SCALE, 4 * PROP_SCALE).fill({ color: 0x000000, alpha: 0.28 });
+  private ring = new Graphics().ellipse(0, -2 * PROP_SCALE, 14 * PROP_SCALE, 6 * PROP_SCALE).stroke({ width: 2, color: 0xfff3a0 });
   private dot = new Graphics();
   private bubble: Sprite;
   x = 0; y = 0; facing: Dir = 'down'; state: CState = 'idle';
@@ -30,7 +30,7 @@ export class Character {
   constructor(readonly id: string, name: string, private frames: CharFrames, bubbleTex: Texture) {
     this.name = name;
     this.sprite.anchor.set(0.5, 1);
-    this.sprite.scale.set(ART);
+    this.sprite.scale.set(PROP);
     this.ring.visible = false;
     this.container.addChild(this.shadow, this.ring, this.sprite);
 
@@ -44,7 +44,7 @@ export class Character {
     this.pill = new Graphics();
     this.dot.position.set(0, 0);
     this.bubble = new Sprite(bubbleTex);
-    this.bubble.anchor.set(0.5, 1); this.bubble.scale.set(ART); this.bubble.visible = false;
+    this.bubble.anchor.set(0.5, 1); this.bubble.scale.set(PROP); this.bubble.visible = false;
     this.bubble.position.set(0, -10);
 
     this.tag.addChild(this.bubble, this.pill, this.dot, this.labelText);
@@ -108,13 +108,13 @@ export class Character {
     if (this.state === 'sit' && this.seat) tex = this.seat.facing === 'up' ? f.sit.up[this.frame] : f.sit.down[this.frame];
     else { flip = this.facing === 'right'; tex = this.state === 'walk' ? f.walk[d][this.frame] : f.idle[d]; }
     this.sprite.texture = tex;
-    this.sprite.scale.set(flip ? -ART : ART, ART);
+    this.sprite.scale.set(flip ? -PROP : PROP, PROP);
     const sitting = this.state === 'sit' && !!this.seat;
     this.container.position.set(Math.round(this.x), Math.round(this.y));
     this.container.zIndex = this.y + (sitting ? this.seat!.zOffset : 0);
     this.shadow.visible = !sitting;
-    this.tag.position.set(Math.round(this.x), Math.round(this.y - (sitting ? 52 : 60)));
+    this.tag.position.set(Math.round(this.x), Math.round(this.y - (sitting ? 52 : 60) * PROP_SCALE));
     this.bubble.visible = this.bubbleOn;
-    this.bubble.y = -10 + Math.sin(this.anim * 6) * 1.5;
+    this.bubble.y = -10 * PROP_SCALE + Math.sin(this.anim * 6) * 1.5;
   }
 }

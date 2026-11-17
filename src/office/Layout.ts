@@ -1,4 +1,4 @@
-import { ART, COLS, ROWS, TILE, MIN_WALK_ROW, type Dir } from "../constants";
+import { PROP, COLS, ROWS, TILE, MIN_WALK_ROW, type Dir } from "../constants";
 import type { FurnitureType } from "./AssetGenerator";
 
 export interface FurnitureDef {
@@ -182,7 +182,7 @@ export function buildLayout(deskCount = 12): Layout {
         occupant: null,
         monitor: {
           x: (tx + 1) * TILE,
-          y: (ty + 1) * TILE - 28 * ART,
+          y: (ty + 1) * TILE - 28 * PROP,
           z: (ty + 1) * TILE + 0.5,
         },
       });

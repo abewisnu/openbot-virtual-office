@@ -2,6 +2,21 @@ import type { Status, AgentPhase, AgentActivity, ActivityKind } from './types';
 export type Dir = 'up' | 'down' | 'left' | 'right';
 /** One "pixel art" = ART screen pixels. All assets are drawn at the same density. */
 export const ART = 2;
+/**
+ * Trial multiplier for every prop (agents, desks, monitors, racks, plants…)
+ * while the floor keeps `ART`. Default `1` is the shipped size, so the look is
+ * unchanged unless a URL asks for it: `?props=3` triples a prop on screen.
+ * Clamped to 0.5–4 so a typo cannot explode the scene. Read once at load.
+ */
+export const PROP_SCALE = (() => {
+  if (typeof location === 'undefined') return 1;
+  const raw = new URLSearchParams(location.search).get('props');
+  const n = Number(raw);
+  if (!raw || !Number.isFinite(n)) return 1;
+  return Math.min(4, Math.max(0.5, n));
+})();
+/** Screen pixels per art pixel for props (floor keeps `ART`). */
+export const PROP = ART * PROP_SCALE;
 export const TILE = 32; // px per screen tile (16 pixel art)
 export const COLS = 60;
 export const ROWS = 40;

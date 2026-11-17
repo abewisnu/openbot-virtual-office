@@ -1,5 +1,5 @@
 import { Application, Container, Graphics, Sprite, Text, TextureStyle } from 'pixi.js';
-import { ART, FOOT_OFFSET, PHASE_COLORS, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
+import { ART, PROP, PROP_SCALE, FOOT_OFFSET, PHASE_COLORS, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
 import type { Status, AgentPhase, Employee } from '../types';
 import { useStore } from '../store/useStore';
 import { generateAssets, makeCharFrames, makeLook, makeRackLeds, type Assets, type RackLed } from './AssetGenerator';
@@ -69,13 +69,13 @@ export class World {
     bg.scale.set(ART);
     this.sortLayer.sortableChildren = true;
     this.root.addChild(bg, this.hands, this.roomLabelLayer, this.sortLayer, this.labelLayer);
-    this.rackLeds = makeRackLeds();
+    this.rackLeds = makeRackLeds(PROP);
     this.root.addChild(this.rackLedGraphics);
     this.app.stage.addChild(this.root);
 
     for (const f of this.layout.furniture) {
       const s = new Sprite(this.assets.furn[f.type]);
-      s.anchor.set(0.5, 1); s.scale.set(ART); s.position.set(f.x, f.y); s.zIndex = f.z;
+      s.anchor.set(0.5, 1); s.scale.set(PROP); s.position.set(f.x, f.y); s.zIndex = f.z;
       this.sortLayer.addChild(s);
     }
     // One monitor per workstation, lit only while a working/ready agent sits there.
@@ -83,7 +83,7 @@ export class World {
     for (const seat of this.layout.seats) {
       if (!seat.monitor) continue;
       const s = new Sprite(this.assets.monitorOff);
-      s.anchor.set(0.5, 0); s.scale.set(ART);
+      s.anchor.set(0.5, 0); s.scale.set(PROP);
       s.position.set(seat.monitor.x, seat.monitor.y); s.zIndex = seat.monitor.z;
       this.sortLayer.addChild(s);
       this.monitors.push({ seat, sprite: s });
@@ -163,7 +163,9 @@ export class World {
   }
   private pick(e: PointerEvent): Character | null {
     const { x: wx, y: wy } = this.worldPoint(e);
-    return [...this.chars].sort((a, b) => b.y - a.y).find((c) => Math.abs(wx - c.x) <= 14 && wy <= c.y + 4 && wy >= c.y - 50) ?? null;
+    return [...this.chars].sort((a, b) => b.y - a.y).find(
+      (c) => Math.abs(wx - c.x) <= 14 * PROP_SCALE && wy <= c.y + 4 * PROP_SCALE && wy >= c.y - 50 * PROP_SCALE,
+    ) ?? null;
   }
   /**
    * The workstation computer under the pointer: monitor screen first, then the
@@ -176,10 +178,10 @@ export class World {
     for (const s of desks) {
       if (!s.monitor) continue;
       // Monitor art is 16x14 art px, anchored top-center.
-      if (Math.abs(wx - s.monitor.x) <= 16 * ART + 4 && wy >= s.monitor.y - 4 && wy <= s.monitor.y + 14 * ART + 6) return s;
+      if (Math.abs(wx - s.monitor.x) <= 16 * PROP + 4 && wy >= s.monitor.y - 4 && wy <= s.monitor.y + 14 * PROP + 6) return s;
     }
     for (const s of desks) {
-      if (Math.abs(wx - s.pos.x) <= 34 && wy >= s.pos.y - 48 && wy <= s.pos.y + 16) return s;
+      if (Math.abs(wx - s.pos.x) <= 34 * PROP_SCALE && wy >= s.pos.y - 48 * PROP_SCALE && wy <= s.pos.y + 16 * PROP_SCALE) return s;
     }
     return null;
   }
@@ -463,10 +465,10 @@ export class World {
     for (const led of this.rackLeds) {
       const green = Math.sin(this.rackT * 2.5 + led.phase) > 0;
       this.rackLedGraphics
-        .circle(led.x, led.y, 2)
+        .circle(led.x, led.y, 2 * PROP_SCALE)
         .fill(green ? 0x5fd068 : 0xd9534f);
       this.rackLedGraphics
-        .circle(led.x, led.y, 3.5)
+        .circle(led.x, led.y, 3.5 * PROP_SCALE)
         .stroke({ width: 1, color: green ? 0x5fd068 : 0xd9534f, alpha: 0.4 });
     }
   }
