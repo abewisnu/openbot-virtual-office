@@ -9,9 +9,11 @@ type CState = 'idle' | 'walk' | 'sit';
 
 /**
  * Plate offset in art px for a workstation sitter: negative, so the name hangs
- * one tile under the feet, clear of the chair, instead of over the desk bay.
+ * just under the chair, snug against its bottom edge, instead of over the desk
+ * bay. -10 art px puts the plate centre 20 screen px below the feet at the
+ * shipped 2x prop scale, which clears the 16 art px chair sprite by ~4 px.
  */
-const BELOW_CHAIR = -16;
+const BELOW_CHAIR = -10;
 
 export class Character {
   readonly container = new Container();

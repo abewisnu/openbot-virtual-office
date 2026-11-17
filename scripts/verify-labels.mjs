@@ -25,10 +25,20 @@ check(
 );
 const below = Number(src.match(/const BELOW_CHAIR = (-?\d+);/)?.[1] ?? 'NaN');
 check('BELOW_CHAIR is a negative art-px offset', below < 0, `value ${below}`);
+// Plate centre = |BELOW_CHAIR| * PROP_SCALE screen px under the feet at the
+// shipped 2x scale; the chair sprite ends 2 px under the feet, and the pill is
+// 19 px tall, so the gap to the chair edge is centre - 9.5 - 2.
+const centre = Math.abs(below) * 2;
+const gap = centre - 9.5 - 2;
 check(
-  'the drop clears the 16 art px chair sprite',
+  'the plate hangs just under the chair, no more than 12 px clear',
+  gap > 0 && gap <= 12,
+  `gap ${gap.toFixed(1)} px under the chair edge`,
+);
+check(
+  'the plate still clears the 16 art px chair sprite',
   Math.abs(below) > 16 - 10,
-  `plate centre ${-below} art px below the feet`,
+  `plate centre ${centre} px below the feet`,
 );
 check('standing or walking lifts the plate to 64 art px', /return seated \? 52 : 64;/.test(lift));
 check('social seats keep the seated height of 52', /return seated \? 52/.test(lift));
