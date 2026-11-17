@@ -28,8 +28,8 @@ check(
 );
 
 // --- Pantry (upper-left room, rows 17-29, cols 1-13)
-check('pantry shelf row leaves gutters at col 5 and col 10', row(18) === '####.####.##.', row(18));
-check('pantry aisle under the shelves is walkable', row(20) === '.............', row(20));
+check('pantry shelf row sits on row 21 with gutters at col 5 and col 10', row(21) === '####.####.##.', row(21));
+check('pantry aisle above the shelves is walkable', row(19) === '.............', row(19));
 check('pantry dining table is centred', row(24) === '....####.....', row(24));
 check(
   'pantry label plate sits on free tiles',
@@ -72,6 +72,7 @@ const art = readFileSync(new URL('../src/office/AssetGenerator.ts', import.meta.
 const layoutSrc = readFileSync(new URL('../src/office/Layout.ts', import.meta.url), 'utf8');
 const guards = [
   ['pantry carpet moved to the upper room', /rug\(c, 4, 22, 7, 6, '#7a8a5a', '#4e5a38'\)/.test(art)],
+  ['pantry shelves sit three tiles below the top wall', /place\("bookshelf", 1, 21, 4, 1\)/.test(layoutSrc)],
   ['no carpet left in the old pantry spot', !/rug\(c, 3, 35, 8, 4/.test(art)],
   ['NOC draws a raised floor', /NOC raised floor/.test(art) && /for \(let ty = 31; ty <= 38; ty\+\+\)/.test(art)],
   ['CRAC sprite is 2x4 tiles at the prop scale', /crac: make\(16, 32/.test(art)],

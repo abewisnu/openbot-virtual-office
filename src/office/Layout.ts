@@ -44,7 +44,7 @@ const ROOM_LABELS: RoomLabel[] = [
   { name: "LOUNGE", tx: 8, ty: 14, span: 0 },
   { name: "MEETING ROOM", tx: 19, ty: 9, span: 1 },
   { name: "WORKSTATIONS", tx: 48, ty: 7 },
-  { name: "PANTRY & STORAGE", tx: 7, ty: 20 },
+  { name: "PANTRY & STORAGE", tx: 9, ty: 27, span: 1 },
   { name: "NOC", tx: 8, ty: 33, span: 1 },
 ];
 const LABEL_SPAN = 2; // free tiles required on each side of the plate centre
@@ -379,15 +379,17 @@ export function buildLayout(deskCount = 12): Layout {
   // the room's top wall, dining nook below them. The NOC used to live here and
   // the two rooms have swapped places, so the upper room now holds the pantry.
   dividerV(14, 16, 29, 23);
-  // Shelf wall along row 18, in three clusters with a one-tile gutter on each
-  // side of it (col 5 and col 10) so the run reads evenly across the room. The
+  // Shelf wall along row 21, in three clusters with a one-tile gutter on each
+  // side of it (col 5 and col 10) so the run reads evenly across the room. It
+  // sits on row 21, three tiles below the top wall, so the tallest bookcase
+  // (5.5 tiles) stands fully inside the room instead of over the glass.
   // footprints match the art at the 2x prop scale: the bookshelf is 32 art px
   // (4 tiles), every other unit 16 art px (2 tiles). `place()` now rejects
   // fractional tiles, so the old 1.5/11.5 hack is gone.
-  place("bookshelf", 1, 18, 4, 1);
-  place("cabinet", 6, 18, 2, 1);
-  place("fridge", 8, 18, 2, 1);
-  place("dispenser", 11, 18, 2, 1);
+  place("bookshelf", 1, 21, 4, 1);
+  place("cabinet", 6, 21, 2, 1);
+  place("fridge", 8, 21, 2, 1);
+  place("dispenser", 11, 21, 2, 1);
   place("plant", 1, 28, 2, 1);
   place("plant", 11, 28, 2, 1);
   // Dining nook in the pantry: a 4x2 table with two chairs on each long side.
