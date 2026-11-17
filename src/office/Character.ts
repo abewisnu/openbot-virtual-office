@@ -7,6 +7,12 @@ import type { Status } from '../types';
 export interface Vec { x: number; y: number }
 type CState = 'idle' | 'walk' | 'sit';
 
+/**
+ * Plate offset in art px for a workstation sitter: negative, so the name hangs
+ * one tile under the feet, clear of the chair, instead of over the desk bay.
+ */
+const BELOW_CHAIR = -16;
+
 export class Character {
   readonly container = new Container();
   readonly tag = new Container();
@@ -102,17 +108,19 @@ export class Character {
     this.refresh();
   }
   /**
-   * Distance from the agent's feet to the name plate, in art pixels. An agent
-   * seated at a workstation carries the plate low, just clear of the seated
-   * sprite, so it stays attached to the body instead of floating high over the
-   * desk bay while it works. The plate lifts back up as soon as the agent
-   * stands or walks, and social seats keep the normal seated height. Both the
-   * `working` and `ready` phases map to the `working` status (see
-   * `statusForPhase()`), so this one branch covers both.
+   * Distance from the agent's feet to the name plate, in art pixels. Negative
+   * means the plate sits *below* the feet.
+   *
+   * An agent seated at a workstation with status `working` (or `ready`, since
+   * both phases map to `working` in `statusForPhase()`) carries the plate under
+   * its chair: over the head it covers the monitor, the desk bay and the seated
+   * sprite, and the request is specifically for the name to read under the
+   * chair. Every other pose keeps the plate above the agent — social seats at
+   * the normal seated height, standing and walking higher still.
    */
   private tagLift(): number {
     const seated = this.state === 'sit' && !!this.seat;
-    if (seated && this.seat!.kind === 'desk' && this.appliedStatus === 'working') return 44;
+    if (seated && this.seat!.kind === 'desk' && this.appliedStatus === 'working') return BELOW_CHAIR;
     return seated ? 52 : 64;
   }
   private refresh() {
@@ -127,8 +135,13 @@ export class Character {
     this.container.position.set(Math.round(this.x), Math.round(this.y));
     this.container.zIndex = this.y + (sitting ? this.seat!.zOffset : 0);
     this.shadow.visible = !sitting;
-    this.tag.position.set(Math.round(this.x), Math.round(this.y - this.tagLift() * PROP_SCALE));
+    const lift = this.tagLift();
+    this.tag.position.set(Math.round(this.x), Math.round(this.y - lift * PROP_SCALE));
     this.bubble.visible = this.bubbleOn;
-    this.bubble.y = -10 * PROP_SCALE + Math.sin(this.anim * 6) * 1.5;
+    // The speech bubble rides on the plate. Under a workstation chair the plate
+    // drops a whole tile, so the bubble cancels that drop and keeps its usual
+    // clearance over the agent's head instead of landing on the chair.
+    const bubbleBase = lift < 0 ? (lift - 74) * PROP_SCALE : -10 * PROP_SCALE;
+    this.bubble.y = bubbleBase + Math.sin(this.anim * 6) * 1.5;
   }
 }

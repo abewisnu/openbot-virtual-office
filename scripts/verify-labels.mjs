@@ -1,6 +1,6 @@
 // Verifies the agent name plate and status dot: they must stay readable at the
-// shipped prop scale, and the plate must drop onto a workstation agent while it
-// works and lift again when that agent stands or walks.
+// shipped prop scale, and a `ready`/`working` workstation sitter must carry the
+// plate under its chair while every other pose keeps it above the agent.
 // Run with: node scripts/verify-labels.mjs
 import { readFileSync } from 'node:fs';
 
@@ -20,19 +20,31 @@ check('speech bubble clears the taller pill', /bubble\.position\.set\(0, -22\)/.
 const lift = src.match(/private tagLift\(\)[\s\S]*?\n  \}/)?.[0] ?? '';
 check('tagLift() exists', lift.length > 0);
 check(
-  'a working workstation sitter carries the plate at 44 art px',
-  /seat!\.kind === 'desk' && this\.appliedStatus === 'working'\) return 44;/.test(lift),
+  'a working workstation sitter carries the plate under the chair',
+  /seat!\.kind === 'desk' && this\.appliedStatus === 'working'\) return BELOW_CHAIR;/.test(lift),
+);
+const below = Number(src.match(/const BELOW_CHAIR = (-?\d+);/)?.[1] ?? 'NaN');
+check('BELOW_CHAIR is a negative art-px offset', below < 0, `value ${below}`);
+check(
+  'the drop clears the 16 art px chair sprite',
+  Math.abs(below) > 16 - 10,
+  `plate centre ${-below} art px below the feet`,
 );
 check('standing or walking lifts the plate to 64 art px', /return seated \? 52 : 64;/.test(lift));
 check('social seats keep the seated height of 52', /return seated \? 52/.test(lift));
 check(
-  'plate height is applied through tagLift()',
-  /this\.tag\.position\.set\(Math\.round\(this\.x\), Math\.round\(this\.y - this\.tagLift\(\) \* PROP_SCALE\)\)/.test(src),
+  'plate offset is applied through tagLift() once per frame',
+  /const lift = this\.tagLift\(\);/.test(src) &&
+    /this\.tag\.position\.set\(Math\.round\(this\.x\), Math\.round\(this\.y - lift \* PROP_SCALE\)\)/.test(src),
+);
+check(
+  'the speech bubble cancels the drop and stays over the head',
+  /lift < 0 \? \(lift - 74\) \* PROP_SCALE : -10 \* PROP_SCALE/.test(src),
 );
 
 console.log(
   failed === 0
-    ? '\nAll label checks passed: bigger plate and dot, low over a working desk, up when standing.'
+    ? '\nAll label checks passed: bigger plate and dot, under the chair while a workstation agent works, up when standing.'
     : `\n${failed} label check(s) failed.`,
 );
 process.exit(failed === 0 ? 0 : 1);
