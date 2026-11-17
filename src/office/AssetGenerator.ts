@@ -198,10 +198,10 @@ function makeFurniture(): Record<FurnitureType, Texture> {
       B(c, 5, 0, 13, 8, '#555a6b'); R(c, '#9ad6f5', 7, 2, 7, 4); B(c, 30, 0, 8, 8, '#2b2f3a'); R(c, '#d9534f', 32, 2, 2, 2);
       B(c, 0, 4, 48, 8, '#a8744a'); B(c, 1, 12, 46, 10, '#6b4429'); R(c, '#8a5a34', 3, 14, 20, 6); R(c, '#8a5a34', 25, 14, 20, 6);
     }),
-    serverRack: make(16, 48, (c) => {
-      B(c, 0, 0, 16, 48, '#2b2f3a');
-      R(c, '#343746', 1, 1, 14, 46);
-      for (let i = 0; i < 5; i++) {
+    serverRack: make(16, 38, (c) => {
+      B(c, 0, 0, 16, 38, '#2b2f3a');
+      R(c, '#343746', 1, 1, 14, 36);
+      for (let i = 0; i < 4; i++) {
         const y = 2 + i * 9;
         B(c, 2, y, 12, 8, '#1d1722');
         R(c, '#252838', 3, y + 1, 10, 6);
@@ -211,7 +211,7 @@ function makeFurniture(): Record<FurnitureType, Texture> {
         R(c, '#555a6b', 12, y + 2, 1, 1);
       }
       R(c, OL, 1, 1, 14, 1);
-      R(c, OL, 1, 46, 14, 1);
+      R(c, OL, 1, 37, 14, 1);
     }),
     partitionH: make(16, 8, (c) => {
       R(c, GLASS_TINT, 0, 1, 16, 6);
@@ -370,8 +370,8 @@ export function makeRackLeds(scale = ART, widthTiles = 1): RackLed[] {
   for (const ty of RACK_ROWS) {
     for (const tx of RACK_COLS) {
       const x = (tx + widthTiles / 2) * TILE;
-      const spriteTop = (ty + 1) * TILE - 48 * scale;
-      for (let j = 0; j < 5; j++) {
+      const spriteTop = (ty + 1) * TILE - 38 * scale;
+      for (let j = 0; j < 4; j++) {
         const y = spriteTop + (2 + j * 9) * scale;
         leds.push({ x, y, phase: idx * 0.5 + j * 0.3 });
       }

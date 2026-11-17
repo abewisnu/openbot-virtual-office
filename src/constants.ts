@@ -20,12 +20,12 @@ export const PROP_SCALE = (() => {
 /** Screen pixels per art pixel for props (floor keeps `ART`). */
 export const PROP = ART * PROP_SCALE;
 /**
- * NOC rack grid, in tiles: 2 rows x 6 columns = 12 racks. Rows sit 6 tiles
- * apart so a rack drawn at `PROP_SCALE = 2` (6 tiles tall) stacks flush on the
- * row in front instead of clipping into it.
+ * NOC rack grid, in tiles: one row of two racks. A rack sprite carries four
+ * server units (16x38 art px) and stands 4.75 tiles tall at `PROP_SCALE = 2`;
+ * the two footprints sit 2 tiles apart so they read as separate cabinets.
  */
-export const RACK_ROWS = [22, 28];
-export const RACK_COLS = [2, 4, 6, 8, 10, 12];
+export const RACK_ROWS = [22];
+export const RACK_COLS = [2, 4];
 /** Tiles a rack footprint spans: rack art is 16 art px = 1 tile at `ART`. */
 export const RACK_W = Math.max(1, Math.round(PROP_SCALE));
 /**

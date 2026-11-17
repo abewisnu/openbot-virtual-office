@@ -356,9 +356,9 @@ export function buildLayout(deskCount = 12): Layout {
   dividerH(18, 17, 32, null, true, true);
   place("plant", 19, 16);
   place("plant", 30, 16);
-  // --- NOC (kiri tengah): 12 rack server, 2 baris x 6 kolom.
-  // One row was dropped so the 2x racks have air between them; the row gap is
-  // 6 tiles (see RACK_ROWS) because a rack at PROP_SCALE 2 stands 6 tiles tall.
+  // --- NOC (kiri tengah): 2 rack server, satu baris x 2 kolom.
+  // A rack sprite holds four server units (16x38 art px) and stands 4.75 tiles
+  // tall at PROP_SCALE 2; the two footprints sit 2 tiles apart on row 22.
   dividerV(14, 16, 29, 23);
   for (const ty of RACK_ROWS) {
     for (const tx of RACK_COLS) {
