@@ -20,9 +20,13 @@ const STATUSES: Status[] = ['working', 'working', 'working', 'meeting', 'chattin
 const SHELL: ReadonlySet<FurnitureType> = new Set<FurnitureType>([
   'partitionH', 'partitionHHalf', 'partitionV', 'partitionCorner', 'doorH', 'doorV', 'whiteboard',
 ]);
-/** Workstation monitor: twice the prop density, so a 16 x 14 art screen fills
- * its 4-tile desk instead of sitting in the middle of it. */
-const MONITOR_SCALE = PROP * 2;
+/** Workstation monitor: a bit denser than the props (1.25x), so the 16 x 14 art
+ * screen covers ~2.5 of its 4-tile desk without towering over it. */
+const MONITOR_SCALE = PROP * 1.25;
+/** Sprite footprint in screen px, kept next to the type so the hit test and the
+ * layout padding can never drift from the drawn size. */
+const MONITOR_W = 16 * MONITOR_SCALE;
+const MONITOR_H = 14 * MONITOR_SCALE;
 /** How long one animated monitor frame stays on screen (ms). */
 const MONITOR_FRAME_MS = 220;
 const tileOf = (x: number, y: number): Tile => ({ tx: Math.floor(x / TILE), ty: Math.floor((y - FOOT_OFFSET) / TILE) });
@@ -193,7 +197,7 @@ export class World {
     for (const s of desks) {
       if (!s.monitor) continue;
       // Monitor art is 16x14 art px, anchored top-center.
-      if (Math.abs(wx - s.monitor.x) <= 16 * PROP + 4 && wy >= s.monitor.y - 28 * PROP - 4 && wy <= s.monitor.y + 6) return s;
+      if (Math.abs(wx - s.monitor.x) <= MONITOR_W / 2 + 4 && wy >= s.monitor.y - MONITOR_H - 4 && wy <= s.monitor.y + 6) return s;
     }
     for (const s of desks) {
       if (Math.abs(wx - s.pos.x) <= 34 * PROP_SCALE && wy >= s.pos.y - 48 * PROP_SCALE && wy <= s.pos.y + 16 * PROP_SCALE) return s;
