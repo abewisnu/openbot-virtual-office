@@ -43,7 +43,7 @@ export interface Layout {
 const ROOM_LABELS: RoomLabel[] = [
   { name: "LOUNGE", tx: 8, ty: 7 },
   { name: "MEETING ROOM", tx: 31, ty: 10 },
-  { name: "WORKSTATIONS", tx: 48, ty: 8 },
+  { name: "WORKSTATIONS", tx: 48, ty: 7 },
   { name: "PANTRY & STORAGE", tx: 11, ty: 37 },
   { name: "NOC", tx: 1, ty: 18, span: 0 },
 ];
@@ -160,12 +160,16 @@ export function buildLayout(deskCount = 12): Layout {
   // --- Workstation (right side): one desk per agent, 4 columns per row.
   // The desk count tracks the live agent roster (min 12, max 16 so the room
   // still reads as an office) so no agent is left without a computer.
+  // A 2x desk stands 4 tiles wide, so bays sit on a 5-tile pitch: 4 tiles of
+  // desk and one empty aisle tile between neighbours. Rows start at ty 9, clear
+  // of the window band (art rows 0-5) and the wall, so the top row no longer
+  // touches the glass, and sit on a 5-tile pitch for the same one-tile aisle.
   const deskTarget = Math.max(12, Math.min(16, Math.floor(deskCount) || 12));
-  const DESK_COLS = [42, 46, 50, 54];
+  const DESK_COLS = [39, 44, 49, 54];
   let n = 1;
   let placed = 0;
   for (let row = 0; placed < deskTarget; row++) {
-    const ty = 6 + row * 4;
+    const ty = 9 + row * 5;
     for (const tx of DESK_COLS) {
       if (placed >= deskTarget) break;
       place("desk", tx, ty, 2, 1);
