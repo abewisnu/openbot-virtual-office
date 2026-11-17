@@ -1,4 +1,4 @@
-import { PROP, COLS, ROWS, TILE, MIN_WALK_ROW, type Dir } from "../constants";
+import { PROP, COLS, ROWS, TILE, MIN_WALK_ROW, RACK_COLS, RACK_ROWS, RACK_W, type Dir } from "../constants";
 import type { FurnitureType } from "./AssetGenerator";
 
 export interface FurnitureDef {
@@ -279,11 +279,13 @@ export function buildLayout(deskCount = 12): Layout {
   dividerH(16, 20, 35, null, true, true);
   place("plant", 34, 10);
   place("plant", 34, 12);
-  // --- NOC (kiri tengah): 18 rack server 3 baris x 6 kolom
+  // --- NOC (kiri tengah): 12 rack server, 2 baris x 6 kolom.
+  // One row was dropped so the 2x racks have air between them; the row gap is
+  // 6 tiles (see RACK_ROWS) because a rack at PROP_SCALE 2 stands 6 tiles tall.
   dividerV(14, 16, 29, 23);
-  for (const ty of [20, 24, 28]) {
-    for (const tx of [2, 4, 6, 8, 10, 12]) {
-      place("serverRack", tx, ty);
+  for (const ty of RACK_ROWS) {
+    for (const tx of RACK_COLS) {
+      place("serverRack", tx, ty, RACK_W, 1);
     }
   }
   // --- Facilities & storage (kiri bawah)

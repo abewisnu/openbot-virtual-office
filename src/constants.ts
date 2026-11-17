@@ -2,21 +2,32 @@ import type { Status, AgentPhase, AgentActivity, ActivityKind } from './types';
 export type Dir = 'up' | 'down' | 'left' | 'right';
 /** One "pixel art" = ART screen pixels. All assets are drawn at the same density. */
 export const ART = 2;
+/** Shipped prop size: one art pixel is 4 screen px (2x the old look). */
+export const DEFAULT_PROP_SCALE = 2;
 /**
- * Trial multiplier for every prop (agents, desks, monitors, racks, plants…)
- * while the floor keeps `ART`. Default `1` is the shipped size, so the look is
- * unchanged unless a URL asks for it: `?props=3` triples a prop on screen.
- * Clamped to 0.5–4 so a typo cannot explode the scene. Read once at load.
+ * Screen-scale multiplier for props (agents, desks, monitors, racks, plants…).
+ * The floor, glass partitions and doors keep `ART`, so the tile grid never
+ * moves and nothing gains a gap. `?props=1` restores the old size, `?props=1.5`
+ * is the in-between; clamped to 0.5–4 so a typo cannot explode the scene.
+ * Read once at load.
  */
 export const PROP_SCALE = (() => {
-  if (typeof location === 'undefined') return 1;
-  const raw = new URLSearchParams(location.search).get('props');
+  const raw = typeof location === 'undefined' ? null : new URLSearchParams(location.search).get('props');
   const n = Number(raw);
-  if (!raw || !Number.isFinite(n)) return 1;
+  if (!raw || !Number.isFinite(n)) return DEFAULT_PROP_SCALE;
   return Math.min(4, Math.max(0.5, n));
 })();
 /** Screen pixels per art pixel for props (floor keeps `ART`). */
 export const PROP = ART * PROP_SCALE;
+/**
+ * NOC rack grid, in tiles: 2 rows x 6 columns = 12 racks. Rows sit 6 tiles
+ * apart so a rack drawn at `PROP_SCALE = 2` (6 tiles tall) stacks flush on the
+ * row in front instead of clipping into it.
+ */
+export const RACK_ROWS = [22, 28];
+export const RACK_COLS = [2, 4, 6, 8, 10, 12];
+/** Tiles a rack footprint spans: rack art is 16 art px = 1 tile at `ART`. */
+export const RACK_W = Math.max(1, Math.round(PROP_SCALE));
 export const TILE = 32; // px per screen tile (16 pixel art)
 export const COLS = 60;
 export const ROWS = 40;

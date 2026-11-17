@@ -1,8 +1,8 @@
 import { Application, Container, Graphics, Sprite, Text, TextureStyle } from 'pixi.js';
-import { ART, PROP, PROP_SCALE, FOOT_OFFSET, PHASE_COLORS, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
+import { ART, PROP, PROP_SCALE, RACK_W, FOOT_OFFSET, PHASE_COLORS, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
 import type { Status, AgentPhase, Employee } from '../types';
 import { useStore } from '../store/useStore';
-import { generateAssets, makeCharFrames, makeLook, makeRackLeds, type Assets, type RackLed } from './AssetGenerator';
+import { generateAssets, makeCharFrames, makeLook, makeRackLeds, type Assets, type FurnitureType, type RackLed } from './AssetGenerator';
 import { buildLayout, zoneName, type ChatSpot, type Layout, type RoomLabel, type Seat } from './Layout';
 import { isInLounge, staysInLounge } from './Lounge';
 import { Character, type Vec } from './Character';
@@ -10,6 +10,14 @@ import { monitorStateFor } from './Monitor';
 import { findPath, type Tile } from './Pathfinder';
 
 const STATUSES: Status[] = ['working', 'working', 'working', 'meeting', 'chatting', 'break', 'idle'];
+/**
+ * Room shell: glass partitions and doors keep `ART` instead of `PROP`. They own
+ * the tile grid, so enlarging them would hang a run a tile past its last tile
+ * and eat the aisle; at `ART` a run ends exactly where the layout says.
+ */
+const SHELL: ReadonlySet<FurnitureType> = new Set<FurnitureType>([
+  'partitionH', 'partitionHHalf', 'partitionV', 'partitionCorner', 'doorH', 'doorV',
+]);
 /** How long one animated monitor frame stays on screen (ms). */
 const MONITOR_FRAME_MS = 220;
 const tileOf = (x: number, y: number): Tile => ({ tx: Math.floor(x / TILE), ty: Math.floor((y - FOOT_OFFSET) / TILE) });
@@ -69,13 +77,13 @@ export class World {
     bg.scale.set(ART);
     this.sortLayer.sortableChildren = true;
     this.root.addChild(bg, this.hands, this.roomLabelLayer, this.sortLayer, this.labelLayer);
-    this.rackLeds = makeRackLeds(PROP);
+    this.rackLeds = makeRackLeds(PROP, RACK_W);
     this.root.addChild(this.rackLedGraphics);
     this.app.stage.addChild(this.root);
 
     for (const f of this.layout.furniture) {
       const s = new Sprite(this.assets.furn[f.type]);
-      s.anchor.set(0.5, 1); s.scale.set(PROP); s.position.set(f.x, f.y); s.zIndex = f.z;
+      s.anchor.set(0.5, 1); s.scale.set(SHELL.has(f.type) ? ART : PROP); s.position.set(f.x, f.y); s.zIndex = f.z;
       this.sortLayer.addChild(s);
     }
     // One monitor per workstation, lit only while a working/ready agent sits there.
