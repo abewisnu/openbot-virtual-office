@@ -151,7 +151,10 @@ evaluated top-down; the first match wins.
 | 5 | `idle` | the agent has a session row at all |
 | 6 | `stopped` | no session row |
 
-`starting` exists in `AGENT_PHASES` but is **never produced** by the derivation.
+`starting` exists in `AGENT_PHASES` but is **never produced** by the derivation. The office still
+renders it defensively: while a phase is `starting`, `World.ts` confines that agent to the Lounge
+room (`src/office/Lounge.ts`, gate `scripts/verify-lounge.mjs`) — it may stand, sit on a lounge sofa
+or walk between lounge floor tiles, and never takes a desk, meeting chair or chat spot.
 
 Windows (`src/data/openbotSource.node.ts:137-151`):
 

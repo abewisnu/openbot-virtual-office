@@ -345,7 +345,7 @@ parses as a JSON array and `Content-Type` is `application/json`.
 | No supervisor | outages persist until a manual restart; supervision was declined |
 | No offline indicator | a failed fetch looks like a live office with mock data |
 | `SESSION_STALE_MS = 30 min` | a quiet roster reads `idle`, board looks empty |
-| `starting` phase never produced | the enum value is dead weight |
+| `starting` phase never produced | no agent rooms in it today; the render path (Lounge confinement) is ready but unexercised by live data |
 | Roster > 16 agents | desks are capped at 16, so agents start sharing |
 | No auth | the loopback bind is the entire boundary |
 
