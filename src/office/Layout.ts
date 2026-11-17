@@ -160,16 +160,18 @@ export function buildLayout(deskCount = 12): Layout {
   // --- Workstation (right side): one desk per agent, 4 columns per row.
   // The desk count tracks the live agent roster (min 12, max 16 so the room
   // still reads as an office) so no agent is left without a computer.
-  // A 2x desk stands 4 tiles wide, so bays sit on a 5-tile pitch: 4 tiles of
-  // desk and one empty aisle tile between neighbours. Rows start at ty 9, clear
-  // of the window band (art rows 0-5) and the wall, so the top row no longer
-  // touches the glass, and sit on a 5-tile pitch for the same one-tile aisle.
+  // A 2x desk stands 4 tiles wide and 3.5 tiles tall, so bays sit on a 5-tile
+  // column pitch (4 tiles of desk + one aisle tile) and a 6-tile row pitch,
+  // which leaves roughly two clear rows between a desk back and the chair in
+  // front of it. The block starts on column 40 — one tile further right than
+  // the first layout pass — so the right-hand bay stops one tile short of the
+  // wall. Rows start at ty 9, clear of the window band (art rows 0-5).
   const deskTarget = Math.max(12, Math.min(16, Math.floor(deskCount) || 12));
-  const DESK_COLS = [39, 44, 49, 54];
+  const DESK_COLS = [40, 45, 50, 55];
   let n = 1;
   let placed = 0;
   for (let row = 0; placed < deskTarget; row++) {
-    const ty = 9 + row * 5;
+    const ty = 9 + row * 6;
     for (const tx of DESK_COLS) {
       if (placed >= deskTarget) break;
       place("desk", tx, ty, 2, 1);
