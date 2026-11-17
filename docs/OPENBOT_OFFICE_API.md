@@ -152,9 +152,11 @@ evaluated top-down; the first match wins.
 | 6 | `stopped` | no session row |
 
 `starting` exists in `AGENT_PHASES` but is **never produced** by the derivation. The office still
-renders it defensively: while a phase is `starting`, `World.ts` confines that agent to the Lounge
-room (`src/office/Lounge.ts`, gate `scripts/verify-lounge.mjs`) — it may stand, sit on a lounge sofa
-or walk between lounge floor tiles, and never takes a desk, meeting chair or chat spot.
+renders it defensively: while a phase is `starting` — or `restarting` (order 2), where the provider
+is rebooting after an error, a manual restart or a config change — `World.ts` confines that agent to
+the Lounge room (`src/office/Lounge.ts`, gate `scripts/verify-lounge.mjs`). It may stand, sit on a
+lounge sofa or walk between lounge floor tiles, and never takes a desk, meeting chair or chat spot,
+so a `restarting` agent is visibly out of service instead of looking busy at a workstation.
 
 Windows (`src/data/openbotSource.node.ts:137-151`):
 
@@ -263,8 +265,9 @@ desk-walk behaviour (§6).
 | Desk walk | `owesDesk = unreadCount > 0 || activity.kind ∈ {unread, waiting}` (`World.ts`) |
 | Desk screen | `monitorStateFor(phase, seated)`: `working` moving, `ready` still, `blocked` grey with pause bars, everything else dark (`src/office/Monitor.ts`) |
 | Blocked at the computer | `blocked` always carries `activity.kind === 'waiting'`, so `owesDesk` walks it to its own desk and it sits there with the grey screen until the prompt is answered, the approval is granted or the usage limit resets |
+| Lounge confinement | `staysInLounge(phase)` → `starting`, `restarting`: goals only from `loungeSeats`/`loungeTiles`, `owesDesk` forced false, no chat/meeting bubble, and the doorway at (14, 13) is never a goal (`src/office/Lounge.ts`) |
 | Desk id | `WS-01 … WS-N`, one per agent in roster order (`useStore.ts`, `Layout.ts`) |
-| Live caption | `Blocked — walking to desk` / `Blocked — waiting for your answer`, `Walking to desk — new instruction`, `At desk — reviewing new instruction`, or the status text |
+| Live caption | `Restarting — walking in Lounge` / `Restarting — waiting in Lounge`, `Starting up — …`, `Blocked — walking to desk` / `Blocked — waiting for your answer`, `Walking to desk — new instruction`, `At desk — reviewing new instruction`, or the status text |
 
 The simulation `Status` (`idle | working | meeting | chatting | break`) drives *where* a
 character stands. It is deliberately separate from `phase`, so the office keeps moving

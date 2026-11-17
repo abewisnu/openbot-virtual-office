@@ -307,7 +307,6 @@ export function fetchAgentProfiles(): AgentProfile[] {
       warmActive,
       recentlyActive,
     });
-
     return {
       agentId: a.agent_id,
       name: json.name,

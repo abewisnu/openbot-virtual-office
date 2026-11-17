@@ -1,7 +1,8 @@
-// Verifies the Lounge confinement rule: a `starting` agent waits inside the
-// Lounge room and is never given a goal outside it. The room bounds are pure
-// constants, so they are checked directly; World.ts is then source-guarded so a
-// future edit cannot quietly send a starting agent to a desk again.
+// Verifies the Lounge confinement rule: a `starting` or `restarting` agent waits
+// inside the Lounge room and is never given a goal outside it. The room bounds
+// are pure constants, so they are checked directly; World.ts is then
+// source-guarded so a future edit cannot quietly send a penned agent to a desk
+// again.
 // Run with: node scripts/verify-lounge.mjs
 import { readFileSync } from 'node:fs';
 import { LOUNGE_ROOM, isInLounge, staysInLounge } from '../src/office/Lounge.ts';
@@ -34,10 +35,10 @@ for (const [tx, ty, want] of cases) {
 
 const phaseCases = [
   ['starting', true],
+  ['restarting', true],
   ['idle', false],
   ['ready', false],
   ['working', false],
-  ['restarting', false],
   ['blocked', false],
   ['stopped', false],
   [undefined, false],
@@ -57,16 +58,22 @@ const boundsMatchWall = wallRow ? Number(wallRow[1]) === LOUNGE_ROOM.minTy : fal
 if (!boundsMatchWall) failed++;
 console.log(`verdict=${boundsMatchWall ? 'PASS' : 'FAIL'} LOUNGE_ROOM.minTy=${LOUNGE_ROOM.minTy} constants.MIN_WALK_ROW=${wallRow?.[1]}`);
 
+const lounge = readFileSync(new URL('../src/office/Lounge.ts', import.meta.url), 'utf8');
+const phaseList = /return phase === 'starting' \|\| phase === 'restarting';/.test(lounge);
+if (!phaseList) failed++;
+console.log(`verdict=${phaseList ? 'PASS' : 'FAIL'} Lounge.ts pens both starting and restarting`);
+
 const world = readFileSync(new URL('../src/office/World.ts', import.meta.url), 'utf8');
 const layout = readFileSync(new URL('../src/office/Layout.ts', import.meta.url), 'utf8');
 const guards = [
   ['World.ts pens lounge tiles through isInLounge()', /loungeTiles = this\.walkable\.filter\(\(t\) => isInLounge\(t\.tx, t\.ty\)\)/.test(world)],
   ['World.ts pens lounge seats through isInLounge()', /loungeSeats = this\.layout\.seats\.filter\([\s\S]{0,160}isInLounge\(s\.approach\.tx, s\.approach\.ty\)/.test(world)],
   ['World.ts branches on staysInLounge() for the phase', /staysInLounge\(/.test(world)],
-  ['assign() returns into assignLounge() for a starting agent', /if \(starting\) \{\s*\n\s*this\.assignLounge\(ch, instant\);\s*\n\s*return;/.test(world)],
-  ['idle starting agent wanders with wanderLounge()', /if \(starting\) this\.wanderLounge\(ch\); else this\.wander\(ch\);/.test(world)],
+  ['assign() returns into assignLounge() for a penned agent', /if \(penned\) \{\s*\n\s*this\.assignLounge\(ch, instant\);\s*\n\s*return;/.test(world)],
+  ['an idle penned agent wanders with wanderLounge()', /if \(penned\) this\.wanderLounge\(ch\); else this\.wander\(ch\);/.test(world)],
   ['assignLounge() picks goals only from loungeSeats/loungeTiles', /assignLounge\([\s\S]{0,700}this\.loungeTiles\[/.test(world)],
-  ['a starting agent owes no desk visit', /staysInLounge\(emp\?\.phase\) \? false : this\.owesDesk\(emp\)/.test(world)],
+  ['a penned agent owes no desk visit', /staysInLounge\(emp\?\.phase\) \? false : this\.owesDesk\(emp\)/.test(world)],
+  ['the live caption names the restarting phase', /phase === 'restarting' \? 'Restarting' : 'Starting up'/.test(world)],
   ['Layout.ts no longer owns the lounge bounds', !/export const LOUNGE_ROOM/.test(layout)],
 ];
 for (const [label, ok] of guards) {
@@ -78,4 +85,4 @@ if (failed) {
   console.error(`\n${failed} lounge check(s) failed.`);
   process.exit(1);
 }
-console.log('\nAll lounge checks passed: starting agents stay inside the Lounge room.');
+console.log('\nAll lounge checks passed: starting and restarting agents stay inside the Lounge room.');

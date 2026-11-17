@@ -347,6 +347,7 @@ parses as a JSON array and `Content-Type` is `application/json`.
 | No offline indicator | a failed fetch looks like a live office with mock data |
 | `SESSION_STALE_MS = 30 min` | a quiet roster reads `idle`, board looks empty |
 | `starting` phase never produced | no agent rooms in it today; the render path (Lounge confinement) is ready but unexercised by live data |
+| `restarting` Lounge placement | `restarting` needs a `%restart%` thread activity, so the Lounge pen was verified with a temporary phase override, never from live data |
 | Roster > 16 agents | desks are capped at 16, so agents start sharing |
 | No auth | the loopback bind is the entire boundary |
 

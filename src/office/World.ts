@@ -33,7 +33,7 @@ export class World {
   private layout!: Layout;
   private assets!: Assets;
   private walkable: Tile[] = [];
-  /** Floor tiles and lounge-kind seats inside the Lounge room: the `starting` pen. */
+  /** Floor tiles and lounge-kind seats inside the Lounge room: the starting/restarting pen. */
   private loungeTiles: Tile[] = [];
   private loungeSeats: Seat[] = [];
   private cam = { x: WORLD_W / 2, y: WORLD_H / 2 + 60, zi: 1 };
@@ -57,8 +57,9 @@ export class World {
     // Size the workstation block to the live roster: one desk per agent.
     this.layout = buildLayout(emps.length);
     this.layout.blocked.forEach((row, ty) => row.forEach((b, tx) => { if (!b) this.walkable.push({ tx, ty }); }));
-    // `starting` agents only ever get goals from these two lists, so they cannot
-    // walk out of the Lounge even though the doorway at (14, 13) stays open.
+    // Penned agents (`starting`, `restarting`) only ever get goals from these two
+    // lists, so they cannot walk out of the Lounge even though the doorway at
+    // (14, 13) stays open.
     this.loungeTiles = this.walkable.filter((t) => isInLounge(t.tx, t.ty));
     this.loungeSeats = this.layout.seats.filter(
       (s) => s.kind === 'lounge' && isInLounge(s.approach.tx, s.approach.ty),
@@ -228,7 +229,7 @@ export class World {
     this.release(ch.id);
     ch.appliedStatus = status;
     const emp = this.empOf(ch.id);
-    const starting = staysInLounge(emp?.phase);
+    const penned = staysInLounge(emp?.phase);
     const owesDesk = this.owedDesk(emp);
     this.instructions.set(ch.id, owesDesk);
     if (emp) {
@@ -239,9 +240,9 @@ export class World {
     ch.changeIn = 20 + Math.random() * 25;
     // Only a live 'working' phase produces the typing animation.
     ch.typing = status === 'working' && emp?.phase === 'working';
-    // An agent still starting has no desk, chair or chat partner yet: it stays
-    // in the Lounge (sit, stand, walk) until the phase moves on.
-    if (starting) {
+    // A starting or restarting agent has no desk, chair or chat partner yet: it
+    // stays in the Lounge (sit, stand, walk) until the phase moves on.
+    if (penned) {
       this.assignLounge(ch, instant);
       return;
     }
@@ -293,16 +294,16 @@ export class World {
     ch.wanderTimer = 2;
   }
   /**
-   * `starting` agents have no desk yet, so a pending instruction must not pull
-   * them out of the Lounge.
+   * A starting/restarting agent has no desk yet, so a pending instruction must
+   * not pull it out of the Lounge.
    */
   private owedDesk(emp: Employee | undefined): boolean {
     return staysInLounge(emp?.phase) ? false : this.owesDesk(emp);
   }
   /**
-   * `starting` agents wait inside the Lounge: a free lounge seat, or a lounge
-   * floor tile. No desk, meeting chair or chat spot, so the room is their only
-   * stage until the phase leaves `starting`.
+   * `starting` and `restarting` agents wait inside the Lounge: a free lounge
+   * seat, or a lounge floor tile. No desk, meeting chair or chat spot, so the
+   * room is their only stage until the phase moves on.
    */
   private assignLounge(ch: Character, instant: boolean) {
     const free = this.loungeSeats.filter((s) => !s.occupant || s.occupant === ch.id);
@@ -318,11 +319,16 @@ export class World {
     if (instant) ch.placeAt(centerOf(tile), 'down');
     else this.routeTo(ch, tile, null);
   }
-  /** Idle `starting` agent: stroll between lounge tiles, never out of the room. */
+  /** Idle starting/restarting agent: stroll between lounge tiles, never out of the room. */
   private wanderLounge(ch: Character) {
     if (!this.loungeTiles.length) return;
     this.routeTo(ch, this.loungeTiles[Math.floor(Math.random() * this.loungeTiles.length)], null);
     ch.wanderTimer = 3 + Math.random() * 4;
+  }
+  /** Live caption while an agent is penned: the phase word plus what it is doing. */
+  private loungeText(phase: AgentPhase, walking: boolean): string {
+    const label = phase === 'restarting' ? 'Restarting' : 'Starting up';
+    return `${label} — ${walking ? 'walking' : 'waiting'} in Lounge`;
   }
   private taskText(s: Status, ws?: string) {
     return ({ working: `Working at ${ws ?? 'desk'}`, meeting: 'Team meeting in Meeting Area', chatting: 'Chatting with colleagues', break: 'Resting in Lounge', idle: 'Wandering the office' })[s];
@@ -342,7 +348,7 @@ export class World {
       const emp = st.employees.find((e) => e.id === ch.id);
       if (!emp) continue;
       ch.setName(emp.name);
-      const starting = staysInLounge(emp.phase);
+      const penned = staysInLounge(emp.phase);
       if (
         emp.status !== ch.appliedStatus ||
         this.phases.get(ch.id) !== emp.phase ||
@@ -358,9 +364,9 @@ export class World {
           st.setStatus(ch.id, STATUSES[Math.floor(Math.random() * STATUSES.length)]);
         }
       }
-      if (ch.appliedStatus === 'idle' && !this.instructions.get(ch.id) && ch.state === 'idle' && !ch.path.length) { ch.wanderTimer -= dt; if (ch.wanderTimer <= 0) { if (starting) this.wanderLounge(ch); else this.wander(ch); } }
-      // A starting agent is alone in the Lounge: no chat or meeting bubble.
-      ch.talking = !starting && (ch.appliedStatus === 'meeting' || ch.appliedStatus === 'chatting') && !ch.path.length;
+      if (ch.appliedStatus === 'idle' && !this.instructions.get(ch.id) && ch.state === 'idle' && !ch.path.length) { ch.wanderTimer -= dt; if (ch.wanderTimer <= 0) { if (penned) this.wanderLounge(ch); else this.wander(ch); } }
+      // A penned agent is alone in the Lounge: no chat or meeting bubble.
+      ch.talking = !penned && (ch.appliedStatus === 'meeting' || ch.appliedStatus === 'chatting') && !ch.path.length;
       ch.update(dt);
       ch.tag.visible = st.showLabels;
       ch.setSelected(st.selectedId === ch.id);
@@ -372,8 +378,17 @@ export class World {
       const ch = this.chars.find((c) => c.id === st.selectedId);
       if (ch) {
         const t = tileOf(ch.x, ch.y), emp = this.empOf(ch.id)!;
-        const starting = staysInLounge(emp.phase);
-        st.setLive({ zone: zoneName(t.tx, t.ty), task: starting ? (ch.path.length ? 'Starting up — walking in Lounge' : 'Starting up — waiting in Lounge') : emp.phase === 'blocked' ? (ch.path.length ? 'Blocked — walking to desk' : 'Blocked — waiting for your answer') : ch.path.length ? (this.instructions.get(ch.id) ? 'Walking to desk — new instruction' : 'Walking…') : this.instructions.get(ch.id) && emp.status === 'idle' ? 'At desk — reviewing new instruction' : this.taskText(emp.status, emp.currentWorkstation), x: Math.round(ch.x), y: Math.round(ch.y) });
+        const penned = staysInLounge(emp.phase);
+        const task = penned
+          ? this.loungeText(emp.phase, ch.path.length > 0)
+          : emp.phase === 'blocked'
+            ? (ch.path.length ? 'Blocked — walking to desk' : 'Blocked — waiting for your answer')
+            : ch.path.length
+              ? (this.instructions.get(ch.id) ? 'Walking to desk — new instruction' : 'Walking…')
+              : this.instructions.get(ch.id) && emp.status === 'idle'
+                ? 'At desk — reviewing new instruction'
+                : this.taskText(emp.status, emp.currentWorkstation);
+        st.setLive({ zone: zoneName(t.tx, t.ty), task, x: Math.round(ch.x), y: Math.round(ch.y) });
       }
     }
     this.updateRackLeds();
