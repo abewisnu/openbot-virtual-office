@@ -105,7 +105,7 @@ URL `?props=<n>` scales props by `n` (0.5–4, default `2`); the floor, glass pa
 |---|---|---|---|
 | Meeting | column 17 and column 32 (rows 5–17), row 18 | columns 18–31, rows 6–17 | 3-tile opening in column 32, rows 10–12, facing the 3-tile aisle (33–35) before the first desk bay |
 
-The Meeting Room sits one room-width left of the workstation block. Its interior is laid out in pixels so each prop keeps a margin from the glass at 2×: a 3-seat sofa and the 64×40 whiteboard along the top band, an 8-seat table under them, a 10×8 rug beneath the whole bay, and a plant in each bottom corner. The whiteboard runs 4 tiles (x 800–928) and clears the sofa by 16 px, so it never covers it.
+The Meeting Room sits one room-width left of the workstation block. Its interior is laid out in pixels so each prop keeps a margin from the glass at 2×: a 3-seat sofa and the 64×40 whiteboard along the top band, an 8-seat table under them, a 10×8 rug beneath the whole bay, and a plant in each bottom corner. The whiteboard runs 4 tiles and is flush with the sofa's right arm (2 px seam, same base line), so the two read as one band along the top wall without covering each other.
 
 ## Architecture
 | File | Role |
