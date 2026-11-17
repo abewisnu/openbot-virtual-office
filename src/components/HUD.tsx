@@ -22,7 +22,9 @@ export default function HUD() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [logo, setLogo] = useState<{ src: string; version: string } | null>(null);
   const [logoChecked, setLogoChecked] = useState(false);
-  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
+  // `serverCount` counts team servers configured in OpenBot; the office always
+  // renders the roster of the one SQLite database, so the badge only informs.
+  const [workspace, setWorkspace] = useState<{ name: string | null; serverCount: number } | null>(null);
   const logoUrl = useRef<string | null>(null);
 
   // Workspace identity (logo and name) lives in OpenBot's own app-support folder
@@ -68,8 +70,15 @@ export default function HUD() {
         if (cancelled || res.status !== 200 || !type.includes('application/json')) return;
         const body: unknown = await res.json();
         if (cancelled) return;
-        const name = (body as { name?: unknown }).name;
-        setWorkspaceName(typeof name === 'string' && name.trim() ? name.trim() : null);
+        const raw = body as { name?: unknown; serverCount?: unknown };
+        const name = typeof raw.name === 'string' && raw.name.trim() ? raw.name.trim() : null;
+        const serverCount =
+          typeof raw.serverCount === 'number' && Number.isFinite(raw.serverCount) && raw.serverCount > 0
+            ? Math.floor(raw.serverCount)
+            : name
+              ? 1
+              : 0;
+        setWorkspace({ name, serverCount });
       } catch {
         /* keep the neutral "Workspace" label */
       }
@@ -119,7 +128,20 @@ export default function HUD() {
             )}
             <div className="brand-copy">
               <span>VIRTUAL OFFICE</span>
-              <strong title={workspaceName ?? undefined}>{workspaceName ?? "Workspace"}</strong>
+              <strong
+                title={
+                  workspace?.name
+                    ? workspace.serverCount > 1
+                      ? `${workspace.name} — ${workspace.serverCount} team servers on this machine, showing the local roster`
+                      : workspace.name
+                    : undefined
+                }
+              >
+                {workspace?.name ?? "Workspace"}
+                {workspace?.name && workspace.serverCount > 1 ? (
+                  <span className="brand-server-count"> ·{workspace.serverCount}</span>
+                ) : null}
+              </strong>
             </div>
             <span className="live-indicator" aria-label="Active session" />
             <button

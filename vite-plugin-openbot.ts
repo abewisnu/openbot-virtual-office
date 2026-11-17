@@ -31,6 +31,7 @@ const serverLogoConfig = z.object({
     .array(
       z.object({
         serverName: z.string().optional(),
+        enabledOnLaunch: z.boolean().optional(),
         serverLogo: z
           .object({ version: z.string().min(1), mimeType: z.string().min(1) })
           .optional(),
@@ -147,29 +148,39 @@ function loadServerLogo(): LogoHit | null {
 
 const MAX_NAME_LEN = 64;
 
+type WorkspaceIdentity = { name: string | null; serverCount: number };
+
 /**
  * Reads the workspace name OpenBot stores in `hosts[].serverName`. Everything
  * else in that file stays in the process: it also holds team-server private
  * keys. Control characters are stripped and the value is capped so the sidebar
  * cannot be fed an unbounded or multi-line string.
+ *
+ * OpenBot's config allows several team servers, but the office renders the agent
+ * roster of one SQLite database, so only one name can be shown. The host that
+ * OpenBot starts on launch wins; otherwise the first named host does. The count
+ * travels with the name so the UI can say the machine has more than one server.
  */
-function loadWorkspaceName(): string | null {
+function loadWorkspaceIdentity(): WorkspaceIdentity {
   const root = dirname(DEFAULT_DB_PATH);
   let config: z.infer<typeof serverLogoConfig>;
   try {
     config = serverLogoConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
   } catch {
-    return null;
+    return { name: null, serverCount: 0 };
   }
 
-  const name = config.hosts?.find((h) => h.serverName)?.serverName;
-  if (!name) return null;
-  const clean = name
+  const named = (config.hosts ?? []).filter((h) => (h.serverName ?? '').trim().length > 0);
+  if (named.length === 0) return { name: null, serverCount: 0 };
+
+  const chosen = named.find((h) => h.enabledOnLaunch) ?? named[0];
+  const clean = (chosen.serverName ?? '')
     .replace(/[\u0000-\u001f\u007f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, MAX_NAME_LEN);
-  return clean.length > 0 ? clean : null;
+
+  return { name: clean.length > 0 ? clean : null, serverCount: named.length };
 }
 
 function sendJson(
@@ -268,7 +279,9 @@ export function openBotApiPlugin(): Plugin {
     }
 
     // `name: null` is a normal answer: the sidebar falls back to "Workspace".
-    sendJson(res, 200, { name: loadWorkspaceName() }, {}, method === 'HEAD');
+    // `serverCount` > 1 means this machine knows several team servers while the
+    // office still renders only the one SQLite roster.
+    sendJson(res, 200, loadWorkspaceIdentity(), {}, method === 'HEAD');
   }
 
   return {

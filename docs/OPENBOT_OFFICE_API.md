@@ -109,16 +109,31 @@ replaced inside OpenBot appears without a page reload.
 
 | Item | Reality |
 |---|---|
-| Source | `openbot-team-server-v2.json`, field `hosts[].serverName` |
-| Response | `200 application/json` with `{ "name": "xscode" }`, `Cache-Control: no-store` |
-| No name configured | `{ "name": null }` — not an error |
+| Source | `openbot-team-server-v2.json`, fields `hosts[].serverName` and `hosts[].enabledOnLaunch` |
+| Response | `200 application/json` with `{ "name": "xscode", "serverCount": 1 }`, `Cache-Control: no-store` |
+| No name configured | `{ "name": null, "serverCount": 0 }` — not an error |
+| Which host wins | the host with `enabledOnLaunch: true`, else the first host with a non-blank name |
+| `serverCount` | number of hosts with a non-blank name; only informational |
 | Sanitising | control characters become spaces, whitespace is collapsed, value trimmed and capped at 64 chars |
 | Guards | same as §2.3: Host allowlist → `421`, non-`GET`/`HEAD` → `405` |
 | Never leaves the process | `serverId`, `publicKey`, `privateKey`, `members`, `sessions`, `invites` |
 
-The sidebar header uses this value as the workspace title and keeps the neutral
+The sidebar header uses `name` as the workspace title and keeps the neutral
 `Workspace` label when the answer is `null`, non-JSON, or missing. Static hosts
 answer with `index.html`, so the `Content-Type` check is what holds that fallback.
+
+This name is the **team server** name, not a person's profile name: the owner's
+profile name comes from `hosts[].members[].name` and is never read here.
+
+### 2.4.1 Multiple team servers
+
+OpenBot's config is an array, so a machine may hold several team servers
+(`hosts[]`), while OVO renders the agent roster of exactly one SQLite database
+(`openbot.db`). There is no per-server roster in the schema, and no table named
+`server`, `team`, or `workspace`, so multi-server rendering is **not supported**.
+When `serverCount > 1` the sidebar appends a muted `·N` next to the name and the
+hover title says the roster shown is the local one. Rendering a second roster
+would need a database path per server, which this build does not have.
 
 ---
 
