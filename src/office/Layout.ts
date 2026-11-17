@@ -174,11 +174,6 @@ export function buildLayout(deskCount = 12): Layout {
   // the shipped 2x scale, 2 at ?props=1). The collision grid has to match that
   // width or a walker can slip through the overhang and cross a workstation.
   const DESK_W = Math.max(2, Math.round((32 * PROP) / TILE));
-  // The grey filing cabinet on the right of every desk is its own 16-art-px
-  // sprite (`16*PROP/TILE` tiles wide). It is right-aligned inside the desk
-  // footprint, so its sprite ends on the desk's right edge and never overhangs
-  // into the aisle: a walker there passes the cabinet, not through it.
-  const FILE_W = Math.max(1, Math.round((16 * PROP) / TILE));
   const deskLeft = (tx: number) => tx - (DESK_W - 2) / 2;
   let n = 1;
   let placed = 0;
@@ -187,7 +182,6 @@ export function buildLayout(deskCount = 12): Layout {
     for (const tx of DESK_COLS) {
       if (placed >= deskTarget) break;
       place("desk", deskLeft(tx), ty, DESK_W, 1);
-      place("filing", deskLeft(tx) + DESK_W - FILE_W, ty, FILE_W, 1);
       const pos = { x: (tx + 1) * TILE, y: (ty + 1) * TILE + 24 };
       chair("chairUp", pos.x, pos.y);
       seats.push({

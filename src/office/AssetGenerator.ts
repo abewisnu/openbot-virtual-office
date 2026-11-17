@@ -16,7 +16,7 @@ const FRAME_LIGHT = 'rgba(84,90,110,0.95)';
 type Ctx = CanvasRenderingContext2D;
 export type FurnitureType =
   | 'desk' | 'chairUp' | 'chairDown' | 'sofa3Down' | 'sofa2Up' | 'coffeeTable' | 'plant' | 'whiteboard'
-  | 'meetingTable' | 'bookshelf' | 'cabinet' | 'fridge' | 'dispenser' | 'storageTable' | 'filing'
+  | 'meetingTable' | 'bookshelf' | 'cabinet' | 'fridge' | 'dispenser' | 'storageTable'
   | 'serverRack'
   | 'partitionH' | 'partitionV' | 'partitionHHalf' | 'partitionCorner' | 'doorH' | 'doorV';
 export interface Look { skin: string; hair: string; shirt: string; pants: string }
@@ -195,10 +195,6 @@ function makeFurniture(): Record<FurnitureType, Texture> {
     storageTable: make(48, 22, (c) => {
       B(c, 5, 0, 13, 8, '#555a6b'); R(c, '#9ad6f5', 7, 2, 7, 4); B(c, 30, 0, 8, 8, '#2b2f3a'); R(c, '#d9534f', 32, 2, 2, 2);
       B(c, 0, 4, 48, 8, '#a8744a'); B(c, 1, 12, 46, 10, '#6b4429'); R(c, '#8a5a34', 3, 14, 20, 6); R(c, '#8a5a34', 25, 14, 20, 6);
-    }),
-    filing: make(16, 22, (c) => {
-      B(c, 0, 0, 16, 22, '#6c7284');
-      for (let i = 0; i < 3; i++) { R(c, '#8a91a6', 2, 2 + i * 7, 12, 5); R(c, OL, 6, 4 + i * 7, 4, 1); }
     }),
     serverRack: make(16, 48, (c) => {
       B(c, 0, 0, 16, 48, '#2b2f3a');
