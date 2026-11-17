@@ -270,6 +270,32 @@ export class World {
     return f.length ? f[Math.floor(Math.random() * f.length)] : null;
   }
   /**
+   * A meeting-room chair for a `chatting` agent. Chairs come in facing pairs
+   * across the table (top row faces `down`, bottom row faces `up`), so the
+   * agent prefers a free seat whose partner is already occupied — it joins the
+   * conversation instead of sitting alone — and otherwise pairs two free seats.
+   */
+  private freeMeetingChatSeat(): Seat | null {
+    const free = this.layout.seats.filter(
+      (s) => s.kind === 'meeting' && !s.occupant,
+    );
+    const partnerOf = (s: Seat) =>
+      this.layout.seats.find(
+        (o) =>
+          o.kind === 'meeting' &&
+          o.id !== s.id &&
+          o.pos.x === s.pos.x &&
+          o.facing !== s.facing,
+      );
+    const withCompany = free.filter((s) => partnerOf(s)?.occupant);
+    const fresh = free.filter((s) => {
+      const p = partnerOf(s);
+      return !!p && !p.occupant;
+    });
+    const pool = withCompany.length ? withCompany : fresh;
+    return pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+  }
+  /**
    * True when the agent owes its desk a visit: a new instruction from a human
    * (unread message) or a pending answer request. Physical movement follows this
    * even while the phase is idle/restarting/blocked, so an agent that was
@@ -313,7 +339,13 @@ export class World {
         null;
     } else if (status === 'meeting') seat = this.freeSeat('meeting');
     else if (status === 'break') seat = this.freeSeat('lounge');
-    else if (status === 'chatting') spot = this.freeSpot();
+    else if (status === 'chatting') {
+      // A chat can happen seated at the meeting table (two agents facing each
+      // other across it, both with a talk bubble) or standing at an aisle chat
+      // spot when every chair is taken.
+      seat = this.freeMeetingChatSeat();
+      if (!seat) spot = this.freeSpot();
+    }
     if (seat) seat.occupant = ch.id;
     if (spot) spot.occupant = ch.id;
     // An agent that walked to its computer for a pending instruction is really

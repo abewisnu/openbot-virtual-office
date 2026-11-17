@@ -89,6 +89,7 @@ node scripts/verify-openbot-source.mjs # check the SQL queries stay read-only
 node scripts/verify-lounge.mjs         # `starting`/`restarting` agents stay inside the Lounge room
 node scripts/verify-store.mjs          # roster source states: never mock before a failed fetch
 node scripts/verify-workspace.mjs      # workspace-folder size walker + no path leak to the browser
+node --import ./scripts/register-ts.mjs scripts/verify-chairs.mjs  # chair collision + meeting-room chat
 ```
 
 `npm run preview` and any other static host do not serve `/api/agents`: the request falls through to
@@ -111,7 +112,7 @@ The Meeting Room sits one room-width left of the workstation block. Its interior
 | File | Role |
 |---|---|
 | `src/office/AssetGenerator.ts` | All pixel art (floor, walls, windows + day/night skyline, glass partitions, furniture, lit/unlit monitors, 4-direction characters + walk/sit frames, speech bubble) is drawn on a Canvas 2D → `Texture` (filter `nearest`). One pixel-art pixel = 2 screen px on the floor, glass partitions, doors and the whiteboard (64×52 art px, 4 tiles wide), and 4 screen px (2×) on the other props: desks, racks, plants, characters. Monitors are drawn one step above that (`MONITOR_SCALE = PROP × 1.25`, anchored bottom-centre) so the screen covers about 2.5 of its 4-tile desk without towering over it; `MONITOR_W`/`MONITOR_H` in `World.ts` keep the click area on the drawn size. `?props=1` restores the 1× prop size; `?props=` takes 0.5–4. |
-| `src/office/Layout.ts` | Room layout (Lounge, Meeting, Workstation, NOC with 12 racks in 2 rows × 6, Pantry/Storage), collision grid, seat and chat-spot lists. Desk count `buildLayout(deskCount)` follows the agent roster, clamped to 12–16, seats `WS-01…WS-N`. The Meeting Room takes columns 17–32 (interior 18–31, rows 6–17, closed by a wall row at 18) with a 3-tile door in its right wall at rows 10–12; workstation bays start on column 37 and sit on a 6-tile column pitch (4-tile desk + 2-tile aisle on the right of each bay) with a 6-tile row pitch, first row at tile row 9, clear of the window band and one tile short of the right wall. `DESK_W = max(2, round(32 × PROP / TILE))` blocks the desk's full sprite width (4 tiles at the 2× default, 2 at `?props=1`), so a walker only crosses a bay through an aisle, never over the desk. A workstation is desk + monitor + chair only — there is no filing cabinet sprite on the bay. Chairs whose seat faces `up` (workstation, the table's near side, the dining nook) are placed with `chair(..., front = true)`, which lifts their `z` above the sitting agent so the backrest overlaps the body and the agent reads as seated. |
+| `src/office/Layout.ts` | Room layout (Lounge, Meeting, Workstation, NOC with 12 racks in 2 rows × 6, Pantry/Storage), collision grid, seat and chat-spot lists. Desk count `buildLayout(deskCount)` follows the agent roster, clamped to 12–16, seats `WS-01…WS-N`. The Meeting Room takes columns 17–32 (interior 18–31, rows 6–17, closed by a wall row at 18) with a 3-tile door in its right wall at rows 10–12; workstation bays start on column 37 and sit on a 6-tile column pitch (4-tile desk + 2-tile aisle on the right of each bay) with a 6-tile row pitch, first row at tile row 9, clear of the window band and one tile short of the right wall. `DESK_W = max(2, round(32 × PROP / TILE))` blocks the desk's full sprite width (4 tiles at the 2× default, 2 at `?props=1`), so a walker only crosses a bay through an aisle, never over the desk. A workstation is desk + monitor + chair only — there is no filing cabinet sprite on the bay. Chairs whose seat faces `up` (workstation, the table's near side, the dining nook) are placed with `chair(..., front = true)`, which lifts their `z` above the sitting agent so the backrest overlaps the body and the agent reads as seated. `chair()` also writes the collision footprint: a chair sprite is 2 tiles wide at the 2× scale, so its seat row is `block(tx-1, ty, 2, 1)` and a walker routes around the backrest instead of through it. The seat tile therefore stays reserved for its occupant, and every seat's `approach` tile sits one row outside the chair (workstation `ty + 2`, meeting table rows 9 and 16, dining nook the free end tiles of its row). |
 | `src/office/Pathfinder.ts` | BFS over the tile grid so characters walk around furniture. |
 | `src/office/Character.ts` | Sprite, idle/walk/sit animations plus typing variants and speech bubble, name label, status indicator. |
 | `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`/`waiting`: the "seated first, then lit" gate, used by `World.ts` and covered by `scripts/verify-monitor.mjs`. `waiting` is the grey screen a seated `blocked` agent waits behind. |
@@ -357,8 +358,10 @@ proxy and CSP work, and it can point at personal photos.
   `GET /api/office-logo` for the workspace logo bytes and `GET /api/office-profile` for
   the OpenBot profile name (`grep 'fetch(' src` = 3 hits, no `POST`).
 - Perspective: horizontal/vertical grid, no vanishing point; depth comes from Y-sorting only.
-- Simulated positions move on their own every ±20–45 s (working → desk, meeting → meeting area,
-  break → lounge, chat → chat spot, idle → wandering). This is simulation `Status`, separate from the
+- Simulated positions move on their own every ±20–45 s (working → desk, meeting → meeting area
+  chair, break → lounge, chat → a meeting-table chair facing a colleague or an aisle chat spot when
+  every chair is taken, idle → wandering). A sitting `chatting` agent keeps its talk bubble, so two
+  agents opposite each other read as a conversation. This is simulation `Status`, separate from the
   real agent `phase`, so the office stays alive when the database cannot be read.
 - A desk monitor lights up only if the agent is **already seated** on that chair (state `sit` on the
   same `seat`) and its `phase` is `working`, `ready` or `blocked`. The chair is reserved from the

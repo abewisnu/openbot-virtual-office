@@ -94,13 +94,23 @@ export function buildLayout(deskCount = 12): Layout {
    * chair (agent faces `up`, back to the viewer) has its backrest between the
    * viewer and the agent, so it must overdraw the agent's back; otherwise the
    * shirt colour hides the chair. Backrests behind the agent stay below.
+   *
+   * A chair is solid: its seat tile (and the half of the 2-tile-wide sprite
+   * overhang on the left) blocks walking, so a walker goes around instead of
+   * through the backrest. The seat tile stays reserved for the agent that sits
+   * there — that is why every seat's `approach` points at a neighbouring free
+   * tile, not at the chair itself.
    */
   const chair = (
     type: FurnitureType,
     x: number,
     y: number,
     front = false,
-  ) => furniture.push({ type, x, y: y + 2, z: front ? y + 4 : y - 4 });
+  ) => {
+    furniture.push({ type, x, y: y + 2, z: front ? y + 4 : y - 4 });
+    const tx = Math.floor(x / TILE), ty = Math.floor((y + 1) / TILE);
+    block(tx - 1, ty, 2, 1);
+  };
   const dividerV = (
     tx: number,
     ty0: number,
@@ -212,7 +222,9 @@ export function buildLayout(deskCount = 12): Layout {
         kind: "desk",
         pos,
         facing: "up",
-        approach: { tx, ty: ty + 1 },
+        // The chair tile is solid now, so the agent stops one row short of the
+        // backrest and steps into the seat from the aisle.
+        approach: { tx, ty: ty + 2 },
         zOffset: 0,
         occupant: null,
         // Bottom edge of the 2x monitor sprite, 4 art px above the desk's front
@@ -307,8 +319,9 @@ export function buildLayout(deskCount = 12): Layout {
   furniture.push({ type: "sofa3Down", x: 688, y: 264, z: 254 });
   block(20, 7, 3, 1);
   sofaSeats(20, 7, "meeting", "MS");
-  // Table sprite is 8 x 4.5 tiles; only the middle four rows collide, so the
-  // chair approach tiles at rows 10 and 15 stay walkable.
+  // Table sprite is 8 x 4.5 tiles; only the middle four rows collide. The chair
+  // seats themselves are solid, so the approach tiles sit in the free aisle
+  // rows 9 and 16 just outside the backrests.
   furniture.push({ type: "meetingTable", x: 800, y: 480, z: 480 });
   block(21, 11, 8, 4);
   for (const cx of [704, 768, 832, 896]) {
@@ -320,7 +333,9 @@ export function buildLayout(deskCount = 12): Layout {
       kind: "meeting",
       pos: top,
       facing: "down",
-      approach: { tx, ty: 10 },
+      // The chair tile is solid, so both rows approach from the aisle: the
+      // top chairs from row 9, the bottom chairs from row 16.
+      approach: { tx, ty: 9 },
       zOffset: 0,
       occupant: null,
     });
@@ -331,7 +346,7 @@ export function buildLayout(deskCount = 12): Layout {
       kind: "meeting",
       pos: bot,
       facing: "up",
-      approach: { tx, ty: 15 },
+      approach: { tx, ty: 16 },
       zOffset: 0,
       occupant: null,
     });
@@ -369,7 +384,10 @@ export function buildLayout(deskCount = 12): Layout {
       kind: "lounge",
       pos: top,
       facing: "down",
-      approach: { tx: x, ty: 35 },
+      // Chairs are solid across two tiles, and the nook is hemmed in by the
+      // table below and the wall above, so both dining chairs step in from the
+      // free end tiles of their row.
+      approach: { tx: x === 6 ? 4 : 8, ty: 35 },
       zOffset: 0,
       occupant: null,
     });
@@ -380,7 +398,7 @@ export function buildLayout(deskCount = 12): Layout {
       kind: "lounge",
       pos: bot,
       facing: "up",
-      approach: { tx: x, ty: 38 },
+      approach: { tx: x === 6 ? 4 : 8, ty: 38 },
       zOffset: 0,
       occupant: null,
     });
