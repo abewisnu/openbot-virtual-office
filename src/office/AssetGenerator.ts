@@ -112,15 +112,29 @@ function makeBackground(night: boolean): Texture {
     rug(c, 20, 10, 10, 8, '#6a5a78', '#473c55');
     rug(c, 4, 22, 7, 6, '#7a8a5a', '#4e5a38');
     // NOC raised floor: 1-tile access panels, every other one perforated for
-    // cold-aisle airflow, so the lower-left room reads as a server room. The
-    // field starts on the top glass (row 30) and runs down to the last floor row
-    // (39) so no bare strip is left along the bottom edge. It stops on column
-    // 13: the right partition at column 14 is a 16 px glass line drawn on the
-    // tile boundary, while a panel is 32 px wide, so a column-14 panel would
-    // push half the carpet past the glass into the corridor and through the open
-    // door rows 32-34.
-    for (let ty = 30; ty <= 39; ty++) {
-      for (let tx = 1; tx <= 13; tx++) {
+    // cold-aisle airflow, so the lower-left room reads as a server room.
+    //
+    // The carpet has to stop exactly on the inner face of each partition, so the
+    // field is clipped instead of being counted in whole tiles: a panel is 16
+    // art px (one tile) while the glass panes are 8 art px and sit centred on
+    // the tile line, which leaves 4 art px of glass on the room side of it.
+    // Measured in art px, with 16 art px per tile:
+    //   right  = 14.5 * 16 - 4 = 228  (col-14 pane, 8 art px wide, centred)
+    //   top    = 30 * 16 + 4   = 484  (row-30 pane, bottom edge 8 world px
+    //                                  below the tile line = 4 art px)
+    //   bottom = ROWS * 16     = 640  (last floor row: no gap at the edge)
+    //   left   = 0                    (open map edge, the NOC has no pane there)
+    const TILE_ART = TILE / ART;
+    const nocX0 = 0;
+    const nocX1 = 14.5 * TILE_ART - 4;
+    const nocY0 = 30 * TILE_ART + 4;
+    const nocY1 = ROWS * TILE_ART;
+    c.save();
+    c.beginPath();
+    c.rect(nocX0, nocY0, nocX1 - nocX0, nocY1 - nocY0);
+    c.clip();
+    for (let ty = 30; ty <= ROWS - 1; ty++) {
+      for (let tx = 0; tx <= 14; tx++) {
         const x = tx * 16, y = ty * 16;
         B(c, x, y, 16, 16, '#2e3340');
         R(c, '#39404f', x + 1, y + 1, 14, 14);
@@ -129,6 +143,7 @@ function makeBackground(night: boolean): Texture {
           for (let py = 3; py < 14; py += 3) for (let px = 3; px < 14; px += 3) R(c, '#333a49', x + px, y + py, 1, 1);
       }
     }
+    c.restore();
     // wall shadow + window light rays
     R(c, 'rgba(0,0,0,0.25)', 0, 80, W, 2); R(c, 'rgba(0,0,0,0.12)', 0, 82, W, 3);
     c.fillStyle = night ? 'rgba(120,150,255,0.07)' : 'rgba(255,240,200,0.09)';

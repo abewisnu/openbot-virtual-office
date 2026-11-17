@@ -130,10 +130,15 @@ const guards = [
   ['pantry carpet moved to the upper room', /rug\(c, 4, 22, 7, 6, '#7a8a5a', '#4e5a38'\)/.test(art)],
   ['pantry shelves sit two tiles below the top wall', /place\("bookshelf", 1, 20, 4, 1\)/.test(layoutSrc)],
   ['no carpet left in the old pantry spot', !/rug\(c, 3, 35, 8, 4/.test(art)],
-  ['NOC draws a raised floor', /NOC raised floor/.test(art) && /for \(let ty = 30; ty <= 39; ty\+\+\)/.test(art)],
+  ['NOC draws a raised floor', /NOC raised floor/.test(art) && /for \(let ty = 30; ty <= ROWS - 1; ty\+\+\)/.test(art)],
   [
-    'NOC carpet stops at the right glass (col 13) and fills the bottom row',
-    /for \(let tx = 1; tx <= 13; tx\+\+\)/.test(art) && !/tx <= 14; tx\+\+/.test(art),
+    'NOC carpet is clipped to the partition faces (228 right, 484 top, 640 bottom, 0 left)',
+    /const nocX1 = 14\.5 \* TILE_ART - 4;/.test(art) &&
+      /const nocY0 = 30 \* TILE_ART \+ 4;/.test(art) &&
+      /const nocY1 = ROWS \* TILE_ART;/.test(art) &&
+      /c\.rect\(nocX0, nocY0, nocX1 - nocX0, nocY1 - nocY0\);/.test(art) &&
+      /c\.clip\(\)/.test(art) &&
+      /c\.restore\(\)/.test(art),
   ],
   ['CRAC sprite is 2x4 tiles at the prop scale', /crac: make\(16, 32/.test(art)],
   ['UPS sprite is 2x2 tiles at the prop scale', /ups: make\(16, 16/.test(art)],
