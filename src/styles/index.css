@@ -202,9 +202,17 @@ body,
 .sidebar-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 16px 14px;
-  scrollbar-color: #51465d transparent;
-  scrollbar-width: thin;
+  /* Hidden scrollbar: expanding a Team activity row makes the column scroll, and
+     a classic scrollbar would take ~10px of width and shift every row sideways.
+     Scrolling still works — wheel, trackpad, keyboard — only the bar is gone. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.sidebar-content::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 .sidebar-card {
   padding: 15px;
