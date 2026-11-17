@@ -28,6 +28,13 @@ fixed with a 16 px gap from the top, left and bottom edges, an all-round 1 px bo
 layered drop shadow, and square corners throughout (matching the pixel look). No layout space is
 reserved for it, so hiding the sidebar leaves the canvas exactly as it was.
 
+The panel is **frosted glass**: `rgba(25, 21, 32, 0.55)` over
+`backdrop-filter: blur(20px) saturate(135%)`, so the office reads through it while the text keeps
+its contrast. Inner cards, notices and the font picker use thinner translucent layers instead of
+opaque fills, and the reopen handle gets the same treatment. Browsers without `backdrop-filter`
+fall back to `rgba(25, 21, 32, 0.94)` via `@supports not (...)`, so the panel never turns into
+translucent text over sprites.
+
 **Team activity** lists one row per phase with its count. Clicking a non-empty row expands the
 agents in that phase (alphabetical, real `name` from the roster); clicking a name focuses that agent
 in the office and opens its info panel. Empty phases are disabled — nothing to list.
