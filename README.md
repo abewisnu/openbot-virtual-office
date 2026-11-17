@@ -210,6 +210,36 @@ exceptions:
 Licence: SIL Open Font License 1.1, `Copyright 2026 The Geist Project Authors`
 (<https://github.com/vercel/geist-font>); the full text ships as `public/fonts/OFL.txt`.
 
+## Theme
+The UI chrome has three modes, picked in **Settings → Theme**:
+
+| Value | Behaviour |
+| --- | --- |
+| `system` (default) | Follows the OS `prefers-color-scheme`, and keeps following it live — changing the system appearance repaints OVO without a reload. |
+| `light` | Pins the light palette, whatever the OS says. |
+| `dark` | Pins the dark palette, whatever the OS says. |
+
+The palette is a set of CSS custom properties in `src/styles/index.css`: dark values on `:root`
+(the defaults), light values in `:root[data-theme='light']`. Every sidebar, info-panel, button,
+select and modal colour reads a `--ovo-*` variable, so both palettes come from one stylesheet.
+`color-scheme` is set alongside each palette so native widgets (select popups, scrollbars) follow.
+
+`src/theme.ts` only decides which palette is active: `resolveTheme()` maps the mode to `light` or
+`dark`, and `applyTheme()` writes two attributes on `<html>` — `data-theme` (the resolved palette)
+and `data-theme-mode` (what the user picked). While the mode is `system`, `watchSystemTheme()`
+subscribes to the `prefers-color-scheme: light` media query and re-applies on change. The choice
+lives in the store as `themeMode` and is applied by an effect in `App.tsx`; like every other UI
+toggle it resets on reload, because OVO stores nothing.
+
+Two details worth knowing:
+
+- The canvas office art is **not** themed. It is pixel art drawn once into textures, so it keeps its
+  own day/night look; the light palette is a warm paper tone (`--ovo-bg: #f4f1ea`) chosen so the
+  frosted sidebar still reads as an overlay on top of that unchanged scene.
+- `index.html` carries a small inline script that sets `data-theme` from the OS **before** React
+  mounts, so a light desktop never flashes the dark defaults. It is kept in sync with `src/theme.ts`
+  by hand, and its `theme-color` metas are split per `prefers-color-scheme` for the browser UI.
+
 ## Ground rules
 - **Name**: OpenBot Virtual Office, **OVO** for short.
 - **Purpose**: a 2D pixel-art visualisation of the work already happening in OpenBot — not a work app.
@@ -241,7 +271,8 @@ Licence: SIL Open Font License 1.1, `Copyright 2026 The Geist Project Authors`
   (`World.ts` → `updateMonitors`, `AssetGenerator.ts` → `makeMonitor(mode, frame?)`).
 - `phase` is recomputed from the database on every request. An agent with no traffic for > 30 minutes
   drops to `idle` (Standby) — a quiet board is correct, not a bug.
-- Window theme follows the local clock (night 18:00–06:00).
+- Canvas window scenery follows the local clock (night 18:00–06:00); this is pixel art, unrelated to
+  the UI **Settings → Theme** mode.
 - Size/speed/colour constants live in `src/constants.ts`.
 - `dist/` is immutable per build; never edit build output, rebuild instead.
 

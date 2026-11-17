@@ -21,6 +21,81 @@
     U+2C60-2C7F, U+A720-A7FF;
 }
 
+/* ---------------------------------------------------------------------------
+   Theme palette. Every neutral colour in the UI layer (sidebar, info panel,
+   modals, buttons) is a custom property, so one attribute on <html> repaints
+   the whole chrome: `data-theme="dark"` (default values below) or
+   `data-theme="light"`. The office scene itself is pixel art drawn on canvas,
+   so it is not part of this palette. `color-scheme` makes native widgets
+   (select dropdowns, checkboxes, scrollbars) follow the same choice.
+   --------------------------------------------------------------------------- */
+:root {
+  color-scheme: dark;
+  --ovo-bg: #14121c;
+  --ovo-text: #f2ede0;
+  --ovo-text-strong: #ffffff;
+  --ovo-text-soft: #a79db5;
+  --ovo-text-dim: #998da6;
+  --ovo-text-faint: #6f6479;
+  --ovo-border: #352b40;
+  --ovo-border-strong: rgba(122, 104, 142, 0.45);
+  --ovo-border-soft: rgba(122, 104, 142, 0.38);
+  --ovo-panel-border: #4a3f58;
+  --ovo-ink: #1d1722;
+  --ovo-panel-bg: rgba(25, 21, 32, 0.55);
+  --ovo-panel-solid: rgba(25, 21, 32, 0.94);
+  --ovo-panel-mobile: rgba(25, 21, 32, 0.62);
+  --ovo-surface: rgba(29, 23, 34, 0.88);
+  --ovo-card-bg: rgba(52, 44, 66, 0.4);
+  --ovo-card-hover: rgba(52, 44, 66, 0.5);
+  --ovo-control-bg: #30283a;
+  --ovo-control-border: #4a3f58;
+  --ovo-control-hover: #493e54;
+  --ovo-track: #342d3b;
+  --ovo-select-bg: rgba(34, 29, 43, 0.75);
+  --ovo-notice-bg: rgba(33, 28, 43, 0.5);
+  --ovo-overlay: rgba(10, 8, 16, 0.55);
+  --ovo-accent: #a7f078;
+  --ovo-accent-wash: rgba(167, 240, 120, 0.1);
+  --ovo-accent-glow: rgba(167, 240, 120, 0.7);
+  --ovo-accent-ink: #15111a;
+  --ovo-danger: #e4a6a6;
+}
+/* Light palette: warm paper instead of a grey UI, so the frosted sidebar still
+   reads as an overlay on the dark pixel office without turning blue-white. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --ovo-bg: #f4f1ea;
+  --ovo-text: #241f2b;
+  --ovo-text-strong: #0f0b14;
+  --ovo-text-soft: #5c5466;
+  --ovo-text-dim: #6c6377;
+  --ovo-text-faint: #8a8194;
+  --ovo-border: #dcd5cd;
+  --ovo-border-strong: rgba(60, 48, 74, 0.32);
+  --ovo-border-soft: rgba(60, 48, 74, 0.22);
+  --ovo-panel-border: #c3b9ae;
+  --ovo-ink: #b9ae9f;
+  --ovo-panel-bg: rgba(250, 248, 243, 0.74);
+  --ovo-panel-solid: rgba(250, 248, 243, 0.96);
+  --ovo-panel-mobile: rgba(250, 248, 243, 0.84);
+  --ovo-surface: rgba(252, 251, 248, 0.92);
+  --ovo-card-bg: rgba(255, 255, 255, 0.62);
+  --ovo-card-hover: rgba(255, 255, 255, 0.82);
+  --ovo-control-bg: #e9e4db;
+  --ovo-control-border: #c9c1b8;
+  --ovo-control-hover: #ded8ce;
+  --ovo-track: #e2dcd2;
+  --ovo-select-bg: rgba(255, 255, 255, 0.9);
+  --ovo-notice-bg: rgba(255, 255, 255, 0.6);
+  --ovo-overlay: rgba(36, 31, 43, 0.35);
+  --ovo-accent: #3f8f26;
+  --ovo-accent-wash: rgba(63, 143, 38, 0.14);
+  --ovo-accent-glow: rgba(63, 143, 38, 0.45);
+  --ovo-accent-ink: #f7fdf3;
+  --ovo-danger: #a8444f;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -31,9 +106,9 @@ body,
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #14121c;
+  background: var(--ovo-bg);
   font-family: ui-monospace, Menlo, Consolas, monospace;
-  color: #f2ede0;
+  color: var(--ovo-text);
 }
 .app-shell {
   display: flex;
@@ -69,10 +144,10 @@ body,
   /* Frosted glass: the panel is translucent and blurs the office behind it, so
      the scene stays readable through the sidebar. Opacity is low enough to see
      the room, high enough that 10–11px text keeps its contrast. */
-  background: rgba(25, 21, 32, 0.55);
+  background: var(--ovo-panel-bg);
   -webkit-backdrop-filter: blur(20px) saturate(135%);
   backdrop-filter: blur(20px) saturate(135%);
-  border: 1px solid rgba(122, 104, 142, 0.45);
+  border: 1px solid var(--ovo-border-strong);
   /* Layered shadow reads as lift over the pixel scene; the tight ring keeps the
      panel edge crisp against light sprites. */
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.3);
@@ -81,7 +156,7 @@ body,
    than leaving translucent text floating over sprites. */
 @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
   .hud-sidebar {
-    background: rgba(25, 21, 32, 0.94);
+    background: var(--ovo-panel-solid);
   }
 }
 /* Geist Pixel ships one 400 cut, so heavy headings stay readable by size and
@@ -100,15 +175,15 @@ body,
   align-items: center;
   gap: 12px;
   padding: 20px 18px 17px;
-  border-bottom: 1px solid #352b40;
+  border-bottom: 1px solid var(--ovo-border);
 }
 .brand-mark {
   display: grid;
   width: 38px;
   height: 38px;
   place-items: center;
-  color: #15111a;
-  background: #a7f078;
+  color: var(--ovo-accent-ink);
+  background: var(--ovo-accent);
   border-radius: 0;
   font-size: 13px;
   font-weight: 900;
@@ -137,11 +212,11 @@ body,
 
 .brand-mark-pending {
   background: transparent;
-  border: 1px solid #2f2738;
+  border: 1px solid var(--ovo-border);
 }
 .brand-copy span,
 .section-eyebrow {
-  color: #998da6;
+  color: var(--ovo-text-dim);
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1.2px;
@@ -157,9 +232,9 @@ body,
 .live-indicator {
   width: 8px;
   height: 8px;
-  background: #a7f078;
+  background: var(--ovo-accent);
   border-radius: 0;
-  box-shadow: 0 0 10px rgba(167, 240, 120, 0.7);
+  box-shadow: 0 0 10px var(--ovo-accent-glow);
 }
 .sidebar-hide-button {
   display: grid;
@@ -168,16 +243,16 @@ body,
   flex: 0 0 auto;
   place-items: center;
   padding: 0 0 3px;
-  color: #bdb3c7;
-  background: #30283a;
-  border: 1px solid #4a3f58;
+  color: var(--ovo-text-soft);
+  background: var(--ovo-control-bg);
+  border: 1px solid var(--ovo-control-border);
   border-radius: 0;
   font-size: 20px;
   line-height: 1;
 }
 .sidebar-hide-button:hover {
-  color: #fff;
-  background: #493e54;
+  color: var(--ovo-text-strong);
+  background: var(--ovo-control-hover);
 }
 .sidebar-reopen-button {
   position: fixed;
@@ -188,16 +263,16 @@ body,
   align-items: center;
   gap: 8px;
   padding: 9px 12px;
-  background: rgba(25, 21, 32, 0.7);
+  background: var(--ovo-panel-solid);
   -webkit-backdrop-filter: blur(14px) saturate(130%);
   backdrop-filter: blur(14px) saturate(130%);
-  border: 1px solid rgba(122, 104, 142, 0.45);
+  border: 1px solid var(--ovo-border-strong);
   border-radius: 0;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   font-size: 11px;
 }
 .sidebar-reopen-button span {
-  color: #a7f078;
+  color: var(--ovo-accent);
 }
 .sidebar-content {
   flex: 1;
@@ -218,8 +293,8 @@ body,
   padding: 15px;
   /* Glass card on the glass panel: one thin translucent layer, no gradient, so
      the blur behind stays visible instead of being covered twice. */
-  background: rgba(52, 44, 66, 0.4);
-  border: 1px solid rgba(122, 104, 142, 0.38);
+  background: var(--ovo-card-bg);
+  border: 1px solid var(--ovo-border-soft);
   border-radius: 0;
 }
 .clock-card {
@@ -234,8 +309,8 @@ body,
 }
 .section-eyebrow .live-badge {
   padding: 2px 5px;
-  color: #a7f078;
-  background: rgba(167, 240, 120, 0.1);
+  color: var(--ovo-accent);
+  background: var(--ovo-accent-wash);
   border-radius: 0;
   font-size: 8px;
   letter-spacing: 0.6px;
@@ -247,12 +322,12 @@ body,
   letter-spacing: -1px;
 }
 .muted {
-  color: #a79db5;
+  color: var(--ovo-text-soft);
   font-size: 11px;
 }
 .sidebar-section {
   padding: 19px 2px 17px;
-  border-bottom: 1px solid #352b40;
+  border-bottom: 1px solid var(--ovo-border);
 }
 .section-heading {
   display: flex;
@@ -266,7 +341,7 @@ body,
   font-weight: 700;
 }
 .section-heading > span {
-  color: #998da6;
+  color: var(--ovo-text-dim);
   font-size: 10px;
 }
 .source-badge {
@@ -308,13 +383,13 @@ body,
   cursor: pointer;
 }
 .status-row:hover:not(:disabled) {
-  color: #fff;
+  color: var(--ovo-text-strong);
 }
 .status-row:disabled {
   cursor: default;
 }
 .status-row:focus-visible {
-  outline: 1px solid #a7f078;
+  outline: 1px solid var(--ovo-accent);
   outline-offset: 2px;
 }
 .status-row .dot {
@@ -328,30 +403,30 @@ body,
   gap: 5px;
 }
 .status-row strong {
-  color: #d9d2e0;
+  color: var(--ovo-text-strong);
   font-size: 10px;
   font-variant-numeric: tabular-nums;
 }
 .status-caret {
   width: 7px;
-  color: #6f6479;
+  color: var(--ovo-text-faint);
   font-style: normal;
   font-size: 10px;
   line-height: 1;
   text-align: center;
 }
 .status-row[aria-expanded='true'] {
-  color: #fff;
+  color: var(--ovo-text-strong);
 }
 .status-row[aria-expanded='true'] .status-caret {
-  color: #a7f078;
+  color: var(--ovo-accent);
 }
 /* Agent names revealed by an expanded row: one per line, indented under the
    label, sitting on a 1px rule so the group reads as one block. */
 .status-members {
   margin: 5px 0 0 15px;
   padding: 0 0 0 8px;
-  border-left: 1px solid #41354d;
+  border-left: 1px solid var(--ovo-border);
   list-style: none;
 }
 .status-members button {
@@ -360,20 +435,20 @@ body,
   padding: 2px 0;
   background: none;
   border: 0;
-  color: #b9b0c4;
+  color: var(--ovo-text-soft);
   font: inherit;
   font-size: 10px;
   text-align: left;
   cursor: pointer;
 }
 .status-members button:hover {
-  color: #a7f078;
+  color: var(--ovo-accent);
 }
 .status-track {
   grid-column: 2 / -1;
   height: 3px;
   overflow: hidden;
-  background: #342d3b;
+  background: var(--ovo-track);
   border-radius: 0;
 }
 .status-track span {
@@ -390,8 +465,8 @@ body,
   min-width: 19px;
   height: 19px;
   place-items: center;
-  color: #c9bdd4 !important;
-  background: #342d3b;
+  color: var(--ovo-text-strong) !important;
+  background: var(--ovo-track);
   border-radius: 0;
 }
 .notice-list {
@@ -401,16 +476,16 @@ body,
 }
 .sidebar-notice {
   padding: 9px 10px;
-  color: #d8d0df;
-  background: rgba(33, 28, 43, 0.5);
-  border-left: 2px solid #a7f078;
+  color: var(--ovo-text);
+  background: var(--ovo-notice-bg);
+  border-left: 2px solid var(--ovo-accent);
   border-radius: 0;
   font-size: 10px;
   line-height: 1.45;
 }
 .empty-notices {
   margin: 0;
-  color: #82768e;
+  color: var(--ovo-text-faint);
   font-size: 10px;
 }
 .settings-section {
@@ -424,29 +499,29 @@ body,
   padding: 7px 8px;
   background: transparent;
   border: 0;
-  color: #d9d2e0;
+  color: var(--ovo-text-strong);
   text-align: left;
 }
 .settings-toggle:hover {
-  background: rgba(52, 44, 66, 0.5);
+  background: var(--ovo-card-hover);
 }
 .settings-toggle > span:first-child {
-  color: #a79db5;
+  color: var(--ovo-text-soft);
 }
 .settings-chevron {
   margin-left: auto;
-  color: #a79db5;
+  color: var(--ovo-text-soft);
 }
 .settings-option {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  color: #bdb3c7;
+  color: var(--ovo-text-soft);
   font-size: 10px;
 }
 .settings-option input {
-  accent-color: #a7f078;
+  accent-color: var(--ovo-accent);
 }
 .settings-select {
   justify-content: space-between;
@@ -454,21 +529,21 @@ body,
 .settings-select select {
   flex: 0 0 118px;
   padding: 4px 6px;
-  background: rgba(34, 29, 43, 0.75);
-  border: 1px solid rgba(122, 104, 142, 0.4);
+  background: var(--ovo-select-bg);
+  border: 1px solid var(--ovo-border-soft);
   border-radius: 0;
-  color: #efe7f7;
+  color: var(--ovo-text-strong);
   font: inherit;
   font-size: 11px;
 }
 .settings-select select:focus-visible {
-  outline: 1px solid #a7f078;
+  outline: 1px solid var(--ovo-accent);
   outline-offset: 1px;
 }
 .sidebar-footer {
   flex: 0 0 auto;
   padding: 13px 14px 16px;
-  border-top: 1px solid #352b40;
+  border-top: 1px solid var(--ovo-border);
 }
 .sidebar-actions {
   display: grid;
@@ -477,13 +552,13 @@ body,
 }
 .sidebar-actions button {
   padding: 8px 9px;
-  background: #30283a;
-  border: 1px solid #4a3f58;
+  background: var(--ovo-control-bg);
+  border: 1px solid var(--ovo-control-border);
   border-radius: 0;
   font-size: 10px;
 }
 .sidebar-actions .exit-button {
-  color: #e4a6a6;
+  color: var(--ovo-danger);
   background: rgba(116, 52, 65, 0.18);
   border-color: #593843;
 }
@@ -498,20 +573,20 @@ body,
 }
 .sidebar-controls p {
   margin: 7px 0 0;
-  color: #a79db5;
+  color: var(--ovo-text-soft);
   font-size: 9px;
 }
 .sidebar-controls kbd {
-  color: #d9d2e0;
-  background: #342d3b;
-  border: 1px solid #493e54;
+  color: var(--ovo-text-strong);
+  background: var(--ovo-track);
+  border: 1px solid var(--ovo-control-hover);
   border-radius: 0;
   padding: 2px 4px;
   margin: 0 1px;
 }
 .panel {
-  background: rgba(29, 23, 34, 0.88);
-  border: 2px solid #4a3f58;
+  background: var(--ovo-surface);
+  border: 2px solid var(--ovo-control-border);
   border-radius: 6px;
   padding: 8px 12px;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
@@ -526,18 +601,18 @@ body,
 button {
   font: inherit;
   font-size: 12px;
-  color: #f2ede0;
-  background: #4a3f58;
-  border: 2px solid #1d1722;
+  color: var(--ovo-text);
+  background: var(--ovo-control-border);
+  border: 2px solid var(--ovo-ink);
   border-radius: 4px;
   padding: 5px 10px;
   cursor: pointer;
 }
 button:hover {
-  background: #5d5072;
+  background: var(--ovo-control-hover);
 }
 kbd {
-  background: #4a3f58;
+  background: var(--ovo-control-border);
   border-radius: 3px;
   padding: 1px 5px;
   margin: 0 2px;
@@ -563,7 +638,7 @@ kbd {
   margin: 10px 0;
 }
 .info dt {
-  color: #a79db5;
+  color: var(--ovo-text-soft);
 }
 .info dd {
   margin: 0;
@@ -585,16 +660,16 @@ kbd {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #f2ede0;
+  color: var(--ovo-text);
 }
 .badge-note {
   font-size: 11px;
-  color: #a79db5;
+  color: var(--ovo-text-soft);
 }
 .avatar {
   width: 28px;
   height: 28px;
-  border: 2px solid #1d1722;
+  border: 2px solid var(--ovo-ink);
   border-radius: 4px;
 }
 .close {
@@ -611,7 +686,7 @@ kbd {
 }
 .chip.on {
   background: #4ade80;
-  color: #10201a;
+  color: var(--ovo-accent-ink);
 }
 .overlay {
   position: fixed;
@@ -619,10 +694,10 @@ kbd {
   z-index: 30;
   display: grid;
   place-items: center;
-  background: rgba(10, 8, 16, 0.55);
+  background: var(--ovo-overlay);
 }
 .overlay.solid {
-  background: #14121c;
+  background: var(--ovo-bg);
 }
 .modal {
   max-width: 380px;
@@ -645,7 +720,7 @@ kbd {
     bottom: auto;
     width: min(304px, calc(100vw - 16px));
     max-height: 62dvh;
-    background: rgba(25, 21, 32, 0.62);
+    background: var(--ovo-panel-mobile);
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
   }
   .sidebar-header {

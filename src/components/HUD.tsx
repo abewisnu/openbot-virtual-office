@@ -12,6 +12,8 @@ export default function HUD() {
     toggleLabels,
     sidebarFont,
     setSidebarFont,
+    themeMode,
+    setThemeMode,
     helpOpen,
     setHelp,
     settingsOpen,
@@ -264,6 +266,23 @@ export default function HUD() {
                       onChange={toggleLabels}
                     />
                     <span>Show names &amp; status</span>
+                  </label>
+                  <label className="settings-option settings-select">
+                    <span>Theme</span>
+                    <select
+                      value={themeMode}
+                      onChange={(e) =>
+                        setThemeMode(
+                          e.target.value === 'light' || e.target.value === 'dark'
+                            ? e.target.value
+                            : 'system'
+                        )
+                      }
+                    >
+                      <option value="system">System</option>
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                    </select>
                   </label>
                   <label className="settings-option settings-select">
                     <span>Sidebar font</span>

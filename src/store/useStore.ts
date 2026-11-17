@@ -4,6 +4,7 @@ import type { Employee, Status } from '../types';
 import { mockEmployees } from '../data/mockEmployees';
 import { STATUS_LABEL } from '../constants';
 import { fetchAgentProfilesAsync, closeOpenBotDbAsync, shirtColorFor } from '../data/openbotSource';
+import type { ThemeMode } from '../theme';
 
 export interface Notice { id: number; text: string; ts: number }
 /** Sidebar font themes. Kept in memory only, like every other UI toggle. */
@@ -26,6 +27,8 @@ interface State {
   showLabels: boolean;
   /** Font theme for the sidebar: the original monospace, or Geist Pixel. */
   sidebarFont: SidebarFont;
+  /** UI palette: follow the OS, or pin light/dark. Applied by `App.tsx`. */
+  themeMode: ThemeMode;
   helpOpen: boolean;
   settingsOpen: boolean;
   exited: boolean;
@@ -35,6 +38,7 @@ interface State {
   setLive: (l: Live) => void;
   toggleLabels: () => void;
   setSidebarFont: (f: SidebarFont) => void;
+  setThemeMode: (m: ThemeMode) => void;
   setHelp: (v: boolean) => void;
   setSettings: (v: boolean) => void;
   setExited: (v: boolean) => void;
@@ -76,6 +80,7 @@ export const useStore = create<State>((set, get) => ({
   notices: [],
   showLabels: true,
   sidebarFont: 'mono',
+  themeMode: 'system',
   helpOpen: false,
   settingsOpen: false,
   exited: false,
@@ -93,6 +98,7 @@ export const useStore = create<State>((set, get) => ({
   setLive: (live) => set({ live }),
   toggleLabels: () => set((s) => ({ showLabels: !s.showLabels })),
   setSidebarFont: (sidebarFont) => set({ sidebarFont }),
+  setThemeMode: (themeMode) => set({ themeMode }),
   setHelp: (helpOpen) => set({ helpOpen }),
   setSettings: (settingsOpen) => set({ settingsOpen }),
   setExited: (exited) => set({ exited }),
