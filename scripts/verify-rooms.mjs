@@ -18,10 +18,10 @@ const blocked = layout.blocked;
 const row = (ty) => blocked[ty].slice(1, 14).map((b) => (b ? '#' : '.')).join('');
 
 // --- Lounge (upper-left room, rows 6-15, cols 1-13)
-check('lounge sofa spans cols 4-9 with plants flanking', row(9) === '##.######..##', row(9));
-check('lounge coffee table is centred', row(11) === '....####.....', row(11));
-check('lounge loveseats sit on row 14', row(14) === '####.....####', row(14));
-check('lounge door lane is open on rows 10 and 15', row(10) === '.............' && row(15) === '.............');
+check('lounge sofa spans cols 4-9 with plants flanking', row(8) === '##.######..##', row(8));
+check('lounge coffee table is centred', row(10) === '....####.....', row(10));
+check('lounge loveseats sit on row 13', row(13) === '####.....####', row(13));
+check('lounge walk lanes stay open on rows 9 and 14', row(9) === '.............' && row(14) === '.............');
 check(
   'lounge has seven seats (3 sofa + 4 loveseat)',
   layout.seats.filter((s) => s.kind === 'lounge' && s.id.startsWith('L')).length === 7,

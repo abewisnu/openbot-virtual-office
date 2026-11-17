@@ -108,7 +108,7 @@ function makeBackground(night: boolean): Texture {
     R(c, OL, 313, 24, 14, 12); R(c, OL, 314, 23, 12, 14); R(c, '#f2ede0', 315, 25, 10, 10); R(c, '#f2ede0', 314, 26, 12, 8);
     R(c, OL, 319, 25, 2, 1); R(c, OL, 319, 34, 2, 1); R(c, OL, 315, 29, 1, 2); R(c, OL, 324, 29, 1, 2);
     // rugs
-    rug(c, 2, 8, 10, 6, '#3f7f8c', '#2b5560');
+    rug(c, 2, 7, 10, 6, '#3f7f8c', '#2b5560');
     rug(c, 20, 10, 10, 8, '#6a5a78', '#473c55');
     rug(c, 4, 22, 7, 6, '#7a8a5a', '#4e5a38');
     // NOC raised floor: 1-tile access panels, every other one perforated for

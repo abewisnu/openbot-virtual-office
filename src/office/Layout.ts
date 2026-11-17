@@ -41,7 +41,7 @@ export interface Layout {
 
 /** Plates sit on empty aisle tiles so they never cover furniture. */
 const ROOM_LABELS: RoomLabel[] = [
-  { name: "LOUNGE", tx: 8, ty: 7 },
+  { name: "LOUNGE", tx: 8, ty: 14, span: 0 },
   { name: "MEETING ROOM", tx: 19, ty: 9, span: 1 },
   { name: "WORKSTATIONS", tx: 48, ty: 7 },
   { name: "PANTRY & STORAGE", tx: 7, ty: 20 },
@@ -265,35 +265,35 @@ export function buildLayout(deskCount = 12): Layout {
     }
   };
   // Lounge seating bay, centred on the room (cols 1-13, centre 7):
-  // - 6-tile 3-seat sofa against the north wall (cols 4-9, row 9), facing down,
-  //   leaving row 8 free under the room plate.
-  // - 4x2 coffee table under it (cols 5-8, rows 11-12).
-  // - a 4-tile loveseat on each side of the table (cols 1-4 and 10-13, row 14)
+  // - 6-tile 3-seat sofa against the north wall (cols 4-9, row 8), facing down,
+  //   one row off the window band so its back still reads against the glass.
+  // - 4x2 coffee table under it (cols 5-8, rows 10-11).
+  // - a 4-tile loveseat on each side of the table (cols 1-4 and 10-13, row 13)
   //   facing up, so the three pieces ring the table without overlapping.
-  // - 10x6 rug under the whole bay, a tall plant flanking the sofa on row 9 so
+  // - 10x6 rug under the whole bay, a tall plant flanking the sofa on row 8 so
   //   each sprite stands fully inside the room instead of over the wall band.
-  // The door (col 14, rows 10-12) stays clear: row 10 and row 15 are open all
+  // The door (col 14, rows 10-12) stays clear: rows 9 and 14-15 are open all
   // the way across, so every seat is reachable from the doorway.
-  place("sofa3Down", 4, 9, 6, 1);
-  sofaSeats(4, 9, "lounge", "LS", [1, 3, 5]);
-  place("coffeeTable", 5, 11, 4, 2);
+  place("sofa3Down", 4, 8, 6, 1);
+  sofaSeats(4, 8, "lounge", "LS", [1, 3, 5]);
+  place("coffeeTable", 5, 10, 4, 2);
   for (const [tx, id] of [[1, "LL"], [10, "LR"]] as const) {
-    place("sofa2Up", tx, 14, 4, 1);
+    place("sofa2Up", tx, 13, 4, 1);
     for (const k of [1, 3]) {
       const x = (tx + k) * TILE;
       seats.push({
         id: `${id}-${k}`,
         kind: "lounge",
-        pos: { x, y: 15 * TILE - 10 },
+        pos: { x, y: 14 * TILE - 10 },
         facing: "up",
-        approach: { tx: Math.floor(x / TILE), ty: 15 },
+        approach: { tx: Math.floor(x / TILE), ty: 14 },
         zOffset: 0,
         occupant: null,
       });
     }
   }
-  place("plant", 1, 9, 2, 1);
-  place("plant", 12, 9, 2, 1);
+  place("plant", 1, 8, 2, 1);
+  place("plant", 12, 8, 2, 1);
   dividerV(14, 5, 15, 13);
   dividerH(16, 0, 13, null, false, false);
   // Close the bottom-right T-junction: the vertical run (col 14) ends at row 15 and the horizontal band (row 16) ends at
