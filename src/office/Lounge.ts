@@ -7,9 +7,10 @@
 //   - `starting`: not in the office yet, warming up.
 //   - `restarting`: provider error / manual restart, so the agent is out of
 //     service until it becomes `ready` (or falls to `blocked`/`stopped`).
-// The room is sealed by partitions on column 14 and row 16 and by the north
-// wall, so its only exit is the doorway at (14, 13); goals inside the room never
-// route through it.
+// The room sits in the open-plan left half of the office: with no glass on
+// column 14 or row 16 its only hard edge is the north window wall, so the pen
+// is a bounds test rather than a set of partitions. Goals inside the room never
+// route through the columns 15-16 aisle.
 
 import type { AgentPhase } from '../types';
 

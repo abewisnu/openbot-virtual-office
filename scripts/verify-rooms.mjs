@@ -18,10 +18,9 @@ const blocked = layout.blocked;
 const row = (ty) => blocked[ty].slice(1, 14).map((b) => (b ? '#' : '.')).join('');
 
 // --- Lounge (upper-left room, rows 6-15, cols 1-13)
-// The room keeps only its vertical (north-south) divider on column 14: the old
-// horizontal glass band on row 16 is gone, so the Lounge and the Pantry read as
-// one open-plan floor plate separated by the col-14 wall alone.
-check('lounge keeps a vertical partition on col 14', blocked[9][14] && blocked[14][14]);
+// Open plan: no glass on column 14 and none on row 16, so the Lounge and the
+// Pantry share one floor plate with the columns 15-16 aisle.
+check('lounge has no vertical partition on col 14', !blocked[9][14] && !blocked[14][14]);
 check('lounge has no horizontal partition band', row(16) === '.............', row(16));
 check('lounge sofa spans cols 4-9 with plants flanking', row(8) === '##.######..##', row(8));
 check('lounge coffee table is centred', row(10) === '....####.....', row(10));

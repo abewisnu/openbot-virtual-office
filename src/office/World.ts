@@ -75,8 +75,8 @@ export class World {
     this.layout = buildLayout(emps.length);
     this.layout.blocked.forEach((row, ty) => row.forEach((b, tx) => { if (!b) this.walkable.push({ tx, ty }); }));
     // Penned agents (`starting`, `restarting`) only ever get goals from these two
-    // lists, so they cannot walk out of the Lounge even though the doorway at
-    // (14, 13) stays open.
+    // lists, so they cannot walk out of the open-plan Lounge even though the
+    // column-14 and row-16 edges carry no glass.
     this.loungeTiles = this.walkable.filter((t) => isInLounge(t.tx, t.ty));
     this.loungeSeats = this.layout.seats.filter(
       (s) => s.kind === 'lounge' && isInLounge(s.approach.tx, s.approach.ty),
