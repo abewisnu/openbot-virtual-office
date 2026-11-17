@@ -52,19 +52,25 @@ body,
   inset: 0;
 }
 .hud-sidebar {
-  position: relative;
+  /* Floating panel: taken out of the flex flow so the office canvas fills the
+     whole viewport and the sidebar sits above it with a gap on every edge. */
+  position: fixed;
   z-index: 12;
+  top: 16px;
+  bottom: 16px;
+  left: 16px;
   display: flex;
-  flex: 0 0 304px;
+  width: 304px;
   flex-direction: column;
-  height: 100%;
   overflow: hidden;
   /* Font theme, chosen in Settings. The default is the plain monospace the
      project shipped with; `data-font="pixel"` opts into Geist Pixel below. */
   font-family: ui-monospace, Menlo, Consolas, monospace;
   background: #191520;
-  border-right: 1px solid #352b40;
-  box-shadow: 8px 0 28px rgba(0, 0, 0, 0.22);
+  border: 1px solid #3b3147;
+  /* Layered shadow reads as lift over the pixel scene; the tight ring keeps the
+     panel edge crisp against light sprites. */
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 0, 0, 0.35);
 }
 /* Geist Pixel ships one 400 cut, so heavy headings stay readable by size and
    letterspacing, not by synthetic weight — hence font-synthesis off. The two
@@ -164,8 +170,8 @@ body,
 .sidebar-reopen-button {
   position: fixed;
   z-index: 20;
-  top: 14px;
-  left: 14px;
+  top: 16px;
+  left: 16px;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -546,16 +552,15 @@ kbd {
     position: fixed;
     inset: 0;
   }
+  /* Same floating panel, tightened for small screens: it no longer spans the
+     full height there, so it needs an explicit bottom. */
   .hud-sidebar {
-    position: fixed;
     top: 8px;
     left: 8px;
+    bottom: auto;
     width: min(304px, calc(100vw - 16px));
-    height: auto;
     max-height: 62dvh;
     background: rgba(25, 21, 32, 0.97);
-    border: 1px solid #493e54;
-    border-radius: 0;
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
   }
   .sidebar-header {

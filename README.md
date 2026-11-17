@@ -23,6 +23,11 @@ messages.
 An open-plan office world in an *Elevated Top-Down Orthographic* style that you can pan and zoom.
 Every asset is generated programmatically (no external image files).
 
+The office canvas fills the viewport; the sidebar is a **floating panel** laid over it —
+fixed with a 16 px gap from the top, left and bottom edges, an all-round 1 px border and a
+layered drop shadow, and square corners throughout (matching the pixel look). No layout space is
+reserved for it, so hiding the sidebar leaves the canvas exactly as it was.
+
 The data is **not mock**: the app reads OpenBot's SQLite database **read-only** through
 `GET /api/agents` and renders each agent's `phase` + `activity`. Mock is used only as a fallback when
 the database cannot be read, and the sidebar shows a badge for the active source.
