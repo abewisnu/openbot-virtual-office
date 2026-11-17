@@ -87,7 +87,7 @@ character = info panel · `E` = randomise simulation status · `Esc` = close pan
 | `src/store/useStore.ts` | Zustand: employees derived from the API, selection, notifications, UI settings, 3 s polling loop. |
 | `src/data/openbotSource.node.ts` | Node side: opens SQLite `readonly`, 11 queries, derives `phase` + `activity`. |
 | `src/data/openbotSource.ts` | Type contract + Zod `agentProfileSchema` + fetch client. |
-| `vite-plugin-openbot.ts` | Dev-only middleware: `GET /api/agents` (Host/method guards, security headers, strips `provider`/`model`/`threadId`), `GET /api/office-logo` streaming the workspace logo from OpenBot's app-support folder (`204` when none), and `GET /api/office-profile` returning the workspace name as JSON. |
+| `vite-plugin-openbot.ts` | Dev-only middleware: `GET /api/agents` (Host/method guards, security headers, strips `provider`/`model`/`threadId`), `GET /api/office-logo` streaming the workspace logo from OpenBot's app-support folder (`204` when none), and `GET /api/office-profile` returning the OpenBot profile name as JSON. |
 | `src/components/*` | HUD, character info panel, canvas host (React overlay on top of Pixi). |
 
 ## Ground rules
@@ -105,7 +105,7 @@ character = info panel · `E` = randomise simulation status · `Esc` = close pan
   It is not a control surface: no chat, no instruction box, no way to send a task from the office. The
   only I/O to the server is read-only: `GET /api/agents` for the agent snapshot and
   `GET /api/office-logo` for the workspace logo bytes and `GET /api/office-profile` for
-  the workspace name (`grep 'fetch(' src` = 3 hits, no `POST`).
+  the OpenBot profile name (`grep 'fetch(' src` = 3 hits, no `POST`).
 - Perspective: horizontal/vertical grid, no vanishing point; depth comes from Y-sorting only.
 - Simulated positions move on their own every ±20–45 s (working → desk, meeting → meeting area,
   break → lounge, chat → chat spot, idle → wandering). This is simulation `Status`, separate from the

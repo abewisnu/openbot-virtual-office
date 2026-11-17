@@ -24,14 +24,21 @@ const LOGO_MIME_EXT: Record<string, string> = {
 const CONFIG_NAME = 'openbot-team-server-v2.json';
 const LOGO_DIR = `${CONFIG_NAME}.assets/logo`;
 
-// Read only the two fields we need. The same file also holds team-server
-// private keys, so nothing else from it is ever forwarded to the browser.
-const serverLogoConfig = z.object({
+// Read only the fields we need. The same file also holds team-server private
+// keys, so nothing else from it is ever forwarded to the browser.
+const memberConfig = z.object({
+  accountId: z.string().optional(),
+  name: z.string().optional(),
+  role: z.string().optional(),
+  disabled: z.boolean().optional(),
+});
+
+const openBotConfig = z.object({
+  activeAccountId: z.string().optional(),
   hosts: z
     .array(
       z.object({
-        serverName: z.string().optional(),
-        enabledOnLaunch: z.boolean().optional(),
+        members: z.array(memberConfig).optional(),
         serverLogo: z
           .object({ version: z.string().min(1), mimeType: z.string().min(1) })
           .optional(),
@@ -90,9 +97,9 @@ function loadServerLogo(): LogoHit | null {
   const logoDir = resolve(root, LOGO_DIR);
   if (!logoDir.startsWith(resolve(root) + sep)) return null;
 
-  let config: z.infer<typeof serverLogoConfig> | null = null;
+  let config: z.infer<typeof openBotConfig> | null = null;
   try {
-    config = serverLogoConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
+    config = openBotConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
   } catch {
     config = null;
   }
@@ -148,39 +155,41 @@ function loadServerLogo(): LogoHit | null {
 
 const MAX_NAME_LEN = 64;
 
-type WorkspaceIdentity = { name: string | null; serverCount: number };
+type WorkspaceProfile = { name: string | null };
 
 /**
- * Reads the workspace name OpenBot stores in `hosts[].serverName`. Everything
- * else in that file stays in the process: it also holds team-server private
- * keys. Control characters are stripped and the value is capped so the sidebar
- * cannot be fed an unbounded or multi-line string.
+ * Reads the *profile* name of the person using this OpenBot: the member entry in
+ * `hosts[].members[]` whose `accountId` matches the config's `activeAccountId`.
+ * Everything else in that file stays in the process, because it also holds
+ * team-server private keys. The owner role and then the first enabled member are
+ * the fallbacks; the email (`username`) is never used as a display name.
  *
- * OpenBot's config allows several team servers, but the office renders the agent
- * roster of one SQLite database, so only one name can be shown. The host that
- * OpenBot starts on launch wins; otherwise the first named host does. The count
- * travels with the name so the UI can say the machine has more than one server.
+ * OpenBot may list several team servers, but this chooses one member across all
+ * of them, which matches the single roster the office draws from `openbot.db`.
  */
-function loadWorkspaceIdentity(): WorkspaceIdentity {
+function loadWorkspaceProfile(): WorkspaceProfile {
   const root = dirname(DEFAULT_DB_PATH);
-  let config: z.infer<typeof serverLogoConfig>;
+  let config: z.infer<typeof openBotConfig>;
   try {
-    config = serverLogoConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
+    config = openBotConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
   } catch {
-    return { name: null, serverCount: 0 };
+    return { name: null };
   }
 
-  const named = (config.hosts ?? []).filter((h) => (h.serverName ?? '').trim().length > 0);
-  if (named.length === 0) return { name: null, serverCount: 0 };
+  const members = (config.hosts ?? []).flatMap((h) => h.members ?? []).filter((m) => !m.disabled);
+  const active = config.activeAccountId;
+  const chosen =
+    (active ? members.find((m) => m.accountId === active) : undefined) ??
+    members.find((m) => m.role === 'owner') ??
+    members[0];
 
-  const chosen = named.find((h) => h.enabledOnLaunch) ?? named[0];
-  const clean = (chosen.serverName ?? '')
+  const clean = (chosen?.name ?? '')
     .replace(/[\u0000-\u001f\u007f]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, MAX_NAME_LEN);
 
-  return { name: clean.length > 0 ? clean : null, serverCount: named.length };
+  return { name: clean.length > 0 ? clean : null };
 }
 
 function sendJson(
@@ -279,9 +288,7 @@ export function openBotApiPlugin(): Plugin {
     }
 
     // `name: null` is a normal answer: the sidebar falls back to "Workspace".
-    // `serverCount` > 1 means this machine knows several team servers while the
-    // office still renders only the one SQLite roster.
-    sendJson(res, 200, loadWorkspaceIdentity(), {}, method === 'HEAD');
+    sendJson(res, 200, loadWorkspaceProfile(), {}, method === 'HEAD');
   }
 
   return {

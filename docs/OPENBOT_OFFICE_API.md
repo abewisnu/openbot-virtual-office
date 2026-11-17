@@ -105,35 +105,35 @@ replaced inside OpenBot appears without a page reload.
 
 ---
 
-### 2.4 Workspace name — `GET /api/office-profile`
+### 2.4 Profile name — `GET /api/office-profile`
 
 | Item | Reality |
 |---|---|
-| Source | `openbot-team-server-v2.json`, fields `hosts[].serverName` and `hosts[].enabledOnLaunch` |
-| Response | `200 application/json` with `{ "name": "xscode", "serverCount": 1 }`, `Cache-Control: no-store` |
-| No name configured | `{ "name": null, "serverCount": 0 }` — not an error |
-| Which host wins | the host with `enabledOnLaunch: true`, else the first host with a non-blank name |
-| `serverCount` | number of hosts with a non-blank name; only informational |
+| Source | `openbot-team-server-v2.json`, fields `activeAccountId` and `hosts[].members[]` |
+| Response | `200 application/json` with `{ "name": "XSCODE" }`, `Cache-Control: no-store` |
+| No name configured | `{ "name": null }` — not an error |
+| Which member wins | the member whose `accountId` equals `activeAccountId`; else the first `role: "owner"`; else the first enabled member |
+| Skipped members | `disabled: true` |
+| Never used as a name | `username` (an e-mail address) |
 | Sanitising | control characters become spaces, whitespace is collapsed, value trimmed and capped at 64 chars |
 | Guards | same as §2.3: Host allowlist → `421`, non-`GET`/`HEAD` → `405` |
-| Never leaves the process | `serverId`, `publicKey`, `privateKey`, `members`, `sessions`, `invites` |
+| Never leaves the process | `serverId`, `publicKey`, `privateKey`, `members[].username`, `sessions`, `invites` |
 
-The sidebar header uses `name` as the workspace title and keeps the neutral
-`Workspace` label when the answer is `null`, non-JSON, or missing. Static hosts
-answer with `index.html`, so the `Content-Type` check is what holds that fallback.
+This is the **person's profile name** from OpenBot, not the team-server name
+(`hosts[].serverName`, e.g. `xscode`). The sidebar header shows it and keeps the
+neutral `Workspace` label when the answer is `null`, non-JSON, or missing. Static
+hosts answer with `index.html`, so the `Content-Type` check is what holds that
+fallback. The value is re-read on window focus and every 20 s.
 
-This name is the **team server** name, not a person's profile name: the owner's
-profile name comes from `hosts[].members[].name` and is never read here.
-
-### 2.4.1 Multiple team servers
+### 2.4.1 Several team servers
 
 OpenBot's config is an array, so a machine may hold several team servers
 (`hosts[]`), while OVO renders the agent roster of exactly one SQLite database
-(`openbot.db`). There is no per-server roster in the schema, and no table named
-`server`, `team`, or `workspace`, so multi-server rendering is **not supported**.
-When `serverCount > 1` the sidebar appends a muted `·N` next to the name and the
-hover title says the roster shown is the local one. Rendering a second roster
-would need a database path per server, which this build does not have.
+(`openbot.db`). The schema has no per-server roster and no table named `server`,
+`team`, or `workspace`, so multi-server rendering is **not supported**. The
+profile name is therefore resolved across all hosts but only one person is shown.
+Rendering a second roster would need a database path per server, which this build
+does not have.
 
 ---
 
