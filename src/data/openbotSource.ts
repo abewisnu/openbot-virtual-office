@@ -106,36 +106,53 @@ const agentProfileSchema = z.object({
  * Returns an empty array when the endpoint is unavailable or the payload is
  * malformed (caller falls back to mock).
  */
-export async function fetchAgentProfilesAsync(): Promise<AgentProfile[]> {
-  try {
-    const res = await fetch(API_ENDPOINT, { cache: 'no-store' });
-    if (!res.ok) return [];
-    const data: unknown = await res.json();
-    if (!Array.isArray(data)) return [];
-    const out: AgentProfile[] = [];
-    for (const entry of data) {
-      const parsed = agentProfileSchema.safeParse(entry);
-      if (!parsed.success) continue;
-      const a = parsed.data;
-      out.push({
-        agentId: a.agentId,
-        name: a.name,
-        role: a.role,
-        provider: '',
-        model: '',
-        threadId: null,
-        avatarColor: a.avatarColor,
-        avatarHue: a.avatarHue,
-        avatarSeed: a.avatarSeed,
-        phase: a.phase,
-        activity: a.activity,
-        unreadCount: a.unreadCount,
-      });
-    }
-    return out;
-  } catch {
-    return [];
+/** Raised when the roster endpoint cannot answer at all (as opposed to a valid
+ * empty roster). The store turns this into the mock fallback. */
+export class AgentSourceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'AgentSourceError';
   }
+}
+
+export async function fetchAgentProfilesAsync(): Promise<AgentProfile[]> {
+  let res: Response;
+  try {
+    res = await fetch(API_ENDPOINT, { cache: 'no-store' });
+  } catch (err) {
+    throw new AgentSourceError(
+      `cannot reach ${API_ENDPOINT}: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+  if (!res.ok) throw new AgentSourceError(`${API_ENDPOINT} returned HTTP ${res.status}`);
+  let data: unknown;
+  try {
+    data = await res.json();
+  } catch {
+    throw new AgentSourceError(`${API_ENDPOINT} did not return JSON`);
+  }
+  if (!Array.isArray(data)) throw new AgentSourceError(`${API_ENDPOINT} did not return an array`);
+  const out: AgentProfile[] = [];
+  for (const entry of data) {
+    const parsed = agentProfileSchema.safeParse(entry);
+    if (!parsed.success) continue;
+    const a = parsed.data;
+    out.push({
+      agentId: a.agentId,
+      name: a.name,
+      role: a.role,
+      provider: '',
+      model: '',
+      threadId: null,
+      avatarColor: a.avatarColor,
+      avatarHue: a.avatarHue,
+      avatarSeed: a.avatarSeed,
+      phase: a.phase,
+      activity: a.activity,
+      unreadCount: a.unreadCount,
+    });
+  }
+  return out;
 }
 
 /** No-op in browser; the API server manages its own connection lifecycle. */

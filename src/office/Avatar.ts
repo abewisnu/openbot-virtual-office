@@ -66,30 +66,39 @@ export type ThemeName = 'dark' | 'light';
 export const AVATAR_INK = '#14121c';
 
 /**
- * Info-panel surface per theme, already composited over the page background:
+ * The two surfaces an avatar tile sits on, per theme. They are NOT the same
+ * colour, so the names matter:
  *
- *   dark   rgba(29, 23, 34, 0.88) over #14121c  -> #1c1621
- *   light  rgba(252, 251, 248, 0.92) over #f4f1ea -> #fbfaf7
+ * - `tile`   the 56x56 box behind the face, `.avatar` background two layers of
+ *            `--ovo-surface` over the panel.
+ * - `gutter` the info-panel body around that box, `.panel.info` background over
+ *            the page backdrop. The face never covers it, but it is the harder
+ *            surface to clear in the light theme (`#edebe9` is darker than the
+ *            tile), so it is the one the clamp is tuned against.
  *
- * `scripts/verify-avatar.mjs` uses the same two constants, so the guarantee the
- * script checks is the one the UI renders.
+ * Both are already composited over whatever sits behind them:
+ *
+ *   dark   tile   rgba(29, 23, 34, 0.88) over #14121c -> #1c1621
+ *          gutter #1b1621
+ *   light  tile   rgba(252, 251, 248, 0.92) over #f4f1ea -> #fbfaf7
+ *          gutter #edebe9
+ *
+ * `scripts/verify-avatar.mjs` imports these constants and prints a ratio
+ * column for each, so a report can say which surface was measured.
  */
-export const PANEL_SURFACES: Record<ThemeName, string> = {
-  dark: '#1c1621',
-  light: '#fbfaf7',
+export const AVATAR_SURFACES: Record<ThemeName, { tile: string; gutter: string }> = {
+  dark: { tile: '#1c1621', gutter: '#1b1621' },
+  light: { tile: '#fbfaf7', gutter: '#edebe9' },
 };
 
-/** Minimum contrast ratio a face must keep, in both directions. */
+/** Minimum contrast ratio a face must keep against either surface. */
 export const MIN_CONTRAST = 3;
 
-/** Relative luminance band a tint is clamped into, per theme. */
-const TINT_LUMINANCE: Record<ThemeName, { min: number; max: number }> = {
-  // Dark panel is almost black: lift the tint until it clears 3:1.
-  dark: { min: 0.15, max: 1 },
-  // Light panel is almost white: keep the tint dark enough for 3:1, but not so
-  // dark that the ink disappears into it.
-  light: { min: 0.145, max: 0.255 },
-};
+/**
+ * The light clamp aims slightly above the 3:1 floor, so hex rounding and the
+ * bisection tolerance cannot drop a tile back under it against the gutter.
+ */
+export const LIGHT_GUTTER_TARGET = 3.08;
 
 export interface AvatarSpec {
   /** Per-theme head tint, already resolved to a CSS hex color. */
@@ -212,9 +221,33 @@ function withLuminance(rgb: Rgb, target: number): Rgb {
   return best;
 }
 
+/** Tint luminance that exactly reaches `ratio` against a lighter surface. */
+function luminanceUnder(surface: Rgb, ratio: number): number {
+  return (relativeLuminance(surface) + 0.05) / ratio - 0.05;
+}
+
+/**
+ * Luminance band a tint is clamped into, per theme.
+ *
+ * The max is derived from the surfaces rather than hand-tuned, so the band
+ * cannot drift away from what the UI paints: in the light theme the gutter
+ * (`#edebe9`) is darker than the avatar tile (`#fbfaf7`), so it is the binding
+ * surface. The min keeps the ink (`#14121c`) legible inside the tile.
+ */
+function tintBand(theme: ThemeName): { min: number; max: number } {
+  if (theme === 'dark') {
+    // The dark surfaces are near-black: lift the tint until it clears the floor.
+    return { min: 0.15, max: 1 };
+  }
+  return {
+    min: 0.145,
+    max: luminanceUnder(hexToRgb(AVATAR_SURFACES.light.gutter), LIGHT_GUTTER_TARGET),
+  };
+}
+
 /** Clamp a tint into the theme's luminance band, keeping hue and saturation. */
 export function tintForTheme(base: Rgb, theme: ThemeName): string {
-  const band = TINT_LUMINANCE[theme];
+  const band = tintBand(theme);
   const lum = relativeLuminance(base);
   if (lum >= band.min && lum <= band.max) return rgbToHex(base);
   const target = lum < band.min ? band.min : band.max;

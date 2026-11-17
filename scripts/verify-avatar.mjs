@@ -1,8 +1,9 @@
 // Verifies the derived pixel avatar: same seed + same agent always yields the
 // same face, a shared seed still yields different faces, the tint clears 3:1
-// against both panel surfaces for the real 16-agent roster, and the seed can
-// never smuggle raw text into the DOM. Then source-guards the payload so
-// `avatarSeed` cannot silently drop out of `/api/agents` again.
+// against BOTH surfaces it can sit on — the avatar tile and the panel gutter —
+// for the real 16-agent roster, and the seed can never smuggle raw text into the
+// DOM. Then source-guards the payload so `avatarSeed` cannot silently drop out
+// of `/api/agents` again.
 // Run with: node scripts/verify-avatar.mjs
 import { readFileSync } from 'node:fs';
 import {
@@ -10,12 +11,13 @@ import {
   AVATAR_HUES,
   AVATAR_INK,
   AVATAR_SEED_MAX,
+  AVATAR_SURFACES,
   EXPRESSIONS,
   HAIR_STYLES,
   HEAD_SHAPES,
   HUE_TINTS,
+  LIGHT_GUTTER_TARGET,
   MIN_CONTRAST,
-  PANEL_SURFACES,
   avatarSpec,
   avatarTint,
   avatarTints,
@@ -75,24 +77,40 @@ check('missing seed falls back to the agent id', fallback.shape === avatarSpec({
 
 // 7. Panel surfaces: composite the real panel colours over the page background
 //    and prove they equal the constants the UI relies on.
+// 7. The two surfaces an avatar tile sits on. The face is painted on the avatar
+//    tile, but in the light theme the panel gutter around that tile is DARKER
+//    (`#edebe9` vs `#fbfaf7`), so it is the binding surface for contrast. Both
+//    are composited here from the real CSS colours and checked against the
+//    constants the component and the clamp use.
 const composite = (fg, alpha, bg) => {
   const f = hexToRgb(fg);
   const b = hexToRgb(bg);
   const mix = (x, y) => Math.round(x * alpha + y * (1 - alpha));
   return { r: mix(f.r, b.r), g: mix(f.g, b.g), b: mix(f.b, b.b) };
 };
-const panels = {
-  dark: composite('#1d1722', 0.88, '#14121c'),
-  light: composite('#fcfbf8', 0.92, '#f4f1ea'),
-};
 const toHex = (c) =>
   `#${[c.r, c.g, c.b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
-check('dark panel composite matches PANEL_SURFACES', toHex(panels.dark) === PANEL_SURFACES.dark, `${toHex(panels.dark)} vs ${PANEL_SURFACES.dark}`);
-check('light panel composite matches PANEL_SURFACES', toHex(panels.light) === PANEL_SURFACES.light, `${toHex(panels.light)} vs ${PANEL_SURFACES.light}`);
+const surfaces = {
+  dark: {
+    // .avatar background: two layers of --ovo-surface over the panel.
+    tile: composite('#1d1722', 0.88, '#14121c'),
+    // .panel.info background over the page backdrop.
+    gutter: hexToRgb('#1b1621'),
+  },
+  light: {
+    tile: composite('#fcfbf8', 0.92, '#f4f1ea'),
+    gutter: hexToRgb('#edebe9'),
+  },
+};
+for (const theme of ['dark', 'light']) {
+  check(`surface.${theme}.tile matches AVATAR_SURFACES.tile`, toHex(surfaces[theme].tile) === AVATAR_SURFACES[theme].tile, `${toHex(surfaces[theme].tile)} vs ${AVATAR_SURFACES[theme].tile}`);
+  check(`surface.${theme}.gutter matches AVATAR_SURFACES.gutter`, toHex(surfaces[theme].gutter) === AVATAR_SURFACES[theme].gutter, `${toHex(surfaces[theme].gutter)} vs ${AVATAR_SURFACES[theme].gutter}`);
+}
 const ink = hexToRgb(AVATAR_INK);
 
 // 8. The real roster: 16 agents read from projection_agents.agent_json on this
-//    machine. Every tint must clear MIN_CONTRAST against its panel and keep the
+//    machine. Every tint must clear MIN_CONTRAST against BOTH surfaces — the
+//    avatar tile it is painted on and the panel gutter around it — and keep the
 //    ink legible inside the tile, in BOTH themes.
 const ROSTER = [
   ['Scope Writer', 'agent-9bf8c6ea-a2bd-46bd-9566-2e010e4c8eb0', 'openbot-curated-agent-project-partner', 150, null],
@@ -114,22 +132,33 @@ const ROSTER = [
 ].map(([name, agentId, seed, hue, color]) => ({ name, agentId, seed, hue, color }));
 
 const round = (n) => n.toFixed(2);
-console.log('\n' + ['agent', 'theme', 'tint', 'tint/panel', 'ink/tint'].join('\t'));
-let worstPanel = Infinity;
+console.log('\n' + ['agent', 'theme', 'tint', 'tint/tile', 'tint/gutter', 'ink/tint'].join('\t'));
+let worstTile = Infinity;
+let worstGutter = Infinity;
 let worstInk = Infinity;
+let worstLightGutter = Infinity;
 for (const agent of ROSTER) {
   const spec = avatarSpec({ seed: agent.seed, agentId: agent.agentId, hue: agent.hue, color: agent.color });
   for (const theme of ['dark', 'light']) {
     const tint = hexToRgb(spec.tints[theme]);
-    const onPanel = contrastRatio(tint, panels[theme]);
+    const onTile = contrastRatio(tint, surfaces[theme].tile);
+    const onGutter = contrastRatio(tint, surfaces[theme].gutter);
     const onTint = contrastRatio(ink, tint);
-    worstPanel = Math.min(worstPanel, onPanel);
+    worstTile = Math.min(worstTile, onTile);
+    worstGutter = Math.min(worstGutter, onGutter);
     worstInk = Math.min(worstInk, onTint);
-    console.log([agent.name, theme, spec.tints[theme], round(onPanel), round(onTint)].join('\t'));
+    if (theme === 'light') worstLightGutter = Math.min(worstLightGutter, onGutter);
+    console.log([agent.name, theme, spec.tints[theme], round(onTile), round(onGutter), round(onTint)].join('\t'));
   }
 }
-check(`all 16 tints clear ${MIN_CONTRAST}:1 against their panel (both themes)`, worstPanel >= MIN_CONTRAST, `worst ${round(worstPanel)}`);
-check(`ink clears ${MIN_CONTRAST}:1 inside all 16 tints (both themes)`, worstInk >= MIN_CONTRAST, `worst ${round(worstInk)}`);
+check(`all 16 tints clear ${MIN_CONTRAST}:1 against the avatar tile (both themes)`, worstTile >= MIN_CONTRAST, `worst ${round(worstTile)}`);
+check(`all 16 tints clear ${MIN_CONTRAST}:1 against the panel gutter (both themes)`, worstGutter >= MIN_CONTRAST, `worst ${round(worstGutter)}`);
+check('ink clears 3:1 inside all 16 tints (both themes)', worstInk >= MIN_CONTRAST, `worst ${round(worstInk)}`);
+check(
+  `light tints keep a ${(LIGHT_GUTTER_TARGET - 0.03).toFixed(2)}:1 floor against the panel gutter`,
+  worstLightGutter >= LIGHT_GUTTER_TARGET - 0.03,
+  `worst ${round(worstLightGutter)} vs target ${LIGHT_GUTTER_TARGET}`,
+);
 
 // 9. Seed collision: the three agents sharing `first-bot:face:123` must differ
 //    in shape/expression/hair/accessory now that agentId is hashed in.
@@ -152,7 +181,11 @@ check(
   collided.every((a) => JSON.stringify(avatarSpec({ seed: a.seed, agentId: a.agentId, hue: a.hue, color: a.color })) === JSON.stringify(avatarSpec({ seed: a.seed, agentId: a.agentId, hue: a.hue, color: a.color }))),
 );
 check('tint variants differ between themes for a clamped colour', avatarTints({ hue: 55, color: null }).dark !== avatarTints({ hue: 55, color: null }).light);
-check('base tint luminance band respected in light theme', relativeLuminance(hexToRgb(avatarTints({ hue: 185, color: null }).light)) <= 0.26);
+check(
+  'light tints clear the gutter target, not just the 3:1 floor',
+  contrastRatio(hexToRgb(avatarTints({ hue: 185, color: null }).light), surfaces.light.gutter) >=
+    LIGHT_GUTTER_TARGET - 0.03,
+);
 
 // 10. Source guards: the field must survive every hop.
 const plugin = readFileSync(new URL('../vite-plugin-openbot.ts', import.meta.url), 'utf8');

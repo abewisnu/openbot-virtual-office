@@ -163,9 +163,9 @@ export default function HUD() {
               <div className="section-heading">
                 <h2>Team activity</h2>
                 <span className="source-badge" data-source={source.source} title={source.reason ?? `source: ${source.source}`}>
-                  {source.source === "openbot" ? "Live" : "Mock"}
+                  {source.source === "openbot" ? "Live" : source.source === "mock" ? "Mock" : "Connecting"}
                 </span>
-                <span>{employees.length} members</span>
+                <span>{source.source === "pending" ? "connecting…" : `${employees.length} members`}</span>
               </div>
               <div className="status-list">
                 {AGENT_PHASES.map((p) => {

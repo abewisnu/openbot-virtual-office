@@ -40,8 +40,10 @@ agents in that phase (alphabetical, real `name` from the roster); clicking a nam
 in the office and opens its info panel. Empty phases are disabled — nothing to list.
 
 The data is **not mock**: the app reads OpenBot's SQLite database **read-only** through
-`GET /api/agents` and renders each agent's `phase` + `activity`. Mock is used only as a fallback when
-the database cannot be read, and the sidebar shows a badge for the active source.
+`GET /api/agents` and renders each agent's `phase` + `activity`. The mock roster is a
+**last resort**: the board opens empty with a grey `Connecting` badge, fills from the
+first successful fetch, and only falls back to mock when a fetch actually fails on a board
+that never loaded live. A polling error on a working board keeps the last live snapshot.
 
 Start here: [`docs/OPENBOT_OFFICE_API.md`](docs/OPENBOT_OFFICE_API.md) (data contract),
 [`docs/OPENBOT_OFFICE_RUNTIME.md`](docs/OPENBOT_OFFICE_RUNTIME.md) (runtime & operations),
@@ -72,6 +74,8 @@ you can watch.
   [`docs/OPENBOT_OFFICE_RUNTIME.md`](docs/OPENBOT_OFFICE_RUNTIME.md); override with
   `OPENBOT_DB_PATH`.
 - Without OpenBot/DB the app still runs, but falls back to mock data (source badge in the sidebar).
+  The mock roster is shown only after a fetch fails; before the first reply the badge reads
+  `Connecting` and the list is empty.
 
 ## Running
 ```bash
@@ -83,6 +87,7 @@ npm run preview  # static dist/ — NO API, the UI falls back to mock
 node scripts/verify-monitor.mjs        # phase × seated matrix + monitor source guards
 node scripts/verify-openbot-source.mjs # check the SQL queries stay read-only
 node scripts/verify-lounge.mjs         # `starting`/`restarting` agents stay inside the Lounge room
+node scripts/verify-store.mjs          # roster source states: never mock before a failed fetch
 ```
 
 `npm run preview` and any other static host do not serve `/api/agents`: the request falls through to
@@ -103,7 +108,8 @@ character = info panel · `E` = randomise simulation status · `Esc` = close pan
 | `src/office/Lounge.ts` | Pure Lounge box (`LOUNGE_ROOM`, `isInLounge`) plus the phase rule `staysInLounge(phase)` — `starting` and `restarting`. Imports nothing, so `scripts/verify-lounge.mjs` runs it directly with `node`. |
 | `src/office/Avatar.ts` | Pure avatar recipe: `stableIndex()` (FNV-1a + murmur3 avalanche) and `avatarSpec()` turn `avatarSeed` plus `agentId` and `avatarHue`/`avatarColor` into `{ tints, shape, expression, hair, accessory }`. Tints are clamped per theme for 3:1 contrast. No imports, no DOM, so `scripts/verify-avatar.mjs` runs it with `node`. |
 | `src/office/World.ts` | Pixi scene, Y-sorting (`zIndex` = bottom edge of an object), camera + bounds, input, agent placement: `working`/`ready` sit at a desk, agents with unread/waiting walk to their own desk. An agent in `starting` or `restarting` is confined to the Lounge room — it sits on a lounge sofa or stands/walks between lounge floor tiles, takes no desk, meeting chair or chat spot, and a pending instruction cannot pull it out. `updateMonitors()` lights a desk screen only when the agent is genuinely seated on that chair (`seat.occupant` **and** `Character.state === 'sit'` on the same `seat`) with `phase` `working`/`ready`/`blocked`; `working` uses animated frames, `ready` a still frame, `blocked` the grey waiting frame while the human answers. A `blocked` agent stays at that desk and stops typing until the phase moves on. A chair is already reserved the moment an agent starts walking, so `seat.occupant` alone is not enough — the screen stays dark while the agent is still walking. |
-| `src/store/useStore.ts` | Zustand: employees derived from the API, selection, notifications, UI settings, 3 s polling loop. |
+| `src/store/useStore.ts` | Zustand: employees derived from the API, selection, notifications, UI settings, 3 s polling loop. Boots empty with `source: 'pending'`, never with the mock roster. |
+| `src/store/sourcePolicy.ts` | Pure roster-source policy: `resolveSource()` maps each fetch outcome to `{ employees, source }`. Starts `pending`, fills `openbot`, falls back to `mock` only when a fetch fails with no live snapshot to keep. No runtime imports, so `scripts/verify-store.mjs` runs it with `node`. |
 | `src/data/openbotSource.node.ts` | Node side: opens SQLite `readonly`, 11 queries, derives `phase` + `activity`. |
 | `src/data/openbotSource.ts` | Type contract + Zod `agentProfileSchema` + fetch client. |
 | `vite-plugin-openbot.ts` | Dev-only middleware: `GET /api/agents` (Host/method guards, security headers, strips `provider`/`model`/`threadId`), `GET /api/office-logo` streaming the workspace logo from OpenBot's app-support folder (`204` when none), and `GET /api/office-profile` returning the OpenBot profile name as JSON. |
@@ -255,13 +261,30 @@ collided. `avatarTint()` prefers `avatarColor`, then the palette entry for `avat
 hex `hsl()` fallback. `sanitizeSeed()` folds anything outside `[a-z0-9:-]` and clips to 128
 chars, so a bad row cannot break the hash or reach the DOM raw.
 
-**Contrast is guaranteed, per theme.** `avatarTints()` returns two variants of the same hue.
-The dark variant is lifted in HSL lightness until it reaches 3:1 against the dark panel surface
-(`#1c1621`, i.e. `rgba(29,23,34,0.88)` over `#14121c`); the light variant is clamped into the
-luminance band that clears 3:1 against the light panel (`#fbfaf7`, i.e.
-`rgba(252,251,248,0.92)` over `#f4f1ea`) *and* keeps the ink at 3:1. Hue and saturation are
-kept, so Neke stays yellow and Clubo stays sky blue — only lightness moves. Worst case on the
-real 16-agent roster is 3.28:1 tint-on-panel and 3.43:1 ink-on-tint.
+**Contrast is guaranteed, per theme, against two named surfaces.** The face is painted on the
+**avatar tile** (`.avatar` background, two layers of `--ovo-surface` over the info panel) but it
+lives inside the **panel gutter** (`.panel.info` background). Those are not the same colour, and
+in the light theme the gutter is the *darker* of the two, so it is the surface that binds:
+
+| Theme | Avatar tile | Panel gutter |
+|---|---|---|
+| dark | `rgba(29,23,34,0.88)` over `#14121c` → `#1c1621` | `#1b1621` |
+| light | `rgba(252,251,248,0.92)` over `#f4f1ea` → `#fbfaf7` | `#edebe9` |
+
+`avatarTints()` returns two variants of the same hue. The dark variant is lifted in HSL lightness
+until it reaches 3:1; the light variant is clamped to a luminance ceiling derived from the gutter
+(`LIGHT_GUTTER_TARGET = 3.08`) so it clears the 3:1 floor on **both** surfaces *and* keeps the ink
+`#14121c` at 3:1 inside the tile. Hue and saturation are kept, so Neke stays yellow and Clubo stays
+sky blue — only lightness moves. Worst case on the real 16-agent roster:
+
+| Surface | Worst ratio |
+|---|---|
+| tint on avatar tile | 3.37:1 |
+| tint on panel gutter | 3.06:1 |
+| ink on tint | 3.43:1 |
+
+`scripts/verify-avatar.mjs` prints a ratio column for each surface separately, so a report can say
+which one it measured.
 
 `src/components/Avatar.tsx` draws that spec as a 12×12 SVG with `shapeRendering="crispEdges"`:
 crisp at any size, zero network requests, zero new dependencies. The two tints arrive as CSS

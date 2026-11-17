@@ -26,7 +26,8 @@ export default function GameCanvas() {
       });
     }).catch(() => {
       if (cancelled) return;
-      // DB unavailable — init with whatever is in the store (mock employees)
+      // World module unavailable — still mount the canvas; the store may be empty
+      // until the first fetch lands.
       return w.init(element).then(() => {
         if (cancelled) return;
         resizeObserver = new ResizeObserver(() => active?.resize());

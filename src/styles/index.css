@@ -361,6 +361,10 @@ body,
   color: #f59e0b;
   background: rgba(245, 158, 11, 0.12);
 }
+.source-badge[data-source="pending"] {
+  color: #9aa3ad;
+  background: rgba(154, 163, 173, 0.14);
+}
 .status-list {
   display: flex;
   flex-direction: column;

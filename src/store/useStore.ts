@@ -1,23 +1,18 @@
 import type { AgentProfile } from '../data/openbotSource';
 import { create } from 'zustand';
 import type { Employee, Status } from '../types';
-import { mockEmployees } from '../data/mockEmployees';
 import { STATUS_LABEL } from '../constants';
 import { fetchAgentProfilesAsync, closeOpenBotDbAsync, shirtColorFor } from '../data/openbotSource';
 import type { ThemeMode } from '../theme';
+import { resolveSource, type SourceState } from './sourcePolicy';
+import { mockEmployees } from '../data/mockEmployees';
+
+export type { SourceState };
 
 export interface Notice { id: number; text: string; ts: number }
 /** Sidebar font themes. Kept in memory only, like every other UI toggle. */
 export type SidebarFont = 'mono' | 'pixel';
 export interface Live { zone: string; task: string; x: number; y: number }
-export interface SourceState {
-  /** Where the employees came from. */
-  source: 'openbot' | 'mock';
-  /** Human-readable reason, e.g. "database not found". */
-  reason: string | null;
-  /** True while the live DB is being polled. */
-  polling: boolean;
-}
 
 interface State {
   employees: Employee[];
@@ -75,7 +70,9 @@ function toEmployee(p: AgentProfile, index: number): Employee {
 }
 
 export const useStore = create<State>((set, get) => ({
-  employees: mockEmployees,
+  // Start EMPTY. The first paint must not show fabricated agents; the roster
+  // arrives from `loadOpenBot()`, which runs before the first frame is settled.
+  employees: [],
   selectedId: null,
   live: { zone: '-', task: '-', x: 0, y: 0 },
   notices: [],
@@ -85,7 +82,7 @@ export const useStore = create<State>((set, get) => ({
   helpOpen: false,
   settingsOpen: false,
   exited: false,
-  source: { source: 'mock', reason: null, polling: false },
+  source: { source: 'pending', reason: null, polling: false },
   select: (id) => set({ selectedId: id }),
   setStatus: (id, status) => {
     const emp = get().employees.find((x) => x.id === id);
@@ -104,20 +101,17 @@ export const useStore = create<State>((set, get) => ({
   setSettings: (settingsOpen) => set({ settingsOpen }),
   setExited: (exited) => set({ exited }),
   loadOpenBot: async () => {
+    const { source, employees } = get();
     try {
       const profiles = await fetchAgentProfilesAsync();
-      if (profiles.length === 0) {
-        set((s) => ({ source: { ...s.source, source: 'mock', reason: 'no agents found' } }));
-        return;
-      }
-      const next = profiles.map(toEmployee);
-      set((s) => ({
-        employees: next,
-        source: { source: 'openbot', reason: null, polling: s.source.polling },
-      }));
+      const outcome =
+        profiles.length === 0
+          ? { kind: 'empty' as const, reason: 'no agents found' }
+          : { kind: 'ok' as const, employees: profiles.map(toEmployee) };
+      set(resolveSource(source, employees, outcome, mockEmployees));
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
-      set((s) => ({ source: { ...s.source, source: 'mock', reason } }));
+      set(resolveSource(source, employees, { kind: 'error', reason }, mockEmployees));
     }
   },
   setPolling: (on) => {

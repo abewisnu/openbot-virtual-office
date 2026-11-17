@@ -57,7 +57,8 @@ return `200 text/html` (the `index.html` shell). Measured:
 ```
 
 A `200` is therefore **not** proof of a working API. The client must parse the body; a
-non-array or schema failure is treated as "no data" and the UI falls back to mock.
+non-array body, invalid JSON or a non-2xx status raises `AgentSourceError`, which the
+source policy turns into the mock fallback (§2.2.1).
 
 ### 2.2 Response body
 
@@ -84,6 +85,34 @@ pixel face from it (§2.5). `provider`, `model`, `threadId` and raw
 `activity` is either `null` or an object (§4).
 
 Measured: `count 15`, keys as above, phases `{idle: 14, working: 1}` at capture time.
+
+### 2.2.1 Client source states — `pending`, `openbot`, `mock`
+
+The browser never opens on fabricated agents. `src/store/useStore.ts` boots with an
+**empty** roster and `source: 'pending'`, then applies every fetch through the pure
+policy `src/store/sourcePolicy.ts` → `resolveSource()`:
+
+| Start state | Outcome | Employees | `source` | Sidebar badge |
+|---|---|---|---|---|
+| `pending`, empty | `ok` (array, ≥1 row) | live rows | `openbot` | `Live` + `N members` |
+| `pending`, empty | `empty` (`[]`, valid) | `[]` | `openbot` | `Live` + `0 members` |
+| `pending`, empty | `error` (network / non-2xx / non-JSON / non-array) | mock roster | `mock` | `Mock` + `N members` |
+| `openbot`, live rows | `error` | **last live snapshot kept** | `openbot` | `Live` + `N members` |
+| any | `pending` before first reply | `[]` | `pending` | `Connecting` + `connecting…` |
+
+Rules that follow from the table:
+
+- The mock roster is reachable from **one** path only: a failing fetch on a board that
+  never loaded live. A transient polling error on a working board keeps the live rows and
+  stays labelled `Live`; `source.reason` records the error for the badge tooltip.
+- An HTTP `200` with a non-array body, invalid JSON, or `!res.ok` is an **error**, not an
+  empty roster. `fetchAgentProfilesAsync()` throws `AgentSourceError` for those; a valid
+  `[]` is an empty live board and never triggers mock.
+- `polling` is carried through every transition untouched (it is a UI toggle, not fetch
+  state).
+- Verified by `node scripts/verify-store.mjs`: every row of the table as a unit test, plus
+  source guards that the store boots empty, that `mockEmployees` is not the initial
+  roster, and that the HUD renders the `Connecting` label.
 
 ---
 
@@ -164,18 +193,31 @@ agents on this machine share `first-bot:face:123` (Iwa, Neke, Clubo), and hashin
 seed alone gave them one shape, expression, hair and accessory. The avalanche is also
 required — raw FNV-1a low bits are weak, so ids differing only near the end collided.
 
-**Tint is a pair, one per theme.** `avatarTints()` returns `{ dark, light }`. Hue and
-saturation stay, lightness is clamped by bisection until the tile clears **3:1**
-against that theme's info-panel surface and the ink (`#14121c`) inside it also clears
+**Tint is a pair, one per theme, measured against two named surfaces.** The face is
+painted on the **avatar tile** (`.avatar` background: two layers of `--ovo-surface`
+over the panel) and sits inside the **panel gutter** (`.panel.info` background over the
+page backdrop). They are different colours, and in the light theme the gutter is
+*darker* than the tile, so the gutter is the binding surface. `avatarTints()` returns
+`{ dark, light }`; hue and saturation stay, lightness is clamped by bisection until the
+tint clears **3:1** against both surfaces and the ink (`#14121c`) inside it also clears
 **3:1**:
 
-| Theme | Panel surface (composited) | Tint luminance band |
-|---|---|---|
-| dark | `rgba(29,23,34,0.88)` over `#14121c` → `#1c1621` | `>= 0.15` |
-| light | `rgba(252,251,248,0.92)` over `#f4f1ea` → `#fbfaf7` | `0.145 – 0.255` |
+| Theme | Avatar tile (composited) | Panel gutter (composited) | Tint luminance band |
+|---|---|---|---|
+| dark | `rgba(29,23,34,0.88)` over `#14121c` → `#1c1621` | `#1b1621` | `>= 0.15` |
+| light | `rgba(252,251,248,0.92)` over `#f4f1ea` → `#fbfaf7` | `#edebe9` | `0.145 – 0.2395` |
 
-Measured on the real 16-agent roster: worst tint-on-panel **3.28:1**, worst
-ink-on-tint **3.43:1**. The two variants travel to the DOM as CSS custom properties
+The light ceiling is not hand-tuned: it is `luminanceUnder(gutter, LIGHT_GUTTER_TARGET)`
+with `LIGHT_GUTTER_TARGET = 3.08`, so the band cannot drift away from what the UI
+paints. Measured on the real 16-agent roster (`node scripts/verify-avatar.mjs`):
+
+| Check | Worst ratio |
+|---|---|
+| tint on avatar tile, both themes | **3.37:1** |
+| tint on panel gutter, both themes | **3.06:1** |
+| ink on tint, both themes | **3.43:1** |
+
+The two variants travel to the DOM as CSS custom properties
 and `:root[data-theme='light'] .avatar` selects the light one, so a theme switch
 repaints without a React re-render. The theme is never read from JS, so no listener
 and no listener cleanup is needed here.
@@ -459,8 +501,9 @@ origin so no CORS or token is needed; `/health` must run a real query so it dist
    `agent_usage_activity.occurred_at`.
 2. **`200` does not mean the API answered.** `/health` and `/api/office` return the HTML
    shell with status `200`. Check `Content-Type` and parse the body.
-3. **`npm run preview` has no API.** It serves static `dist/`, so the client silently shows
-   mock data. This is the most common false "it works on my machine".
+3. **`npm run preview` has no API.** It serves static `dist/`, so the fetch fails and the
+   client falls back to the mock roster. This is the most common false "it works on my
+   machine".
 4. **`OPENBOT_DB` is not read.** Use `OPENBOT_DB_PATH`.
 5. **A quiet roster looks empty.** `ready` decays to `idle` after 30 min of no traffic by
    design.
@@ -484,6 +527,10 @@ curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: evil.example' \
 
 # source gate (types, schema, phase rules, bundle hygiene)
 node scripts/verify-openbot-source.mjs
+
+# client gates: first paint must never show the mock roster
+node scripts/verify-store.mjs          # pending/openbot/mock transitions + boot state
+node scripts/verify-avatar.mjs         # tint contrast on avatar tile AND panel gutter, 16 × 2
 
 # raw DB truth, read-only
 sqlite3 "file:$HOME/Library/Application Support/OpenBot/openbot.db?mode=ro" \
