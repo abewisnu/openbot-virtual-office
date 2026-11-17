@@ -69,6 +69,8 @@ export function buildLayout(deskCount = 12): Layout {
   const furniture: FurnitureDef[] = [];
   const seats: Seat[] = [];
   const block = (tx: number, ty: number, w: number, h: number) => {
+    if (!Number.isInteger(tx) || !Number.isInteger(ty))
+      throw new Error(`block() needs integer tiles, got (${tx}, ${ty})`);
     for (let y = ty; y < ty + h; y++)
       for (let x = tx; x < tx + w; x++) blocked[y][x] = true;
   };
@@ -360,16 +362,21 @@ export function buildLayout(deskCount = 12): Layout {
   // the room's top wall, dining nook below them. The NOC used to live here and
   // the two rooms have swapped places, so the upper room now holds the pantry.
   dividerV(14, 16, 29, 23);
-  place("bookshelf", 1.5, 18, 2, 1);
-  place("bookshelf", 3, 18, 3, 1);
-  place("cabinet", 6, 18);
-  place("fridge", 7, 18);
-  place("dispenser", 8, 18);
-  place("storageTable", 10, 18, 3, 1);
-  place("plant", 13, 18);
-  place("plant", 13, 28);
+  // Shelf wall along row 18, in three clusters with a one-tile gutter on each
+  // side of it (col 5 and col 10) so the run reads evenly across the room. The
+  // footprints match the art at the 2x prop scale: the bookshelf is 32 art px
+  // (4 tiles), every other unit 16 art px (2 tiles). `place()` now rejects
+  // fractional tiles, so the old 1.5/11.5 hack is gone.
+  place("bookshelf", 1, 18, 4, 1);
+  place("cabinet", 6, 18, 2, 1);
+  place("fridge", 8, 18, 2, 1);
+  place("dispenser", 11, 18, 2, 1);
+  place("plant", 1, 28, 2, 1);
+  place("plant", 11, 28, 2, 1);
   // Dining nook in the pantry: a 4x2 table with two chairs on each long side.
-  place("meetingTable", 5, 24, 4, 2);
+  // The 4-tile `diningTable` sprite matches its footprint exactly, so the aisle
+  // is not clipped by a table drawn wider than its collision.
+  place("diningTable", 5, 24, 4, 2);
   for (const x of [6, 7]) {
     const top = { x: (x + 0.5) * TILE, y: 24 * TILE - 2 };
     chair("chairDown", top.x, top.y);
@@ -397,15 +404,21 @@ export function buildLayout(deskCount = 12): Layout {
       occupant: null,
     });
   }
-  // --- NOC (kiri bawah, ruang bawah): 2 rack server, satu baris x 2 kolom.
-  // A rack sprite holds four server units (16x38 art px) and stands 4.75 tiles
-  // tall at PROP_SCALE 2; the two footprints sit 2 tiles apart on row 36, two
-  // free rows in front of them for the walkers.
+  // --- NOC (kiri bawah, ruang bawah): raised-floor server room.
+  // Everything tall stands on row 36 so it grows up to row 31 and never clips
+  // the pantry wall at row 30: two racks (each 2 tiles wide, 4 server units) on
+  // the left, the CRAC in the middle and the UPS cabinet on the right. Both
+  // walk lanes (col 6-7 and col 10) stay open. The wall row itself carries two
+  // patch panels (access switches) above the racks.
   for (const ty of RACK_ROWS) {
     for (const tx of RACK_COLS) {
       place("serverRack", tx, ty, RACK_W, 1);
     }
   }
+  place("crac", 8, 36, 2, 1);
+  place("ups", 11, 36, 2, 1);
+  place("switchBox", 7, 31, 2, 1);
+  place("switchBox", 10, 31, 2, 1);
   dividerH(30, 0, 13);
   dividerV(14, 30, 39, 34);
   // Mirror of the lounge joint: the horizontal run stops at tile 13, a half pane bridges into the left half of tile 14,

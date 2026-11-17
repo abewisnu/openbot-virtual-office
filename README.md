@@ -90,6 +90,7 @@ node scripts/verify-lounge.mjs         # `starting`/`restarting` agents stay ins
 node scripts/verify-store.mjs          # roster source states: never mock before a failed fetch
 node scripts/verify-workspace.mjs      # workspace-folder size walker + no path leak to the browser
 node --import ./scripts/register-ts.mjs scripts/verify-chairs.mjs  # chair collision + meeting-room chat
+node --import ./scripts/register-ts.mjs scripts/verify-rooms.mjs  # pantry spacing, NOC server-room dressing, carpet
 ```
 
 `npm run preview` and any other static host do not serve `/api/agents`: the request falls through to
@@ -358,6 +359,8 @@ proxy and CSP work, and it can point at personal photos.
   `GET /api/office-logo` for the workspace logo bytes and `GET /api/office-profile` for
   the OpenBot profile name (`grep 'fetch(' src` = 3 hits, no `POST`).
 - Perspective: horizontal/vertical grid, no vanishing point; depth comes from Y-sorting only.
+- Pantry & Storage (upper-left room, rows 17–29): three shelf clusters on row 18 with a one-tile gutter at col 5 and col 10 (bookshelf 4 tiles, cabinet, fridge and dispenser 2 tiles each), a 4-tile `diningTable` with two chairs per long side on the 7×6 rug at rows 22–27, and a plant in each bottom corner. Footprint widths follow the art at the 2× prop scale, and `place()`/`block()` now reject fractional tiles.
+- NOC (lower-left room, rows 31–38): raised-floor access panels (every other panel perforated for cold-aisle airflow) drawn into the floor texture, two racks with four server units each at row 36, a louvered CRAC and a UPS cabinet beside them, and two patch panels (access switches) on the wall row 31. Every tall prop is based on row 36 so it grows upward to row 32 and never clips the pantry wall, and two walk lanes stay open.
 - Simulated positions move on their own every ±20–45 s (working → desk, meeting → meeting area
   chair, break → lounge, chat → a meeting-table chair facing a colleague or an aisle chat spot when
   every chair is taken, idle → wandering). A sitting `chatting` agent keeps its talk bubble, so two

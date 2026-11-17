@@ -16,8 +16,8 @@ const FRAME_LIGHT = 'rgba(84,90,110,0.95)';
 type Ctx = CanvasRenderingContext2D;
 export type FurnitureType =
   | 'desk' | 'chairUp' | 'chairDown' | 'sofa3Down' | 'sofa2Up' | 'coffeeTable' | 'plant' | 'whiteboard'
-  | 'meetingTable' | 'bookshelf' | 'cabinet' | 'fridge' | 'dispenser' | 'storageTable'
-  | 'serverRack'
+  | 'meetingTable' | 'diningTable' | 'bookshelf' | 'cabinet' | 'fridge' | 'dispenser' | 'storageTable'
+  | 'serverRack' | 'crac' | 'ups' | 'switchBox'
   | 'partitionH' | 'partitionV' | 'partitionHHalf' | 'partitionCorner' | 'doorH' | 'doorV';
 export interface Look { skin: string; hair: string; shirt: string; pants: string }
 type D3 = 'up' | 'down' | 'left';
@@ -110,7 +110,19 @@ function makeBackground(night: boolean): Texture {
     // rugs
     rug(c, 2, 8, 8, 5, '#3f7f8c', '#2b5560');
     rug(c, 20, 10, 10, 8, '#6a5a78', '#473c55');
-    rug(c, 3, 35, 8, 4, '#7a8a5a', '#4e5a38');
+    rug(c, 4, 22, 7, 6, '#7a8a5a', '#4e5a38');
+    // NOC raised floor: 1-tile access panels, every other one perforated for
+    // cold-aisle airflow, so the lower-left room reads as a server room.
+    for (let ty = 31; ty <= 38; ty++) {
+      for (let tx = 1; tx <= 13; tx++) {
+        const x = tx * 16, y = ty * 16;
+        B(c, x, y, 16, 16, '#2e3340');
+        R(c, '#39404f', x + 1, y + 1, 14, 14);
+        R(c, '#252a35', x, y, 16, 1); R(c, '#252a35', x, y, 1, 16);
+        if ((tx + ty) % 2 === 0)
+          for (let py = 3; py < 14; py += 3) for (let px = 3; px < 14; px += 3) R(c, '#333a49', x + px, y + py, 1, 1);
+      }
+    }
     // wall shadow + window light rays
     R(c, 'rgba(0,0,0,0.25)', 0, 80, W, 2); R(c, 'rgba(0,0,0,0.12)', 0, 82, W, 3);
     c.fillStyle = night ? 'rgba(120,150,255,0.07)' : 'rgba(255,240,200,0.09)';
@@ -169,6 +181,15 @@ function makeFurniture(): Record<FurnitureType, Texture> {
       R(c, '#8c8f99', 8, 25, 16, 1); R(c, '#8c8f99', 34, 23, 20, 1); R(c, '#8c8f99', 8, 30, 22, 1);
       B(c, 8, 38, 3, 14, '#555a6b'); B(c, 53, 38, 3, 14, '#555a6b');
     }),
+    // Pantry dining table: 4 seat settings on a 4-tile top, so its footprint
+    // matches the 8-seat meeting table's per-seat scale without overhanging.
+    diningTable: make(32, 20, (c) => {
+      B(c, 0, 4, 32, 10, '#a8744a'); R(c, '#c18c5e', 1, 5, 30, 1);
+      R(c, '#8a5a34', 2, 10, 28, 2);
+      R(c, '#e8e0d0', 5, 7, 6, 3); R(c, '#e8e0d0', 21, 7, 6, 3);
+      R(c, '#4f86c6', 13, 8, 3, 2); R(c, '#d9a441', 17, 8, 3, 2);
+      B(c, 1, 14, 30, 4, '#6b4429'); B(c, 3, 18, 4, 2, '#6b4429'); B(c, 25, 18, 4, 2, '#6b4429');
+    }),
     meetingTable: make(64, 36, (c) => {
       B(c, 0, 2, 64, 27, '#a8744a'); R(c, '#c18c5e', 2, 3, 60, 1);
       B(c, 2, 28, 60, 6, '#6b4429'); B(c, 4, 33, 4, 3, '#6b4429'); B(c, 56, 33, 4, 3, '#6b4429');
@@ -212,6 +233,35 @@ function makeFurniture(): Record<FurnitureType, Texture> {
       }
       R(c, OL, 1, 1, 14, 1);
       R(c, OL, 1, 37, 14, 1);
+    }),
+    // Precision cooling unit (CRAC) for the NOC: louvered cabinet with a cyan
+    // readout, 2 tiles wide x 4 tiles tall at the 2x prop scale.
+    crac: make(16, 32, (c) => {
+      B(c, 0, 0, 16, 32, '#b9bfcc');
+      R(c, '#cfd5e0', 1, 1, 14, 1);
+      B(c, 1, 3, 14, 20, '#8f96a5');
+      for (let i = 0; i < 9; i++) R(c, '#6f7686', 2, 4 + i * 2, 12, 1);
+      B(c, 1, 24, 14, 6, '#3a3f4c');
+      R(c, '#4aa3d8', 3, 26, 4, 2); R(c, '#5aa469', 9, 26, 2, 2);
+      R(c, '#6b7280', 2, 21, 12, 1);
+      R(c, OL, 1, 30, 14, 1);
+    }),
+    // UPS battery cabinet: dark chassis, amber charge LED, blue load LED.
+    ups: make(16, 16, (c) => {
+      B(c, 0, 0, 16, 16, '#2b2f3a');
+      R(c, '#3a3f4c', 1, 1, 14, 1);
+      B(c, 2, 4, 12, 5, '#1d1722');
+      R(c, '#d9a441', 3, 5, 3, 2); R(c, '#4aa3d8', 7, 5, 3, 2);
+      R(c, '#555a6b', 2, 10, 12, 1); R(c, '#555a6b', 2, 12, 8, 1);
+      R(c, OL, 1, 14, 14, 1);
+    }),
+    // Wall-mounted patch panel / access switch: 2 tiles wide, 1 tile tall.
+    switchBox: make(16, 8, (c) => {
+      B(c, 0, 0, 16, 8, '#343746');
+      R(c, '#3f4453', 1, 1, 14, 1);
+      for (let i = 0; i < 6; i++) R(c, '#4aa3d8', 2 + i * 2, 3, 1, 1);
+      for (let i = 0; i < 6; i++) R(c, '#5aa469', 2 + i * 2, 5, 1, 1);
+      R(c, OL, 1, 7, 14, 1);
     }),
     partitionH: make(16, 8, (c) => {
       R(c, GLASS_TINT, 0, 1, 16, 6);
