@@ -14,12 +14,15 @@ const STATUSES: Status[] = ['working', 'working', 'working', 'meeting', 'chattin
  * Room shell: glass partitions, doors and the wall-mounted whiteboard keep
  * `ART` instead of `PROP`. They own the tile grid, so enlarging them would hang
  * a run a tile past its last tile and eat the aisle; at `ART` a run ends
- * exactly where the layout says, and a 48 x 40 art board stays 3 x 2.5 tiles
+ * exactly where the layout says, and a 64 x 40 art board stays 4 x 2.5 tiles
  * on the meeting-room wall instead of eating half the room.
  */
 const SHELL: ReadonlySet<FurnitureType> = new Set<FurnitureType>([
   'partitionH', 'partitionHHalf', 'partitionV', 'partitionCorner', 'doorH', 'doorV', 'whiteboard',
 ]);
+/** Workstation monitor: twice the prop density, so a 16 x 14 art screen fills
+ * its 4-tile desk instead of sitting in the middle of it. */
+const MONITOR_SCALE = PROP * 2;
 /** How long one animated monitor frame stays on screen (ms). */
 const MONITOR_FRAME_MS = 220;
 const tileOf = (x: number, y: number): Tile => ({ tx: Math.floor(x / TILE), ty: Math.floor((y - FOOT_OFFSET) / TILE) });
@@ -93,7 +96,9 @@ export class World {
     for (const seat of this.layout.seats) {
       if (!seat.monitor) continue;
       const s = new Sprite(this.assets.monitorOff);
-      s.anchor.set(0.5, 0); s.scale.set(PROP);
+      // Bottom-anchored: the layout stores the sprite's bottom edge just above
+      // the desk front, so doubling the scale grows the screen upward.
+      s.anchor.set(0.5, 1); s.scale.set(MONITOR_SCALE);
       s.position.set(seat.monitor.x, seat.monitor.y); s.zIndex = seat.monitor.z;
       this.sortLayer.addChild(s);
       this.monitors.push({ seat, sprite: s });
@@ -188,7 +193,7 @@ export class World {
     for (const s of desks) {
       if (!s.monitor) continue;
       // Monitor art is 16x14 art px, anchored top-center.
-      if (Math.abs(wx - s.monitor.x) <= 16 * PROP + 4 && wy >= s.monitor.y - 4 && wy <= s.monitor.y + 14 * PROP + 6) return s;
+      if (Math.abs(wx - s.monitor.x) <= 16 * PROP + 4 && wy >= s.monitor.y - 28 * PROP - 4 && wy <= s.monitor.y + 6) return s;
     }
     for (const s of desks) {
       if (Math.abs(wx - s.pos.x) <= 34 * PROP_SCALE && wy >= s.pos.y - 48 * PROP_SCALE && wy <= s.pos.y + 16 * PROP_SCALE) return s;

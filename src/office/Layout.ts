@@ -89,8 +89,18 @@ export function buildLayout(deskCount = 12): Layout {
     });
     block(tx, ty, w, h);
   };
-  const chair = (type: FurnitureType, x: number, y: number) =>
-    furniture.push({ type, x, y: y + 2, z: y - 4 });
+  /**
+   * `front` draws the chair above the agent seated at `y`. A forward-facing
+   * chair (agent faces `up`, back to the viewer) has its backrest between the
+   * viewer and the agent, so it must overdraw the agent's back; otherwise the
+   * shirt colour hides the chair. Backrests behind the agent stay below.
+   */
+  const chair = (
+    type: FurnitureType,
+    x: number,
+    y: number,
+    front = false,
+  ) => furniture.push({ type, x, y: y + 2, z: front ? y + 4 : y - 4 });
   const dividerV = (
     tx: number,
     ty0: number,
@@ -196,7 +206,7 @@ export function buildLayout(deskCount = 12): Layout {
       if (placed >= deskTarget) break;
       place("desk", deskLeft(tx), ty, DESK_W, 1);
       const pos = { x: (tx + 1) * TILE, y: (ty + 1) * TILE + 24 };
-      chair("chairUp", pos.x, pos.y);
+      chair("chairUp", pos.x, pos.y, true);
       seats.push({
         id: `WS-${String(n++).padStart(2, "0")}`,
         kind: "desk",
@@ -205,9 +215,11 @@ export function buildLayout(deskCount = 12): Layout {
         approach: { tx, ty: ty + 1 },
         zOffset: 0,
         occupant: null,
+        // Bottom edge of the 2x monitor sprite, 4 art px above the desk's front
+        // edge: the screen fills the desk width and stops under the window band.
         monitor: {
           x: (tx + 1) * TILE,
-          y: (ty + 1) * TILE - 28 * PROP,
+          y: (ty + 1) * TILE - 4 * PROP,
           z: (ty + 1) * TILE + 0.5,
         },
       });
@@ -272,17 +284,22 @@ export function buildLayout(deskCount = 12): Layout {
   });
   // --- Meeting (kiri-tengah)
   // The room sits one room-width left of the workstation block: walls on
-  // columns 17 and 32, interior columns 18-31 and rows 6-15, which leaves a
+  // columns 17 and 32, interior columns 18-31 and rows 6-17, which leaves a
   // 3-tile aisle (33-35) between the glass and the first desk bay at column 36.
+  // The floor runs one extra row past the table so the back chairs no longer
+  // touch the bottom glass: chairs end at y 512 and the bottom wall sits at
+  // row 18 (y 584).
   // Props are anchored in pixels, not tiles, because at the 2x default their
   // sprites are much wider and taller than their collision footprint. The
   // numbers keep a one-tile margin on every side and a visible gap between the
-  // pieces: top band = sofa (x 592-784) beside the whiteboard (x 800-896),
-  // sofa top flush with the window band at y 264 and the board at y 272;
-  // table (x 672-928, y 336-480) centred under them
-  // with four chairs per side; rug 21-30 / 10-16 under the whole bay.
-  furniture.push({ type: "whiteboard", x: 848, y: 272, z: 272 });
-  block(25, 8, 3, 1);
+  // pieces: top band = sofa (x 592-784) then the 128 px whiteboard
+  // (x 800-928), both ending at the chair line; table (x 672-928,
+  // y 336-480) centred under them with four chairs per side.
+
+  // Whiteboard right of the sofa, 4 tiles wide at ART, clear of the sofa and of
+  // the first top chair (chair sprite tops at y 272).
+  furniture.push({ type: "whiteboard", x: 864, y: 272, z: 272 });
+  block(25, 8, 4, 1);
   furniture.push({ type: "sofa3Down", x: 688, y: 264, z: 254 });
   block(20, 7, 3, 1);
   sofaSeats(20, 7, "meeting", "MS");
@@ -304,7 +321,7 @@ export function buildLayout(deskCount = 12): Layout {
       occupant: null,
     });
     const bot = { x: cx, y: 510 };
-    chair("chairUp", bot.x, bot.y);
+    chair("chairUp", bot.x, bot.y, true);
     seats.push({
       id: `MB-${tx}`,
       kind: "meeting",
@@ -315,11 +332,11 @@ export function buildLayout(deskCount = 12): Layout {
       occupant: null,
     });
   }
-  dividerV(17, 5, 15);
-  dividerV(32, 5, 15, 11);
-  dividerH(16, 17, 32, null, true, true);
-  place("plant", 19, 14);
-  place("plant", 30, 14);
+  dividerV(17, 5, 17);
+  dividerV(32, 5, 17, 12);
+  dividerH(18, 17, 32, null, true, true);
+  place("plant", 19, 16);
+  place("plant", 30, 16);
   // --- NOC (kiri tengah): 12 rack server, 2 baris x 6 kolom.
   // One row was dropped so the 2x racks have air between them; the row gap is
   // 6 tiles (see RACK_ROWS) because a rack at PROP_SCALE 2 stands 6 tiles tall.
@@ -353,7 +370,7 @@ export function buildLayout(deskCount = 12): Layout {
       occupant: null,
     });
     const bot = { x: (x + 0.5) * TILE, y: 39 * TILE - 4 };
-    chair("chairUp", bot.x, bot.y);
+    chair("chairUp", bot.x, bot.y, true);
     seats.push({
       id: `DB-${x}`,
       kind: "lounge",
