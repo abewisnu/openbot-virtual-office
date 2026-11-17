@@ -169,13 +169,18 @@ export function buildLayout(deskCount = 12): Layout {
   // column 35. Rows start at ty 9, clear of the window band (art rows 0-5).
   const deskTarget = Math.max(12, Math.min(16, Math.floor(deskCount) || 12));
   const DESK_COLS = [37, 43, 49, 55];
+  // Tile footprint of one desk, measured from the sprite: the desk art is 32
+  // art px wide, so at PROP px per art px it covers `32*PROP/TILE` tiles (4 at
+  // the shipped 2x scale, 2 at ?props=1). The collision grid has to match that
+  // width or a walker can slip through the overhang and cross a workstation.
+  const DESK_W = Math.max(2, Math.round((32 * PROP) / TILE));
   let n = 1;
   let placed = 0;
   for (let row = 0; placed < deskTarget; row++) {
     const ty = 9 + row * 6;
     for (const tx of DESK_COLS) {
       if (placed >= deskTarget) break;
-      place("desk", tx, ty, 2, 1);
+      place("desk", tx - (DESK_W - 2) / 2, ty, DESK_W, 1);
       place("filing", tx + 2, ty);
       const pos = { x: (tx + 1) * TILE, y: (ty + 1) * TILE + 24 };
       chair("chairUp", pos.x, pos.y);
