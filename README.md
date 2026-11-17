@@ -91,6 +91,7 @@ node scripts/verify-store.mjs          # roster source states: never mock before
 node scripts/verify-workspace.mjs      # workspace-folder size walker + no path leak to the browser
 node --import ./scripts/register-ts.mjs scripts/verify-chairs.mjs  # chair collision + meeting-room chat
 node --import ./scripts/register-ts.mjs scripts/verify-rooms.mjs  # pantry spacing, NOC server-room dressing, carpet
+node --import ./scripts/register-ts.mjs scripts/verify-idle.mjs  # standby agents sit and chat in the social rooms
 ```
 
 `npm run preview` and any other static host do not serve `/api/agents`: the request falls through to
@@ -118,6 +119,7 @@ The Meeting Room sits one room-width left of the workstation block. Its interior
 | `src/office/Character.ts` | Sprite, idle/walk/sit animations plus typing variants and speech bubble, name label, status indicator. |
 | `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`/`waiting`: the "seated first, then lit" gate, used by `World.ts` and covered by `scripts/verify-monitor.mjs`. `waiting` is the grey screen a seated `blocked` agent waits behind. |
 | `src/office/Lounge.ts` | Pure Lounge box (`LOUNGE_ROOM`, `isInLounge`) plus the phase rule `staysInLounge(phase)` — `starting` and `restarting`. Imports nothing, so `scripts/verify-lounge.mjs` runs it directly with `node`. |
+| `src/office/Idle.ts` | Pure standby rule: `isSocialZone()` (Lounge, Pantry & Storage, Meeting Area), `pickIdleSeat()` (a free non-desk chair, preferring one whose vis-à-vis is already seated), `pickIdleTile()`, `isChattingSeat()` and `visAVis()`. Type-only imports, so `scripts/verify-idle.mjs` runs it with `node`. `World.ts` builds its idle floor-tile pool from the same zone list, which is why a standby agent can never pick a workstation aisle. |
 | `src/office/Avatar.ts` | Pure avatar recipe: `stableIndex()` (FNV-1a + murmur3 avalanche) and `avatarSpec()` turn `avatarSeed` plus `agentId` and `avatarHue`/`avatarColor` into `{ tints, shape, expression, hair, accessory }`. Tints are clamped per theme for 3:1 contrast. No imports, no DOM, so `scripts/verify-avatar.mjs` runs it with `node`. |
 | `src/office/World.ts` | Pixi scene, Y-sorting (`zIndex` = bottom edge of an object), camera + bounds, input, agent placement: `working`/`ready` sit at a desk, agents with unread/waiting walk to their own desk. An agent in `starting` or `restarting` is confined to the Lounge room — it sits on a lounge sofa or stands/walks between lounge floor tiles, takes no desk, meeting chair or chat spot, and a pending instruction cannot pull it out. `updateMonitors()` lights a desk screen only when the agent is genuinely seated on that chair (`seat.occupant` **and** `Character.state === 'sit'` on the same `seat`) with `phase` `working`/`ready`/`blocked`; `working` uses animated frames, `ready` a still frame, `blocked` the grey waiting frame while the human answers. A `blocked` agent stays at that desk and stops typing until the phase moves on. A chair is already reserved the moment an agent starts walking, so `seat.occupant` alone is not enough — the screen stays dark while the agent is still walking. |
 | `src/store/useStore.ts` | Zustand: employees derived from the API, selection, notifications, UI settings, 3 s polling loop. Boots empty with `source: 'pending'`, never with the mock roster. |
@@ -167,7 +169,7 @@ active session is demoted), `RESTART_WINDOW_MS` 5 min (a restart marker is fresh
 | `ready` | session `active` **and** (session moved < 10 min **or** traffic < 30 min) | Sits at its own desk, powered on and waiting | Still, lit | No | `Working at WS-NN` |
 | `blocked` | at least one unwoken `agent_waits` row | Leaves whatever it was doing, walks to its own desk and stays seated; its activity is always `waiting` | Grey with pause bars | No | `Blocked — walking to desk` / `Blocked — waiting for your answer` |
 | `restarting` | `%restart%` thread activity inside 5 min | Penned in the **Lounge**: sits on a sofa or stands/walks between lounge floor tiles; takes no desk, meeting chair or chat spot | Dark | No | `Restarting — walking in Lounge` / `Restarting — waiting in Lounge` |
-| `idle` | a session row exists but no fresh evidence | Follows the simulation `Status` (wander, chat, meeting, break). If the activity is `unread` or `waiting` it still walks to its own desk and reads there | Dark | Only at the desk for a pending instruction | `Wandering the office`, or `Walking to desk — new instruction` / `At desk — reviewing new instruction` |
+| `idle` | a session row exists but no fresh evidence | Follows the simulation `Status`, but a standby agent sits and chats in the Meeting Area, Lounge or Pantry instead of roaming. If the activity is `unread` or `waiting` it still walks to its own desk and reads there | Dark | Only at the desk for a pending instruction | `Standing by in <room>`, or `Walking to desk — new instruction` / `At desk — reviewing new instruction` |
 | `starting` | never produced today (`AGENT_PHASES` only) | Same Lounge pen as `restarting`, if it ever appears | Dark | No | `Starting up — walking in Lounge` / `Starting up — waiting in Lounge` |
 | `stopped` | no session row at all | Follows the simulation `Status`: wanders, chats, takes a break | Dark | No | `Wandering the office` |
 
@@ -363,10 +365,15 @@ proxy and CSP work, and it can point at personal photos.
 - Pantry & Storage (upper-left room, rows 17–29): three shelf clusters on row 20 (two tiles below the top wall) with a one-tile gutter at col 5 and col 10 (bookshelf 4 tiles, cabinet, fridge and dispenser 2 tiles each), a 4-tile `diningTable` with two chairs per long side on the 7×6 rug at rows 22–27, and a plant in each bottom corner. Footprint widths follow the art at the 2× prop scale, and `place()`/`block()` now reject fractional tiles.
 - NOC (lower-left room, rows 31–38): raised-floor access panels (every other panel perforated for cold-aisle airflow) drawn into the floor texture, two racks with four server units each at row 36, a louvered CRAC and a UPS cabinet beside them, and two patch panels (access switches) on the wall row 31. Every tall prop is based on row 36 so it grows upward to row 32 and never clips the pantry wall, and two walk lanes stay open.
 - Simulated positions move on their own every ±20–45 s (working → desk, meeting → meeting area
-  chair, break → lounge, chat → a meeting-table chair facing a colleague or an aisle chat spot when
-  every chair is taken, idle → wandering). A sitting `chatting` agent keeps its talk bubble, so two
-  agents opposite each other read as a conversation. This is simulation `Status`, separate from the
-  real agent `phase`, so the office stays alive when the database cannot be read.
+  chair, break → a chair in the Meeting Area, the Lounge or the Pantry, chat → a meeting-table chair
+  facing a colleague or an aisle chat spot when every chair is taken, idle → a chair in one of those
+  three social rooms). A standby (`idle`) agent picks a chair whose vis-à-vis is already seated when
+  one is free, otherwise any free social chair, and only falls back to a social-room floor tile when
+  all 21 chairs are taken — its goals come from `src/office/Idle.ts` and the social-room tile list, so
+  it never paces the workstation aisles. A seated idle agent keeps its chair for 18–40 s
+  (`Math.random() < 0.6` = stay put) and shows a talk bubble when somebody sits facing it, so two
+  standby agents read as a conversation. This is simulation `Status`, separate from the real agent
+  `phase`, so the office stays alive when the database cannot be read.
 - A desk monitor lights up only if the agent is **already seated** on that chair (state `sit` on the
   same `seat`) and its `phase` is `working`, `ready` or `blocked`. The chair is reserved from the
   moment the agent starts walking, so an agent still walking to its desk = screen stays dark.

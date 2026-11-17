@@ -4,6 +4,7 @@ import type { Status, AgentPhase, Employee } from '../types';
 import { useStore } from '../store/useStore';
 import { generateAssets, makeCharFrames, makeLook, makeRackLeds, type Assets, type FurnitureType, type RackLed } from './AssetGenerator';
 import { buildLayout, zoneName, type ChatSpot, type Layout, type RoomLabel, type Seat } from './Layout';
+import { isChattingSeat, isSocialZone, pickIdleSeat, pickIdleTile } from './Idle';
 import { isInLounge, staysInLounge } from './Lounge';
 import { Character, type Vec } from './Character';
 import { monitorStateFor } from './Monitor';
@@ -53,6 +54,8 @@ export class World {
   /** Floor tiles and lounge-kind seats inside the Lounge room: the starting/restarting pen. */
   private loungeTiles: Tile[] = [];
   private loungeSeats: Seat[] = [];
+  /** Floor tiles in the social rooms (Meeting, Lounge, Pantry): the idle stage. */
+  private socialTiles: Tile[] = [];
   private cam = { x: WORLD_W / 2, y: WORLD_H / 2 + 60, zi: 1 };
   private keys = new Set<string>();
   private drag = { active: false, moved: 0, lx: 0, ly: 0 };
@@ -81,6 +84,9 @@ export class World {
     this.loungeSeats = this.layout.seats.filter(
       (s) => s.kind === 'lounge' && isInLounge(s.approach.tx, s.approach.ty),
     );
+    // Idle agents live in the social rooms and nowhere else: their floor goals
+    // are these tiles, so a standby agent never paces the workstation aisles.
+    this.socialTiles = this.walkable.filter((t) => isSocialZone(zoneName(t.tx, t.ty)));
 
     const bg = new Sprite(this.assets.background);
     bg.scale.set(ART);
@@ -338,13 +344,18 @@ export class World {
         freeDesks[0] ??
         null;
     } else if (status === 'meeting') seat = this.freeSeat('meeting');
-    else if (status === 'break') seat = this.freeSeat('lounge');
     else if (status === 'chatting') {
       // A chat can happen seated at the meeting table (two agents facing each
       // other across it, both with a talk bubble) or standing at an aisle chat
       // spot when every chair is taken.
       seat = this.freeMeetingChatSeat();
       if (!seat) spot = this.freeSpot();
+    } else {
+      // `idle` and `break` share one stage: a chair in the Meeting Area, the
+      // Lounge or the Pantry, preferring one that already faces somebody seated
+      // (so the bubble reads as a conversation). A standby agent never picks a
+      // workstation aisle, which is what made the office look busy.
+      seat = pickIdleSeat(this.layout.seats, ch.id);
     }
     if (seat) seat.occupant = ch.id;
     if (spot) spot.occupant = ch.id;
@@ -355,7 +366,11 @@ export class World {
     if (instant) {
       if (seat) ch.sitAt(seat);
       else if (spot) ch.placeAt(centerOf(spot), spot.facing);
-      else ch.placeAt(centerOf(this.walkable[Math.floor(Math.random() * this.walkable.length)]), 'down');
+      else {
+        const t = this.socialSpot();
+        if (t) ch.placeAt(centerOf(t), 'down');
+        else ch.placeAt(centerOf(this.walkable[Math.floor(Math.random() * this.walkable.length)]), 'down');
+      }
     } else if (seat) this.routeTo(ch, seat.approach, seat);
     else if (spot) this.routeTo(ch, spot, null, spot.facing);
     else if (owesDesk) {
@@ -365,7 +380,9 @@ export class World {
       if (own) this.routeTo(ch, own.approach, null, own.facing);
       else this.wander(ch);
     }
-    else this.wander(ch);
+    // Every social chair is taken: stand somewhere in a social room rather than
+    // pacing the whole office.
+    else this.wanderIdle(ch);
   }
   private routeTo(ch: Character, goal: Tile, seat: Seat | null, facing?: Dir) {
     if (seat && ch.seat === seat) return;
@@ -379,6 +396,34 @@ export class World {
   private wander(ch: Character) {
     this.routeTo(ch, this.walkable[Math.floor(Math.random() * this.walkable.length)], null);
     ch.wanderTimer = 2;
+  }
+  /** A floor tile in one of the social rooms, or null when none is free. */
+  private socialSpot(): Tile | null {
+    return pickIdleTile(this.socialTiles);
+  }
+  /**
+   * Idle agent with no free chair left: stroll inside the social rooms only, at
+   * a slow pace and for a short distance, so the office stays calm.
+   */
+  private wanderIdle(ch: Character) {
+    const t = this.socialSpot();
+    if (!t) return;
+    this.routeTo(ch, t, null);
+    ch.wanderTimer = 10 + Math.random() * 10;
+  }
+  /**
+   * Stand up and take another social chair, or stay put: called when an idle
+   * agent's dwell timer runs out. Staying seated is the common case.
+   */
+  private roomHop(ch: Character) {
+    const seat = pickIdleSeat(this.layout.seats, ch.id);
+    if (seat && ch.seat !== seat) {
+      this.release(ch.id);
+      seat.occupant = ch.id;
+      this.routeTo(ch, seat.approach, seat);
+      return;
+    }
+    this.wanderIdle(ch);
   }
   /**
    * A starting/restarting agent has no desk yet, so a pending instruction must
@@ -417,8 +462,9 @@ export class World {
     const label = phase === 'restarting' ? 'Restarting' : 'Starting up';
     return `${label} — ${walking ? 'walking' : 'waiting'} in Lounge`;
   }
-  private taskText(s: Status, ws?: string) {
-    return ({ working: `Working at ${ws ?? 'desk'}`, meeting: 'Team meeting in Meeting Area', chatting: 'Chatting with colleagues', break: 'Resting in Lounge', idle: 'Wandering the office' })[s];
+  private taskText(s: Status, ws?: string, zone?: string) {
+    const where = zone ?? 'the office';
+    return ({ working: `Working at ${ws ?? 'desk'}`, meeting: 'Team meeting in Meeting Area', chatting: 'Chatting with colleagues', break: `Resting in ${where}`, idle: `Standing by in ${where}` })[s];
   }
 
   private update(dt: number) {
@@ -451,9 +497,24 @@ export class World {
           st.setStatus(ch.id, STATUSES[Math.floor(Math.random() * STATUSES.length)]);
         }
       }
-      if (ch.appliedStatus === 'idle' && !this.instructions.get(ch.id) && ch.state === 'idle' && !ch.path.length) { ch.wanderTimer -= dt; if (ch.wanderTimer <= 0) { if (penned) this.wanderLounge(ch); else this.wander(ch); } }
-      // A penned agent is alone in the Lounge: no chat or meeting bubble.
-      ch.talking = !penned && (ch.appliedStatus === 'meeting' || ch.appliedStatus === 'chatting') && !ch.path.length;
+      // Idle dwell: a seated agent keeps its chair (and its conversation) until
+      // the timer runs out, then maybe takes another social chair. A standing
+      // idle agent strolls inside the social rooms only.
+      if (ch.appliedStatus === 'idle' && !this.instructions.get(ch.id) && !ch.path.length) {
+        ch.wanderTimer -= dt;
+        if (ch.wanderTimer <= 0) {
+          ch.wanderTimer = 18 + Math.random() * 22;
+          if (penned) this.wanderLounge(ch);
+          else if (ch.state === 'sit' && Math.random() < 0.6) {
+            // Stay put: sitting still is the calm, expected read.
+          } else this.roomHop(ch);
+        }
+      }
+      // A penned agent is alone in the Lounge: no chat or meeting bubble. An
+      // idle agent that sits vis-à-vis a seated colleague does get one, so two
+      // standby agents read as a conversation instead of two idle bodies.
+      const chattingIdle = ch.appliedStatus === 'idle' && ch.state === 'sit' && !!ch.seat && isChattingSeat(this.layout.seats, ch.seat, ch.id);
+      ch.talking = !penned && !ch.path.length && (ch.appliedStatus === 'meeting' || ch.appliedStatus === 'chatting' || chattingIdle);
       ch.update(dt);
       ch.tag.visible = st.showLabels;
       ch.setSelected(st.selectedId === ch.id);
@@ -474,7 +535,7 @@ export class World {
               ? (this.instructions.get(ch.id) ? 'Walking to desk — new instruction' : 'Walking…')
               : this.instructions.get(ch.id) && emp.status === 'idle'
                 ? 'At desk — reviewing new instruction'
-                : this.taskText(emp.status, emp.currentWorkstation);
+                : this.taskText(emp.status, emp.currentWorkstation, zoneName(t.tx, t.ty));
         st.setLive({ zone: zoneName(t.tx, t.ty), task, x: Math.round(ch.x), y: Math.round(ch.y) });
       }
     }
