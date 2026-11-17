@@ -1,5 +1,7 @@
 # OpenBot Virtual Office (OVO)
 
+<img src="public/logo.png" alt="OpenBot Virtual Office (OVO) logo" width="160">
+
 <!-- Badges built with https://github.com/ileriayo/markdown-badges (shields.io) -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge&logo=open-source-initiative&logoColor=white)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=for-the-badge)](package.json)
