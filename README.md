@@ -55,48 +55,39 @@ Everything in `screenshot/` was captured from the running app at **1600 × 1000*
 2× pixel density, fed by a **dummy roster of 10 agents** served on the normal `/api/agents` route
 (same field set as the real endpoint, so the sidebar badge reads `Live`). The workspace identity is
 a demo one — name **Nusantara Studio**, custom pixel logo — so the documentation never shows a real
-account name. No mock lives in a component: the world, the sidebar and the info card all read the
-same store shape they read in production.
+account name or logo. No mock lives in a component: the world, the sidebar and the info card all
+read the same store shape they read in production.
 
 <!-- Side-by-side on GitHub, stacked on narrow screens: two cells, one image each. -->
 | <img src="screenshot/office-overview.png" alt="Full office canvas with the sidebar hidden" width="100%"> | <img src="screenshot/sidebar.png" alt="Floating sidebar with the team activity list" width="100%"> |
 |:--:|:--:|
-| **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), Meeting Area, Lounge, Pantry & Storage and the raised-floor NOC on the left. Hiding the sidebar reserves no layout space, so the office is pixel-for-pixel identical behind it. | **2 · Sidebar menu** — the frosted panel floats 16 px from every edge, here showing the demo workspace **Nusantara Studio** with its own pixel logo. It carries the source badge and clock, one row per phase with a clickable count, the recent-updates feed, and Settings / Help / Exit controls. |
-
-**2b · Sidebar anatomy** — every part of the panel captured on its own, same seed and identity as above:
-
-| <img src="screenshot/sidebar-header.png" alt="Sidebar header with workspace logo, name and live indicator" width="100%"> | <img src="screenshot/sidebar-clock.png" alt="Office time card" width="100%"> |
-|:--:|:--:|
-| **Header** — workspace logo (38 × 38), `VIRTUAL OFFICE` eyebrow, the workspace name, the live indicator and the hide button. | **Office time** — local clock with seconds, the `LIVE` badge and today's date in `id-ID`. |
-
-| <img src="screenshot/sidebar-status.png" alt="Team activity list grouped per phase" width="100%"> | <img src="screenshot/sidebar-updates.png" alt="Recent updates feed" width="100%"> |
-|:--:|:--:|
-| **Team activity** — one row per phase (`Standby`, `Starting`, `Ready`, `Working`, `Restarting`, `Blocked`, `Stopped`) with a clickable count and a 5-segment gauge, plus the member count and source badge in the heading. | **Recent updates** — the last three status changes, newest first, with a counter in the heading; falls back to `No recent updates.` on a quiet board. |
-
-| <img src="screenshot/sidebar-settings.png" alt="Expanded settings section" width="100%"> | <img src="screenshot/sidebar-footer.png" alt="Sidebar footer actions" width="100%"> |
-|:--:|:--:|
-| **Settings** — expanded: label toggle, theme (`System` / `Light` / `Dark`) and sidebar font (`Monospace` / `Geist Pixel`). | **Footer** — `? Help` and `⏻ Exit` actions plus the `CAMERA CONTROLS` legend (`WASD`/arrows, drag, scroll) pinned to the bottom of the panel. |
+| **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), Meeting Area, Lounge, Pantry & Storage and the raised-floor NOC on the left. Hiding the sidebar reserves no layout space, so the office is pixel-for-pixel identical behind it. | **2 · Sidebar** — the frosted panel floats 16 px from every edge, showing the demo workspace **Nusantara Studio** with its own pixel logo, the `Live` source badge and clock, one row per phase with a clickable count, the recent-updates feed, and the Settings / Help / Exit controls. |
 
 <img src="screenshot/info-panel.png" alt="Info panel for the selected agent" width="100%">
 
-**3 · Info panel** — clicking an agent (or a name in the `Working` row) focuses it in the office and
-opens the bottom info strip. It shows the name and role, the live `phase` badge with the single
-highest-priority `activity` note, then the placement (`Zone`, workstation id), the workspace
-footprint on disk, the world `Position` and the `Unread` count. The pixel face is drawn from
-`avatarSeed`, so the same agent keeps the same face on every reload.
+**3 · Info panel** — close-up of the card: the agent's name and role, the live `phase` badge with the
+single highest-priority `activity` note, then placement (`Zone`, workstation id), workspace footprint
+on disk, world `Position` and `Unread` count. The pixel face is drawn from `avatarSeed`, so the same
+agent keeps the same face on every reload.
+
+<img src="screenshot/agent-panel.png" alt="Office with an agent selected and its info strip open" width="100%">
+
+**4 · Agent selected in the office** — the same card in context: clicking an agent in the canvas (or
+a name in the `Working` row) outlines it and pins the info strip to the bottom of the stage, while the
+sidebar keeps the roster visible. This is the whole page, so it also shows how the floating panels sit
+over the office.
 
 <img src="screenshot/office-activity.gif" alt="Ten seconds of office activity" width="100%">
 
-**4 · Ten seconds of activity** — `screenshot/office-activity.gif`: 10 s, 10 fps, 640 × 400,
-looped, ~1.8 MB. Agents walk to their desks and type while `Working`, pair up on the Lounge sofas,
-the Meeting Area and the Pantry when idle, and the name plate under a working workstation rides
-along below the chair.
+**5 · Ten seconds of activity** — `screenshot/office-activity.gif`: 10 s, 10 fps, 640 × 400,
+looped. Agents walk to their desks and type while `Working`, pair up on the Lounge sofas, the Meeting
+Area and the Pantry when idle, and the name plate under a working workstation rides below its chair.
 
 > Regenerating these: start `npm run dev`, answer `/api/agents` with any fixture array that matches
 > the real field set, answer `/api/office-logo` and `/api/office-profile` with the demo identity, let
 > the agents settle for a few seconds, then capture — full page with the sidebar hidden, the sidebar
-> alone plus one crop per section, one agent selected, and a 10 s screen recording converted to GIF
-> (`ffmpeg -ss 7 -t 10 -i capture.webm -vf "fps=10,scale=640:-1" office-activity.gif`).
+> alone, the info card close-up, the page with an agent selected, and a 10 s screen recording
+> converted to GIF (`ffmpeg -ss 14 -t 10 -i capture.webm -vf "fps=10,scale=640:-1" office-activity.gif`).
 
 ## Integration with OpenBot
 
