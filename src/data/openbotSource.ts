@@ -50,6 +50,8 @@ export interface AgentProfile {
   model: string;
   avatarColor: string | null;
   avatarHue: number;
+  /** OpenBot's `agent_json.avatarSeed`; drives the derived pixel face. */
+  avatarSeed: string | null;
   phase: AgentPhase;
   /** The single highest-priority activity, or null when there is none. */
   activity: AgentActivity | null;
@@ -93,6 +95,7 @@ const agentProfileSchema = z.object({
   role: z.string(),
   avatarColor: z.string().nullable(),
   avatarHue: z.number(),
+  avatarSeed: z.string().max(128).nullable().default(null),
   phase: z.enum(AGENT_PHASES),
   activity: activitySchema.nullable(),
   unreadCount: z.number().int().nonnegative(),
@@ -123,6 +126,7 @@ export async function fetchAgentProfilesAsync(): Promise<AgentProfile[]> {
         threadId: null,
         avatarColor: a.avatarColor,
         avatarHue: a.avatarHue,
+        avatarSeed: a.avatarSeed,
         phase: a.phase,
         activity: a.activity,
         unreadCount: a.unreadCount,

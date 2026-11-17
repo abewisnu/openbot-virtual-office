@@ -69,6 +69,7 @@ non-array or schema failure is treated as "no data" and the UI falls back to moc
     "role": "Example Role",
     "avatarColor": null,
     "avatarHue": 30,
+    "avatarSeed": "agent-00000000-0000-0000-0000-000000000000:face:41",
     "phase": "idle",
     "activity": null,
     "unreadCount": 0
@@ -76,7 +77,9 @@ non-array or schema failure is treated as "no data" and the UI falls back to moc
 ]
 ```
 
-Exactly these eight keys, in this order. `provider`, `model`, `threadId` and raw
+Exactly these nine keys, in this order. `avatarSeed` is OpenBot's face seed
+(`projection_agents.agent_json.avatarSeed`, `/^[a-z0-9:-]{1,128}$/`); OVO derives the
+pixel face from it (§2.5). `provider`, `model`, `threadId` and raw
 `agent_json` are stripped server-side (`vite-plugin-openbot.ts:70-79`) before serialisation.
 `activity` is either `null` or an object (§4).
 
@@ -134,6 +137,34 @@ OpenBot's config is an array, so a machine may hold several team servers
 profile name is therefore resolved across all hosts but only one person is shown.
 Rendering a second roster would need a database path per server, which this build
 does not have.
+
+### 2.5 Agent avatar — derived, never fetched
+
+OpenBot stores **no avatar image** for an agent. `projection_agents.agent_json` carries
+three fields: `avatarSeed` (always set, `/^[a-z0-9:-]{1,128}$/`), `avatarHue`
+(sometimes `null`) and `avatarColor` (sometimes `null`). `avatarUrl` exists in the
+schema but is `null` on all 16 rows of this machine, so nothing is downloaded today.
+
+| Field | Use in OVO |
+|---|---|
+| `avatarSeed` | hash input for the face (shape, eyes, hair, accessory) |
+| `avatarHue` | tint fallback when `avatarColor` is `null` |
+| `avatarColor` | explicit tint, wins over `avatarHue` |
+| `avatarUrl` | **not** sent; a remote image would need a server-side proxy plus CSP work |
+
+`src/office/Avatar.ts` is pure (no imports, no DOM): `stableIndex()` is FNV-1a modulo
+the list length — the same hash OpenBot's renderer uses — and `avatarSpec()` returns
+`{ tint, shape, expression, hair, accessory }`. `src/components/Avatar.tsx` draws that
+as a 12×12 SVG with `shapeRendering="crispEdges"`, so one pixel-art face = one rect
+group, size-independent. `scripts/verify-avatar.mjs` covers determinism, variety, tint
+resolution and the seed sanitiser.
+
+The **lists are OVO's**, not OpenBot's: the app's own `SHAPES`/`EXPRESSIONS` arrays are
+not readable from its bundle, so the exact silhouette does not match the OpenBot
+window pixel for pixel. Same seed still means the same face in every OVO client.
+A missing seed (mock roster, older payload) falls back to the agent id, so no row is
+faceless. Raw text cannot reach the DOM: `sanitizeSeed()` folds anything outside
+`[a-z0-9:-]` and clips to 128 chars.
 
 ---
 

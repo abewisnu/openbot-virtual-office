@@ -232,6 +232,7 @@ export function openBotApiPlugin(): Plugin {
         role: p.role,
         avatarColor: p.avatarColor,
         avatarHue: p.avatarHue,
+        avatarSeed: p.avatarSeed,
         phase: p.phase,
         activity: p.activity,
         unreadCount: p.unreadCount,

@@ -63,6 +63,7 @@ function toEmployee(p: AgentProfile, index: number): Employee {
     role: p.role,
     avatarColor: p.avatarColor,
     avatarHue: p.avatarHue,
+    avatarSeed: p.avatarSeed,
     phase: p.phase,
     activity: p.activity,
     status: statusForPhase(p.phase),

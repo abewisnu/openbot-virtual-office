@@ -81,6 +81,8 @@ const agentJsonSchema = z.object({
   threadId: z.string().nullish(),
   avatarColor: z.string().nullish(),
   avatarHue: z.coerce.number().nullish(),
+  // OpenBot's own seed shape; anything else is folded to a safe slug later.
+  avatarSeed: z.string().max(128).nullish(),
 });
 
 // ---------------------------------------------------------------------------
@@ -315,6 +317,7 @@ export function fetchAgentProfiles(): AgentProfile[] {
       model: json.model,
       avatarColor: json.avatarColor ?? null,
       avatarHue: json.avatarHue ?? 0,
+      avatarSeed: json.avatarSeed ?? null,
       phase,
       activity,
       unreadCount,

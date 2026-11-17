@@ -101,6 +101,7 @@ character = info panel · `E` = randomise simulation status · `Esc` = close pan
 | `src/office/Character.ts` | Sprite, idle/walk/sit animations plus typing variants and speech bubble, name label, status indicator. |
 | `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`/`waiting`: the "seated first, then lit" gate, used by `World.ts` and covered by `scripts/verify-monitor.mjs`. `waiting` is the grey screen a seated `blocked` agent waits behind. |
 | `src/office/Lounge.ts` | Pure Lounge box (`LOUNGE_ROOM`, `isInLounge`) plus the phase rule `staysInLounge(phase)` — `starting` and `restarting`. Imports nothing, so `scripts/verify-lounge.mjs` runs it directly with `node`. |
+| `src/office/Avatar.ts` | Pure avatar recipe: FNV-1a `stableIndex()` + `avatarSpec()` turn `avatarSeed` plus `avatarHue`/`avatarColor` into `{ tint, shape, expression, hair, accessory }`. No imports, no DOM, so `scripts/verify-avatar.mjs` runs it with `node`. |
 | `src/office/World.ts` | Pixi scene, Y-sorting (`zIndex` = bottom edge of an object), camera + bounds, input, agent placement: `working`/`ready` sit at a desk, agents with unread/waiting walk to their own desk. An agent in `starting` or `restarting` is confined to the Lounge room — it sits on a lounge sofa or stands/walks between lounge floor tiles, takes no desk, meeting chair or chat spot, and a pending instruction cannot pull it out. `updateMonitors()` lights a desk screen only when the agent is genuinely seated on that chair (`seat.occupant` **and** `Character.state === 'sit'` on the same `seat`) with `phase` `working`/`ready`/`blocked`; `working` uses animated frames, `ready` a still frame, `blocked` the grey waiting frame while the human answers. A `blocked` agent stays at that desk and stops typing until the phase moves on. A chair is already reserved the moment an agent starts walking, so `seat.occupant` alone is not enough — the screen stays dark while the agent is still walking. |
 | `src/store/useStore.ts` | Zustand: employees derived from the API, selection, notifications, UI settings, 3 s polling loop. |
 | `src/data/openbotSource.node.ts` | Node side: opens SQLite `readonly`, 11 queries, derives `phase` + `activity`. |
@@ -239,6 +240,26 @@ Two details worth knowing:
 - `index.html` carries a small inline script that sets `data-theme` from the OS **before** React
   mounts, so a light desktop never flashes the dark defaults. It is kept in sync with `src/theme.ts`
   by hand, and its `theme-color` metas are split per `prefers-color-scheme` for the browser UI.
+
+## Avatars
+The info panel draws each agent's face from its **seed**, not from a picture. OpenBot keeps no
+avatar image in `openbot.db`: `projection_agents.agent_json` carries `avatarSeed` (always set),
+`avatarHue` and `avatarColor` (sometimes `null`), and those three alone decide the face.
+
+`src/office/Avatar.ts` is the whole recipe and imports nothing. `stableIndex()` is FNV-1a modulo
+the list length, the same hash OpenBot's renderer uses, so a seed always lands on the same
+shape, expression, hair and accessory. `avatarTint()` prefers `avatarColor`, then the palette
+entry for `avatarHue`, then a plain `hsl()` fallback. `sanitizeSeed()` folds anything outside
+`[a-z0-9:-]` and clips to 128 chars, so a bad row cannot break the hash or reach the DOM raw.
+
+`src/components/Avatar.tsx` draws that spec as a 12×12 SVG with `shapeRendering="crispEdges"`:
+crisp at any size, zero network requests, zero new dependencies. A row with no seed (mock
+roster, older payload) falls back to the agent id, so no character is faceless.
+
+The feature lists are OVO's own: OpenBot's sprite order is not readable from its bundle, so the
+silhouette is similar in spirit but not identical to the OpenBot window. Nothing is copied from
+its `forme-*.webp` assets. `avatarUrl` is not used yet; a remote image would need a server-side
+proxy and CSP work, and it can point at personal photos.
 
 ## Ground rules
 - **Name**: OpenBot Virtual Office, **OVO** for short.

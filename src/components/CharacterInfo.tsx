@@ -1,5 +1,6 @@
+import Avatar from './Avatar';
 import { useStore } from '../store/useStore';
-import { badgeFor, shirtColorFor } from '../constants';
+import { badgeFor } from '../constants';
 import type { Status } from '../types';
 
 export default function CharacterInfo() {
@@ -10,7 +11,7 @@ export default function CharacterInfo() {
   return (
     <aside className="panel info">
       <button className="close" onClick={() => select(null)}>×</button>
-      <div className="avatar" style={{ background: shirtColorFor(emp) }} />
+      <Avatar employee={emp} />
       <h3>{emp.name}</h3>
       <p className="muted">{emp.role}</p>
       <div className="badge-row">

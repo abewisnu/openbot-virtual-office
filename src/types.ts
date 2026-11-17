@@ -17,6 +17,11 @@ export interface Employee {
   avatarColor: string | null;
   /** 0-360 hue used to derive a shirt color when avatarColor is null. */
   avatarHue: number;
+  /**
+   * OpenBot's `agent_json.avatarSeed`: the hash input for the pixel face.
+   * Null on the mock roster and on payloads that predate the field.
+   */
+  avatarSeed: string | null;
   /** Live agent runtime phase from the real source, when available. */
   phase: import('./data/openbotSource').AgentPhase;
   /** Single highest-priority activity, or null when there is none. */

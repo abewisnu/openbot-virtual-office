@@ -9,6 +9,7 @@ const P = (name: string, role: string, color: string | null, hue: number, status
   role,
   avatarColor: color,
   avatarHue: hue,
+  avatarSeed: name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
   phase: status === 'working' ? 'ready' : 'idle',
   activity: status === 'working' ? { kind: 'working', variant: 'turn', priority: 4 } : null,
   status,
