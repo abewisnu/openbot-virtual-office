@@ -145,6 +145,33 @@ function loadServerLogo(): LogoHit | null {
 }
 
 
+const MAX_NAME_LEN = 64;
+
+/**
+ * Reads the workspace name OpenBot stores in `hosts[].serverName`. Everything
+ * else in that file stays in the process: it also holds team-server private
+ * keys. Control characters are stripped and the value is capped so the sidebar
+ * cannot be fed an unbounded or multi-line string.
+ */
+function loadWorkspaceName(): string | null {
+  const root = dirname(DEFAULT_DB_PATH);
+  let config: z.infer<typeof serverLogoConfig>;
+  try {
+    config = serverLogoConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
+  } catch {
+    return null;
+  }
+
+  const name = config.hosts?.find((h) => h.serverName)?.serverName;
+  if (!name) return null;
+  const clean = name
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_NAME_LEN);
+  return clean.length > 0 ? clean : null;
+}
+
 function sendJson(
   res: ServerResponse,
   status: number,
@@ -228,11 +255,28 @@ export function openBotApiPlugin(): Plugin {
     else res.end(logo.bytes);
   }
 
+  function handleProfileRequest(req: IncomingMessage, res: ServerResponse) {
+    if (!isAllowedHost(req.headers.host)) {
+      sendJson(res, 421, { error: 'Misdirected request' });
+      return;
+    }
+
+    const method = req.method ?? 'GET';
+    if (method !== 'GET' && method !== 'HEAD') {
+      sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
+      return;
+    }
+
+    // `name: null` is a normal answer: the sidebar falls back to "Workspace".
+    sendJson(res, 200, { name: loadWorkspaceName() }, {}, method === 'HEAD');
+  }
+
   return {
     name: 'openbot-api',
     configureServer(server) {
       server.middlewares.use('/api/agents', handleRequest);
       server.middlewares.use('/api/office-logo', handleLogoRequest);
+      server.middlewares.use('/api/office-profile', handleProfileRequest);
     },
     close() {
       closeOpenBotDb();

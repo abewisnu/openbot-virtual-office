@@ -22,17 +22,18 @@ export default function HUD() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   const [logo, setLogo] = useState<{ src: string; version: string } | null>(null);
   const [logoChecked, setLogoChecked] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
   const logoUrl = useRef<string | null>(null);
 
-  // The workspace logo lives in OpenBot's own app-support folder and is exposed
-  // by the dev API only as image bytes. It is re-read on focus and every 20 s so
-  // a logo replaced inside OpenBot shows up without a page reload. Nothing is
-  // drawn until the first answer arrives, which keeps the reload free of a
-  // flash of the built-in mark.
+  // Workspace identity (logo and name) lives in OpenBot's own app-support folder
+  // and is exposed by the dev API as image bytes plus a plain name string. Both
+  // are re-read on focus and every 20 s so a change made inside OpenBot shows up
+  // without a page reload. Nothing is drawn until the first answer arrives, which
+  // keeps a reload free of a flash of the built-in mark.
   useEffect(() => {
     let cancelled = false;
 
-    const load = async () => {
+    const loadLogo = async () => {
       try {
         const res = await fetch('/api/office-logo', { headers: { Accept: 'image/*' }, cache: 'no-store' });
         const type = res.headers.get('content-type') ?? '';
@@ -56,6 +57,25 @@ export default function HUD() {
         if (!cancelled) setLogoChecked(true);
       }
     };
+
+    const loadName = async () => {
+      try {
+        const res = await fetch('/api/office-profile', {
+          headers: { Accept: 'application/json' },
+          cache: 'no-store',
+        });
+        const type = res.headers.get('content-type') ?? '';
+        if (cancelled || res.status !== 200 || !type.includes('application/json')) return;
+        const body: unknown = await res.json();
+        if (cancelled) return;
+        const name = (body as { name?: unknown }).name;
+        setWorkspaceName(typeof name === 'string' && name.trim() ? name.trim() : null);
+      } catch {
+        /* keep the neutral "Workspace" label */
+      }
+    };
+
+    const load = () => Promise.all([loadLogo(), loadName()]);
 
     void load();
     const onFocus = () => void load();
@@ -99,7 +119,7 @@ export default function HUD() {
             )}
             <div className="brand-copy">
               <span>VIRTUAL OFFICE</span>
-              <strong>Workspace</strong>
+              <strong title={workspaceName ?? undefined}>{workspaceName ?? "Workspace"}</strong>
             </div>
             <span className="live-indicator" aria-label="Active session" />
             <button

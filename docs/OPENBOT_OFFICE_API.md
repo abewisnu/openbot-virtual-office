@@ -19,7 +19,7 @@ Vite **dev-only** plugin. The production design (`/api/office` on port 8099, `/h
 
 | Item | Reality |
 |---|---|
-| Endpoint | `GET /api/agents` (and `HEAD`) — plus `GET /api/office-logo` for the workspace logo (§2.3) |
+| Endpoint | `GET /api/agents` (and `HEAD`) — plus `GET /api/office-logo` for the workspace logo (§2.3) and `GET /api/office-profile` for the workspace name (§2.4) |
 | Host | the Vite dev server itself, default `http://localhost:5173` |
 | Provider | `vite-plugin-openbot.ts` → `configureServer` middleware |
 | Availability | **dev only**. `vite preview` and any static host do **not** serve it |
@@ -102,6 +102,23 @@ The sidebar renders this image only when the answer is `200` with an `image/*`
 Nothing is drawn before the first answer resolves, so a reload never flashes the green
 `VO` tile. The browser re-reads the endpoint every 20 s and on window focus, so a logo
 replaced inside OpenBot appears without a page reload.
+
+---
+
+### 2.4 Workspace name — `GET /api/office-profile`
+
+| Item | Reality |
+|---|---|
+| Source | `openbot-team-server-v2.json`, field `hosts[].serverName` |
+| Response | `200 application/json` with `{ "name": "xscode" }`, `Cache-Control: no-store` |
+| No name configured | `{ "name": null }` — not an error |
+| Sanitising | control characters become spaces, whitespace is collapsed, value trimmed and capped at 64 chars |
+| Guards | same as §2.3: Host allowlist → `421`, non-`GET`/`HEAD` → `405` |
+| Never leaves the process | `serverId`, `publicKey`, `privateKey`, `members`, `sessions`, `invites` |
+
+The sidebar header uses this value as the workspace title and keeps the neutral
+`Workspace` label when the answer is `null`, non-JSON, or missing. Static hosts
+answer with `index.html`, so the `Content-Type` check is what holds that fallback.
 
 ---
 
