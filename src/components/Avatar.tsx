@@ -1,8 +1,12 @@
+import type { CSSProperties } from 'react';
 import { avatarSpec, type AvatarSpec } from '../office/Avatar';
 import type { Employee } from '../types';
 
 /** Canvas ink, kept fixed: the office art is not part of the UI theme. */
 const INK = '#14121c';
+
+/** Resolved per theme by the CSS custom properties set on `.avatar`. */
+const TINT = 'var(--avatar-tint)';
 
 /** 12x12 pixel grid, drawn as SVG rects so it stays crisp at any size. */
 const GRID = 12;
@@ -15,22 +19,22 @@ interface Rect {
   fill: string;
 }
 
-function headRects(shape: AvatarSpec['shape'], tint: string): Rect[] {
+function headRects(shape: AvatarSpec['shape']): Rect[] {
   switch (shape) {
     case 'round':
       // Square with the four corners taken off.
       return [
-        { x: 2, y: 3, w: 8, h: 6, fill: tint },
-        { x: 3, y: 2, w: 6, h: 1, fill: tint },
-        { x: 3, y: 9, w: 6, h: 1, fill: tint },
+        { x: 2, y: 3, w: 8, h: 6, fill: TINT },
+        { x: 3, y: 2, w: 6, h: 1, fill: TINT },
+        { x: 3, y: 9, w: 6, h: 1, fill: TINT },
       ];
     case 'tall':
-      return [{ x: 3, y: 1, w: 6, h: 10, fill: tint }];
+      return [{ x: 3, y: 1, w: 6, h: 10, fill: TINT }];
     case 'wide':
-      return [{ x: 1, y: 3, w: 10, h: 6, fill: tint }];
+      return [{ x: 1, y: 3, w: 10, h: 6, fill: TINT }];
     case 'square':
     default:
-      return [{ x: 2, y: 2, w: 8, h: 8, fill: tint }];
+      return [{ x: 2, y: 2, w: 8, h: 8, fill: TINT }];
   }
 }
 
@@ -99,8 +103,9 @@ function accessoryRects(accessory: AvatarSpec['accessory']): Rect[] {
 }
 
 /**
- * The agent's pixel face, computed from `avatarSeed` alone. Same seed, same
- * face; nothing is fetched and nothing is persisted.
+ * The agent's pixel face, computed from `avatarSeed` plus `agentId`. Same pair,
+ * same face; nothing is fetched and nothing is persisted. The tint comes from a
+ * CSS custom property, so a theme switch repaints it without a re-render.
  */
 export default function Avatar({
   employee,
@@ -113,16 +118,21 @@ export default function Avatar({
     seed: employee.avatarSeed,
     hue: employee.avatarHue,
     color: employee.avatarColor,
+    agentId: employee.id,
     fallbackSeed: employee.id,
   });
   const rects = [
-    ...headRects(spec.shape, spec.tint),
+    ...headRects(spec.shape),
     ...hairRects(spec.hair),
     ...faceRects(spec.expression),
     ...accessoryRects(spec.accessory),
   ];
+  const vars = {
+    '--avatar-tint-dark': spec.tints.dark,
+    '--avatar-tint-light': spec.tints.light,
+  } as CSSProperties;
   return (
-    <div className="avatar" title={`${employee.name} avatar`}>
+    <div className="avatar" style={vars} title={`${employee.name} avatar`}>
       <svg
         width={size}
         height={size}

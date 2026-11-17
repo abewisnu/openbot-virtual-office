@@ -675,6 +675,11 @@ kbd {
   line-height: 0;
   background: var(--ovo-surface);
   overflow: hidden;
+  /* Per-agent tints are inlined by Avatar.tsx; this picks the active theme's. */
+  --avatar-tint: var(--avatar-tint-dark, #6ab7ff);
+}
+:root[data-theme='light'] .avatar {
+  --avatar-tint: var(--avatar-tint-light, #2f6fb5);
 }
 .avatar svg {
   display: block;

@@ -152,18 +152,39 @@ schema but is `null` on all 16 rows of this machine, so nothing is downloaded to
 | `avatarColor` | explicit tint, wins over `avatarHue` |
 | `avatarUrl` | **not** sent; a remote image would need a server-side proxy plus CSP work |
 
-`src/office/Avatar.ts` is pure (no imports, no DOM): `stableIndex()` is FNV-1a modulo
-the list length — the same hash OpenBot's renderer uses — and `avatarSpec()` returns
-`{ tint, shape, expression, hair, accessory }`. `src/components/Avatar.tsx` draws that
+`src/office/Avatar.ts` is pure (no imports, no DOM): `stableIndex()` is FNV-1a with a
+murmur3-style avalanche before the modulo, and `avatarSpec()` returns
+`{ tints, shape, expression, hair, accessory }`. `src/components/Avatar.tsx` draws that
 as a 12×12 SVG with `shapeRendering="crispEdges"`, so one pixel-art face = one rect
 group, size-independent. `scripts/verify-avatar.mjs` covers determinism, variety, tint
-resolution and the seed sanitiser.
+resolution, seed sanitising, seed collisions and the contrast table.
+
+**Hash key = `avatarSeed:agentId:<feature>`.** `agentId` participates on purpose: three
+agents on this machine share `first-bot:face:123` (Iwa, Neke, Clubo), and hashing the
+seed alone gave them one shape, expression, hair and accessory. The avalanche is also
+required — raw FNV-1a low bits are weak, so ids differing only near the end collided.
+
+**Tint is a pair, one per theme.** `avatarTints()` returns `{ dark, light }`. Hue and
+saturation stay, lightness is clamped by bisection until the tile clears **3:1**
+against that theme's info-panel surface and the ink (`#14121c`) inside it also clears
+**3:1**:
+
+| Theme | Panel surface (composited) | Tint luminance band |
+|---|---|---|
+| dark | `rgba(29,23,34,0.88)` over `#14121c` → `#1c1621` | `>= 0.15` |
+| light | `rgba(252,251,248,0.92)` over `#f4f1ea` → `#fbfaf7` | `0.145 – 0.255` |
+
+Measured on the real 16-agent roster: worst tint-on-panel **3.28:1**, worst
+ink-on-tint **3.43:1**. The two variants travel to the DOM as CSS custom properties
+and `:root[data-theme='light'] .avatar` selects the light one, so a theme switch
+repaints without a React re-render. The theme is never read from JS, so no listener
+and no listener cleanup is needed here.
 
 The **lists are OVO's**, not OpenBot's: the app's own `SHAPES`/`EXPRESSIONS` arrays are
 not readable from its bundle, so the exact silhouette does not match the OpenBot
-window pixel for pixel. Same seed still means the same face in every OVO client.
-A missing seed (mock roster, older payload) falls back to the agent id, so no row is
-faceless. Raw text cannot reach the DOM: `sanitizeSeed()` folds anything outside
+window pixel for pixel. The same seed + agent id still means the same face in every OVO
+client. A missing seed (mock roster, older payload) falls back to the agent id, so no
+row is faceless. Raw text cannot reach the DOM: `sanitizeSeed()` folds anything outside
 `[a-z0-9:-]` and clips to 128 chars.
 
 ---

@@ -101,7 +101,7 @@ character = info panel · `E` = randomise simulation status · `Esc` = close pan
 | `src/office/Character.ts` | Sprite, idle/walk/sit animations plus typing variants and speech bubble, name label, status indicator. |
 | `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`/`waiting`: the "seated first, then lit" gate, used by `World.ts` and covered by `scripts/verify-monitor.mjs`. `waiting` is the grey screen a seated `blocked` agent waits behind. |
 | `src/office/Lounge.ts` | Pure Lounge box (`LOUNGE_ROOM`, `isInLounge`) plus the phase rule `staysInLounge(phase)` — `starting` and `restarting`. Imports nothing, so `scripts/verify-lounge.mjs` runs it directly with `node`. |
-| `src/office/Avatar.ts` | Pure avatar recipe: FNV-1a `stableIndex()` + `avatarSpec()` turn `avatarSeed` plus `avatarHue`/`avatarColor` into `{ tint, shape, expression, hair, accessory }`. No imports, no DOM, so `scripts/verify-avatar.mjs` runs it with `node`. |
+| `src/office/Avatar.ts` | Pure avatar recipe: `stableIndex()` (FNV-1a + murmur3 avalanche) and `avatarSpec()` turn `avatarSeed` plus `agentId` and `avatarHue`/`avatarColor` into `{ tints, shape, expression, hair, accessory }`. Tints are clamped per theme for 3:1 contrast. No imports, no DOM, so `scripts/verify-avatar.mjs` runs it with `node`. |
 | `src/office/World.ts` | Pixi scene, Y-sorting (`zIndex` = bottom edge of an object), camera + bounds, input, agent placement: `working`/`ready` sit at a desk, agents with unread/waiting walk to their own desk. An agent in `starting` or `restarting` is confined to the Lounge room — it sits on a lounge sofa or stands/walks between lounge floor tiles, takes no desk, meeting chair or chat spot, and a pending instruction cannot pull it out. `updateMonitors()` lights a desk screen only when the agent is genuinely seated on that chair (`seat.occupant` **and** `Character.state === 'sit'` on the same `seat`) with `phase` `working`/`ready`/`blocked`; `working` uses animated frames, `ready` a still frame, `blocked` the grey waiting frame while the human answers. A `blocked` agent stays at that desk and stops typing until the phase moves on. A chair is already reserved the moment an agent starts walking, so `seat.occupant` alone is not enough — the screen stays dark while the agent is still walking. |
 | `src/store/useStore.ts` | Zustand: employees derived from the API, selection, notifications, UI settings, 3 s polling loop. |
 | `src/data/openbotSource.node.ts` | Node side: opens SQLite `readonly`, 11 queries, derives `phase` + `activity`. |
@@ -246,15 +246,29 @@ The info panel draws each agent's face from its **seed**, not from a picture. Op
 avatar image in `openbot.db`: `projection_agents.agent_json` carries `avatarSeed` (always set),
 `avatarHue` and `avatarColor` (sometimes `null`), and those three alone decide the face.
 
-`src/office/Avatar.ts` is the whole recipe and imports nothing. `stableIndex()` is FNV-1a modulo
-the list length, the same hash OpenBot's renderer uses, so a seed always lands on the same
-shape, expression, hair and accessory. `avatarTint()` prefers `avatarColor`, then the palette
-entry for `avatarHue`, then a plain `hsl()` fallback. `sanitizeSeed()` folds anything outside
-`[a-z0-9:-]` and clips to 128 chars, so a bad row cannot break the hash or reach the DOM raw.
+`src/office/Avatar.ts` is the whole recipe and imports nothing. `stableIndex()` is FNV-1a over
+the key, then a murmur3-style avalanche before the modulo. The key is
+`avatarSeed:agentId:<feature>` — `agentId` is hashed in on purpose, because three agents on
+this machine share the seed `first-bot:face:123` and would otherwise get one identical face.
+The avalanche matters too: raw FNV-1a has weak low bits, so ids differing only at the end
+collided. `avatarTint()` prefers `avatarColor`, then the palette entry for `avatarHue`, then a
+hex `hsl()` fallback. `sanitizeSeed()` folds anything outside `[a-z0-9:-]` and clips to 128
+chars, so a bad row cannot break the hash or reach the DOM raw.
+
+**Contrast is guaranteed, per theme.** `avatarTints()` returns two variants of the same hue.
+The dark variant is lifted in HSL lightness until it reaches 3:1 against the dark panel surface
+(`#1c1621`, i.e. `rgba(29,23,34,0.88)` over `#14121c`); the light variant is clamped into the
+luminance band that clears 3:1 against the light panel (`#fbfaf7`, i.e.
+`rgba(252,251,248,0.92)` over `#f4f1ea`) *and* keeps the ink at 3:1. Hue and saturation are
+kept, so Neke stays yellow and Clubo stays sky blue — only lightness moves. Worst case on the
+real 16-agent roster is 3.28:1 tint-on-panel and 3.43:1 ink-on-tint.
 
 `src/components/Avatar.tsx` draws that spec as a 12×12 SVG with `shapeRendering="crispEdges"`:
-crisp at any size, zero network requests, zero new dependencies. A row with no seed (mock
-roster, older payload) falls back to the agent id, so no character is faceless.
+crisp at any size, zero network requests, zero new dependencies. The two tints arrive as CSS
+custom properties (`--avatar-tint-dark`, `--avatar-tint-light`) and `:root[data-theme='light']
+.avatar` picks the active one, so a theme switch repaints the face without a re-render. A row
+with no seed (mock roster, older payload) falls back to the agent id, so no character is
+faceless.
 
 The feature lists are OVO's own: OpenBot's sprite order is not readable from its bundle, so the
 silhouette is similar in spirit but not identical to the OpenBot window. Nothing is copied from

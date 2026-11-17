@@ -7,13 +7,21 @@
  * The recipe mirrors OpenBot's own, which was read from its renderer bundle:
  *
  *   stableIndex(value, length) = FNV-1a of `value`, taken modulo `length`
- *   shape      <- `${seed}:shape`
- *   expression <- `${seed}:expression`
+ *   shape      <- `${seed}:${agentId}:shape`
+ *   expression <- `${seed}:${agentId}:expression`
  *   color      <- avatarColor, else the hue palette
+ *
+ * `agentId` is part of the hash on purpose: several agents share a seed such as
+ * `first-bot:face:123` (Iwa, Neke, Clubo on this machine), and without it they
+ * would get one identical face, separated only by tint.
  *
  * OpenBot's own sprite lists are not readable from the bundle, so the feature
  * lists below are OVO's. Same seed, same face, every render, in every client —
  * but the exact silhouette will not match the OpenBot window pixel for pixel.
+ *
+ * Two tint variants are returned, one per UI theme. Each is clamped in HSL
+ * lightness until it reaches 3:1 against that theme's info-panel surface *and*
+ * keeps the ink at 3:1, so a face never melts into the panel.
  *
  * Pure module: no imports, no DOM, so `scripts/verify-avatar.mjs` can load it
  * with plain `node`.
@@ -52,10 +60,40 @@ export type HeadShape = (typeof HEAD_SHAPES)[number];
 export type Expression = (typeof EXPRESSIONS)[number];
 export type HairStyle = (typeof HAIR_STYLES)[number];
 export type Accessory = (typeof ACCESSORIES)[number];
+export type ThemeName = 'dark' | 'light';
+
+/** Ink used for every face feature. Fixed: the office art is not themed. */
+export const AVATAR_INK = '#14121c';
+
+/**
+ * Info-panel surface per theme, already composited over the page background:
+ *
+ *   dark   rgba(29, 23, 34, 0.88) over #14121c  -> #1c1621
+ *   light  rgba(252, 251, 248, 0.92) over #f4f1ea -> #fbfaf7
+ *
+ * `scripts/verify-avatar.mjs` uses the same two constants, so the guarantee the
+ * script checks is the one the UI renders.
+ */
+export const PANEL_SURFACES: Record<ThemeName, string> = {
+  dark: '#1c1621',
+  light: '#fbfaf7',
+};
+
+/** Minimum contrast ratio a face must keep, in both directions. */
+export const MIN_CONTRAST = 3;
+
+/** Relative luminance band a tint is clamped into, per theme. */
+const TINT_LUMINANCE: Record<ThemeName, { min: number; max: number }> = {
+  // Dark panel is almost black: lift the tint until it clears 3:1.
+  dark: { min: 0.15, max: 1 },
+  // Light panel is almost white: keep the tint dark enough for 3:1, but not so
+  // dark that the ink disappears into it.
+  light: { min: 0.145, max: 0.255 },
+};
 
 export interface AvatarSpec {
-  /** Base tint for the head block, already resolved to a CSS color. */
-  tint: string;
+  /** Per-theme head tint, already resolved to a CSS hex color. */
+  tints: Record<ThemeName, string>;
   shape: HeadShape;
   expression: Expression;
   hair: HairStyle;
@@ -65,24 +103,161 @@ export interface AvatarSpec {
 /** Longest seed the boundary accepts; matches OpenBot's own limit. */
 export const AVATAR_SEED_MAX = 128;
 
-/** FNV-1a over the string, modulo `length` — the same hash OpenBot uses. */
+// ---------------------------------------------------------------------------
+// Color math (pure, no dependencies)
+// ---------------------------------------------------------------------------
+
+export interface Rgb {
+  r: number;
+  g: number;
+  b: number;
+}
+
+export function hexToRgb(hex: string): Rgb {
+  const raw = hex.replace('#', '');
+  const full = raw.length === 3 ? raw.split('').map((c) => c + c).join('') : raw;
+  const n = Number.parseInt(full, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+export function rgbToHex({ r, g, b }: Rgb): string {
+  const channel = (v: number) =>
+    Math.round(Math.min(255, Math.max(0, v)))
+      .toString(16)
+      .padStart(2, '0');
+  return `#${channel(r)}${channel(g)}${channel(b)}`;
+}
+
+export function relativeLuminance(rgb: Rgb): number {
+  const channel = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
+}
+
+/** WCAG contrast ratio, 1..21. */
+export function contrastRatio(a: Rgb, b: Rgb): number {
+  const la = relativeLuminance(a);
+  const lb = relativeLuminance(b);
+  const hi = Math.max(la, lb);
+  const lo = Math.min(la, lb);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+interface Hsl {
+  h: number;
+  s: number;
+  l: number;
+}
+
+function rgbToHsl({ r, g, b }: Rgb): Hsl {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const l = (max + min) / 2;
+  if (max === min) return { h: 0, s: 0, l };
+  const d = max - min;
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+  let h: number;
+  if (max === rn) h = ((gn - bn) / d + (gn < bn ? 6 : 0)) / 6;
+  else if (max === gn) h = ((bn - rn) / d + 2) / 6;
+  else h = ((rn - gn) / d + 4) / 6;
+  return { h, s, l };
+}
+
+function hslToRgb({ h, s, l }: Hsl): Rgb {
+  if (s === 0) {
+    const v = l * 255;
+    return { r: v, g: v, b: v };
+  }
+  const hue = (p: number, q: number, t: number) => {
+    let tt = t;
+    if (tt < 0) tt += 1;
+    if (tt > 1) tt -= 1;
+    if (tt < 1 / 6) return p + (q - p) * 6 * tt;
+    if (tt < 1 / 2) return q;
+    if (tt < 2 / 3) return p + (q - p) * (2 / 3 - tt) * 6;
+    return p;
+  };
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+  const p = 2 * l - q;
+  return {
+    r: hue(p, q, h + 1 / 3) * 255,
+    g: hue(p, q, h) * 255,
+    b: hue(p, q, h - 1 / 3) * 255,
+  };
+}
+
+/** Luminance is monotonic in HSL lightness, so a bisection is enough. */
+function withLuminance(rgb: Rgb, target: number): Rgb {
+  const hsl = rgbToHsl(rgb);
+  let lo = hsl.l;
+  let hi = 1;
+  if (relativeLuminance(rgb) > target) {
+    lo = 0;
+    hi = hsl.l;
+  }
+  let best = rgb;
+  for (let i = 0; i < 40; i += 1) {
+    const mid = (lo + hi) / 2;
+    const candidate = hslToRgb({ ...hsl, l: mid });
+    const lum = relativeLuminance(candidate);
+    best = candidate;
+    if (lum < target) lo = mid;
+    else hi = mid;
+  }
+  return best;
+}
+
+/** Clamp a tint into the theme's luminance band, keeping hue and saturation. */
+export function tintForTheme(base: Rgb, theme: ThemeName): string {
+  const band = TINT_LUMINANCE[theme];
+  const lum = relativeLuminance(base);
+  if (lum >= band.min && lum <= band.max) return rgbToHex(base);
+  const target = lum < band.min ? band.min : band.max;
+  return rgbToHex(withLuminance(base, target));
+}
+
+// ---------------------------------------------------------------------------
+// Seed + spec
+// ---------------------------------------------------------------------------
+
+/**
+ * FNV-1a over the string, then a murmur3-style avalanche, then modulo `length`.
+ *
+ * The avalanche is required: raw FNV-1a has weak low bits, so two seeds that
+ * differ only near the end (two agent ids sharing `first-bot:face:123`) landed
+ * on the same shape, expression, hair and accessory. Mixing the high bits down
+ * keeps the function deterministic while separating those ids.
+ */
 export function stableIndex(value: string, length: number): number {
   let hash = 2166136261;
   for (let i = 0; i < value.length; i += 1) {
     hash ^= value.charCodeAt(i);
     hash = Math.imul(hash, 16777619);
   }
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x7feb352d);
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 0x846ca68b);
+  hash ^= hash >>> 16;
   return (hash >>> 0) % length;
 }
 
-/**
- * Resolve the head tint: an explicit color wins, otherwise the nearest known
- * hue, otherwise the hue itself (agents whose hue is outside the palette).
- */
+/** Base tint before the theme clamp: explicit color, then the hue palette. */
 export function avatarTint(input: { hue: number; color: string | null }): string {
   if (input.color) return input.color;
   const hue = Math.round(((input.hue % 360) + 360) % 360);
-  return HUE_TINTS[hue] ?? `hsl(${hue}, 45%, 55%)`;
+  return HUE_TINTS[hue] ?? rgbToHex(hslToRgb({ h: hue / 360, s: 0.45, l: 0.55 }));
+}
+
+/** Both theme variants of the base tint. */
+export function avatarTints(input: { hue: number; color: string | null }): Record<ThemeName, string> {
+  const base = hexToRgb(avatarTint(input));
+  return { dark: tintForTheme(base, 'dark'), light: tintForTheme(base, 'light') };
 }
 
 /**
@@ -93,15 +268,18 @@ export function avatarSpec(input: {
   seed: string | null;
   hue: number;
   color: string | null;
+  agentId?: string;
   fallbackSeed?: string;
 }): AvatarSpec {
   const seed = sanitizeSeed(input.seed ?? input.fallbackSeed ?? 'openbot-agent');
+  const identity = sanitizeSeed(input.agentId ?? input.fallbackSeed ?? 'openbot-agent');
+  const key = `${seed}:${identity}`;
   return {
-    tint: avatarTint(input),
-    shape: HEAD_SHAPES[stableIndex(`${seed}:shape`, HEAD_SHAPES.length)],
-    expression: EXPRESSIONS[stableIndex(`${seed}:expression`, EXPRESSIONS.length)],
-    hair: HAIR_STYLES[stableIndex(`${seed}:hair`, HAIR_STYLES.length)],
-    accessory: ACCESSORIES[stableIndex(`${seed}:accessory`, ACCESSORIES.length)],
+    tints: avatarTints(input),
+    shape: HEAD_SHAPES[stableIndex(`${key}:shape`, HEAD_SHAPES.length)],
+    expression: EXPRESSIONS[stableIndex(`${key}:expression`, EXPRESSIONS.length)],
+    hair: HAIR_STYLES[stableIndex(`${key}:hair`, HAIR_STYLES.length)],
+    accessory: ACCESSORIES[stableIndex(`${key}:accessory`, ACCESSORIES.length)],
   };
 }
 
