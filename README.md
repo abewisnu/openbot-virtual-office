@@ -1,5 +1,17 @@
 # OpenBot Virtual Office (OVO)
 
+<!-- Badges built with https://github.com/ileriayo/markdown-badges (shields.io) -->
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge&logo=open-source-initiative&logoColor=white)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=for-the-badge)](package.json)
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-339933.svg?style=for-the-badge&logo=nodedotjs&logoColor=white)](package.json)
+[![React](https://img.shields.io/badge/React-18-61DAFB.svg?style=for-the-badge&logo=react&logoColor=black)](package.json)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6.svg?style=for-the-badge&logo=typescript&logoColor=white)](package.json)
+[![Vite](https://img.shields.io/badge/Vite-5-646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)](package.json)
+[![PixiJS](https://img.shields.io/badge/PixiJS-8-FF4DB8.svg?style=for-the-badge&logo=pixijs&logoColor=white)](package.json)
+[![Zustand](https://img.shields.io/badge/Zustand-5-2D3748.svg?style=for-the-badge)](package.json)
+[![SQLite: read-only](https://img.shields.io/badge/SQLite-read--only-003B57.svg?style=for-the-badge&logo=sqlite&logoColor=white)](docs/OPENBOT_OFFICE_API.md)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](#license)
+
 **OpenBot Virtual Office** — **OVO** for short — is a *visualisation* of the work running inside
 OpenBot, rendered as a 2D pixel-art virtual office. Its role is **observe only**: OVO has no chat, no
 command box, and cannot send instructions to an agent. Instructions stay in OpenBot itself; OVO shows
