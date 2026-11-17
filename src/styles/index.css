@@ -91,7 +91,7 @@ body,
   place-items: center;
   color: #15111a;
   background: #a7f078;
-  border-radius: 10px;
+  border-radius: 0;
   font-size: 13px;
   font-weight: 900;
   letter-spacing: -1px;
@@ -114,7 +114,7 @@ body,
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: inherit;
+  border-radius: 0;
 }
 
 .brand-mark-pending {
@@ -140,7 +140,7 @@ body,
   width: 8px;
   height: 8px;
   background: #a7f078;
-  border-radius: 50%;
+  border-radius: 0;
   box-shadow: 0 0 10px rgba(167, 240, 120, 0.7);
 }
 .sidebar-hide-button {
@@ -153,7 +153,7 @@ body,
   color: #bdb3c7;
   background: #30283a;
   border: 1px solid #4a3f58;
-  border-radius: 5px;
+  border-radius: 0;
   font-size: 20px;
   line-height: 1;
 }
@@ -172,7 +172,7 @@ body,
   padding: 9px 12px;
   background: #191520;
   border: 1px solid #493e54;
-  border-radius: 8px;
+  border-radius: 0;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
   font-size: 11px;
 }
@@ -190,7 +190,7 @@ body,
   padding: 15px;
   background: linear-gradient(135deg, #292235, #211c2b);
   border: 1px solid #41354d;
-  border-radius: 10px;
+  border-radius: 0;
 }
 .clock-card {
   display: flex;
@@ -206,7 +206,7 @@ body,
   padding: 2px 5px;
   color: #a7f078;
   background: rgba(167, 240, 120, 0.1);
-  border-radius: 3px;
+  border-radius: 0;
   font-size: 8px;
   letter-spacing: 0.6px;
 }
@@ -242,7 +242,7 @@ body,
 .source-badge {
   margin-left: 0;
   padding: 1px 6px;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -283,12 +283,12 @@ body,
   height: 3px;
   overflow: hidden;
   background: #342d3b;
-  border-radius: 4px;
+  border-radius: 0;
 }
 .status-track span {
   display: block;
   height: 100%;
-  border-radius: inherit;
+  border-radius: 0;
   transition: width 0.25s ease;
 }
 .updates-section {
@@ -301,7 +301,7 @@ body,
   place-items: center;
   color: #c9bdd4 !important;
   background: #342d3b;
-  border-radius: 50%;
+  border-radius: 0;
 }
 .notice-list {
   display: flex;
@@ -313,7 +313,7 @@ body,
   color: #d8d0df;
   background: #211c2b;
   border-left: 2px solid #a7f078;
-  border-radius: 0 5px 5px 0;
+  border-radius: 0;
   font-size: 10px;
   line-height: 1.45;
 }
@@ -365,7 +365,7 @@ body,
   padding: 4px 6px;
   background: #221d2b;
   border: 1px solid #41354d;
-  border-radius: 6px;
+  border-radius: 0;
   color: #efe7f7;
   font: inherit;
   font-size: 11px;
@@ -388,7 +388,7 @@ body,
   padding: 8px 9px;
   background: #30283a;
   border: 1px solid #4a3f58;
-  border-radius: 6px;
+  border-radius: 0;
   font-size: 10px;
 }
 .sidebar-actions .exit-button {
@@ -414,7 +414,7 @@ body,
   color: #d9d2e0;
   background: #342d3b;
   border: 1px solid #493e54;
-  border-radius: 3px;
+  border-radius: 0;
   padding: 2px 4px;
   margin: 0 1px;
 }
@@ -555,7 +555,7 @@ kbd {
     max-height: 62dvh;
     background: rgba(25, 21, 32, 0.97);
     border: 1px solid #493e54;
-    border-radius: 10px;
+    border-radius: 0;
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5);
   }
   .sidebar-header {
@@ -576,4 +576,12 @@ kbd {
     right: 8px;
     width: min(260px, calc(100vw - 16px));
   }
+}
+
+/* Square pixel look: the sidebar has no rounded corners. Kept last so it also
+   wins over the app-wide rules (`button`, `kbd`, `.dot`) that would otherwise
+   re-round sidebar controls; canvas chips and panels keep their own radii. */
+.hud-sidebar,
+.hud-sidebar * {
+  border-radius: 0;
 }
