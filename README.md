@@ -28,6 +28,10 @@ fixed with a 16 px gap from the top, left and bottom edges, an all-round 1 px bo
 layered drop shadow, and square corners throughout (matching the pixel look). No layout space is
 reserved for it, so hiding the sidebar leaves the canvas exactly as it was.
 
+**Team activity** lists one row per phase with its count. Clicking a non-empty row expands the
+agents in that phase (alphabetical, real `name` from the roster); clicking a name focuses that agent
+in the office and opens its info panel. Empty phases are disabled — nothing to list.
+
 The data is **not mock**: the app reads OpenBot's SQLite database **read-only** through
 `GET /api/agents` and renders each agent's `phase` + `activity`. Mock is used only as a fallback when
 the database cannot be read, and the sidebar shows a badge for the active source.

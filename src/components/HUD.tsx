@@ -19,9 +19,12 @@ export default function HUD() {
     exited,
     setExited,
     source,
+    select,
   } = useStore();
   const [now, setNow] = useState(Date.now());
   const [sidebarVisible, setSidebarVisible] = useState(true);
+  // Which "Team activity" row is expanded to show the agents behind its count.
+  const [openPhase, setOpenPhase] = useState<AgentPhase | null>(null);
   const [logo, setLogo] = useState<{ src: string; version: string } | null>(null);
   const [logoChecked, setLogoChecked] = useState(false);
   // Profile name of the person using this OpenBot, taken from OpenBot's own
@@ -98,10 +101,6 @@ export default function HUD() {
     const t = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(t);
   }, []);
-  const phaseCounts = employees.reduce(
-    (a, e) => ({ ...a, [e.phase]: (a[e.phase] ?? 0) + 1 }),
-    {} as Record<AgentPhase, number>,
-  );
   const recentNotices = notices
     .filter((n) => now - n.ts < 9000)
     .slice(-3)
@@ -167,24 +166,63 @@ export default function HUD() {
                 <span>{employees.length} members</span>
               </div>
               <div className="status-list">
-                {AGENT_PHASES.map((p) => (
-                  <div className="status-row" key={p}>
-                    <i
-                      className="dot"
-                      style={{ background: PHASE_COLORS[p] }}
-                    />
-                    <span>{PHASE_LABEL[p]}</span>
-                    <strong>{phaseCounts[p] ?? 0}</strong>
-                    <div className="status-track">
-                      <span
-                        style={{
-                          width: `${((phaseCounts[p] ?? 0) / Math.max(employees.length, 1)) * 100}%`,
-                          background: PHASE_COLORS[p],
-                        }}
-                      />
+                {AGENT_PHASES.map((p) => {
+                  const members = employees
+                    .filter((e) => e.phase === p)
+                    .sort((a, b) => a.name.localeCompare(b.name));
+                  const count = members.length;
+                  const open = openPhase === p && count > 0;
+                  return (
+                    <div className="status-group" key={p}>
+                      {/* A row is the button: same grid as before, one extra
+                          caret cell so the expanded state is visible. Rows with
+                          no members stay inert — nothing to list. */}
+                      <button
+                        type="button"
+                        className="status-row"
+                        aria-expanded={open}
+                        aria-controls={count ? `phase-members-${p}` : undefined}
+                        disabled={count === 0}
+                        onClick={() => setOpenPhase((cur) => (cur === p ? null : p))}
+                      >
+                        <i
+                          className="dot"
+                          style={{ background: PHASE_COLORS[p] }}
+                        />
+                        <span>{PHASE_LABEL[p]}</span>
+                        <span className="status-meta">
+                          <strong>{count}</strong>
+                          <i className="status-caret" aria-hidden="true">
+                            {count ? (open ? "−" : "+") : ""}
+                          </i>
+                        </span>
+                        <div className="status-track">
+                          <span
+                            style={{
+                              width: `${(count / Math.max(employees.length, 1)) * 100}%`,
+                              background: PHASE_COLORS[p],
+                            }}
+                          />
+                        </div>
+                      </button>
+                      {open && (
+                        <ul className="status-members" id={`phase-members-${p}`}>
+                          {members.map((m) => (
+                            <li key={m.id}>
+                              <button
+                                type="button"
+                                onClick={() => select(m.id)}
+                                title={`Show ${m.name} in the office`}
+                              >
+                                {m.name}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
