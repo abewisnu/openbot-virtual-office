@@ -53,7 +53,7 @@ export function zoneName(tx: number, ty: number): string {
   if (tx < 15 && ty < 16) return "Lounge";
   if (tx < 15 && ty < 30 && ty >= 17) return "Pantry & Storage";
   if (tx < 15 && ty >= 30) return "NOC";
-  if (tx >= 17 && tx <= 32 && ty < 19) return "Meeting Area";
+  if (tx >= 17 && tx <= 32 && ty < 20) return "Meeting Area";
   if (tx >= 39) return "Workstation Area";
   return "Sirkulasi";
 }
@@ -311,11 +311,11 @@ export function buildLayout(deskCount = 12): Layout {
   // glass box and door, and the Meeting Room keeps its partitions unchanged.
   // --- Meeting (kiri-tengah)
   // The room sits one room-width left of the workstation block: walls on
-  // columns 17 and 32, interior columns 18-31 and rows 6-17, which leaves a
-  // 3-tile aisle (33-35) between the glass and the first desk bay at column 36.
-  // The floor runs one extra row past the table so the back chairs no longer
-  // touch the bottom glass: chairs end at y 512 and the bottom wall sits at
-  // row 18 (y 584).
+  // columns 17 and 32, interior columns 18-31 and rows 6-19 (bottom glass on
+  // row 20), which leaves a 3-tile aisle (33-35) between the glass and the
+  // first desk bay at column 36. The floor runs two rows past the table so the
+  // back chairs and the rug no longer touch the bottom glass: chairs end at
+  // y 512, the rug at row 17, and the bottom wall sits at row 20 (y 640).
   // Props are anchored in pixels, not tiles, because at the 2x default their
   // sprites are much wider and taller than their collision footprint. The
   // numbers keep a one-tile margin on every side and a visible gap between the
@@ -366,9 +366,13 @@ export function buildLayout(deskCount = 12): Layout {
       occupant: null,
     });
   }
-  dividerV(17, 5, 17);
-  dividerV(32, 5, 17, 12);
-  dividerH(18, 17, 32, null, true, true);
+  // The floor runs two more rows past the table (rows 18-19) so the rug and
+  // its plants stop clear of the bottom glass instead of touching it. The side
+  // partitions follow the new wall line: both columns now reach row 19 and the
+  // bottom band sits on row 20.
+  dividerV(17, 5, 19);
+  dividerV(32, 5, 19, 12);
+  dividerH(20, 17, 32, null, true, true);
   place("plant", 19, 16);
   place("plant", 30, 16);
   // --- Pantry & Storage (kiri tengah, ruang atas): shelves and storage along

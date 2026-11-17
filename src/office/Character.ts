@@ -36,7 +36,7 @@ export class Character {
 
     this.labelText = new Text({
       text: name,
-      style: { fontFamily: 'monospace', fontSize: 10, fontWeight: 'bold', fill: 0xffffff },
+      style: { fontFamily: 'monospace', fontSize: 12, fontWeight: 'bold', fill: 0xffffff },
       resolution: 2,
     });
     this.labelText.anchor.set(0.5);
@@ -45,24 +45,24 @@ export class Character {
     this.dot.position.set(0, 0);
     this.bubble = new Sprite(bubbleTex);
     this.bubble.anchor.set(0.5, 1); this.bubble.scale.set(PROP); this.bubble.visible = false;
-    this.bubble.position.set(0, -10);
+    this.bubble.position.set(0, -22);
 
     this.tag.addChild(this.bubble, this.pill, this.dot, this.labelText);
     this.resizePill();
   }
 
   private resizePill() {
-    const w = this.labelText.width + 16;
+    const w = this.labelText.width + 20;
     const half = w / 2;
-    const dotX = -half + 7;
-    this.pill.clear().roundRect(-half, -8, w, 15, 4).fill({ color: 0x000000, alpha: 0.62 });
-    this.labelText.position.set(4, 0);
+    const dotX = -half + 9;
+    this.pill.clear().roundRect(-half, -10, w, 19, 5).fill({ color: 0x000000, alpha: 0.62 });
+    this.labelText.position.set(5, 0);
     this.dotX = dotX;
     this.dot.position.set(dotX, 0);
   }
 
   setDot(color: string) {
-    this.dot.clear().circle(0, 0, 3).fill({ color });
+    this.dot.clear().circle(0, 0, 4).fill({ color });
   }
 
   /** Update the name shown on the tag. Resizes the pill to fit the new text. */
@@ -101,6 +101,20 @@ export class Character {
     } else this.bubbleOn = false;
     this.refresh();
   }
+  /**
+   * Distance from the agent's feet to the name plate, in art pixels. An agent
+   * seated at a workstation carries the plate low, just clear of the seated
+   * sprite, so it stays attached to the body instead of floating high over the
+   * desk bay while it works. The plate lifts back up as soon as the agent
+   * stands or walks, and social seats keep the normal seated height. Both the
+   * `working` and `ready` phases map to the `working` status (see
+   * `statusForPhase()`), so this one branch covers both.
+   */
+  private tagLift(): number {
+    const seated = this.state === 'sit' && !!this.seat;
+    if (seated && this.seat!.kind === 'desk' && this.appliedStatus === 'working') return 44;
+    return seated ? 52 : 64;
+  }
   private refresh() {
     const f = this.frames;
     let tex: Texture, flip = false;
@@ -113,7 +127,7 @@ export class Character {
     this.container.position.set(Math.round(this.x), Math.round(this.y));
     this.container.zIndex = this.y + (sitting ? this.seat!.zOffset : 0);
     this.shadow.visible = !sitting;
-    this.tag.position.set(Math.round(this.x), Math.round(this.y - (sitting ? 52 : 60) * PROP_SCALE));
+    this.tag.position.set(Math.round(this.x), Math.round(this.y - this.tagLift() * PROP_SCALE));
     this.bubble.visible = this.bubbleOn;
     this.bubble.y = -10 * PROP_SCALE + Math.sin(this.anim * 6) * 1.5;
   }

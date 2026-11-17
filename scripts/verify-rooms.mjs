@@ -33,7 +33,17 @@ check(
 
 // --- Pantry (upper-left room, rows 17-29, cols 1-13)
 check('pantry shelf row sits on row 20 with gutters at col 5 and col 10', row(20) === '####.####.##.', row(20));
-check('pantry aisle above the shelves is walkable', row(18) === '.............', row(18));
+check(
+  'meeting-room floor runs clear below the rug to the bottom glass',
+  [18, 19].every((ty) => blocked[ty].slice(18, 32).every((b) => !b)),
+  `rows 18-19 cols 18-31 open`,
+);
+check(
+  'meeting-room bottom wall sits on row 20 and side glass reaches it',
+  blocked[20].slice(17, 32).every((b) => b) && blocked[19][17] && blocked[19][32],
+  `row 20 cols 17-32 solid, cols 17/32 still solid on row 19`,
+);
+
 check('pantry dining table is centred', row(24) === '....####.....', row(24));
 check(
   'pantry label plate sits on free tiles',
@@ -120,7 +130,8 @@ const guards = [
   ['pantry carpet moved to the upper room', /rug\(c, 4, 22, 7, 6, '#7a8a5a', '#4e5a38'\)/.test(art)],
   ['pantry shelves sit two tiles below the top wall', /place\("bookshelf", 1, 20, 4, 1\)/.test(layoutSrc)],
   ['no carpet left in the old pantry spot', !/rug\(c, 3, 35, 8, 4/.test(art)],
-  ['NOC draws a raised floor', /NOC raised floor/.test(art) && /for \(let ty = 31; ty <= 38; ty\+\+\)/.test(art)],
+  ['NOC draws a raised floor', /NOC raised floor/.test(art) && /for \(let ty = 30; ty <= 38; ty\+\+\)/.test(art)],
+  ['NOC carpet reaches the partition lines (row 30, col 14)', /for \(let tx = 1; tx <= 14; tx\+\+\)/.test(art)],
   ['CRAC sprite is 2x4 tiles at the prop scale', /crac: make\(16, 32/.test(art)],
   ['UPS sprite is 2x2 tiles at the prop scale', /ups: make\(16, 16/.test(art)],
   ['patch panel sprite is 2x1 tiles at the prop scale', /switchBox: make\(16, 8/.test(art)],
