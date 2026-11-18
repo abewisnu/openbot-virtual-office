@@ -22,12 +22,12 @@
 
 ### Crypto donations
 
-| Crypto | Network | Address |
+| Network | Address |
 |---|---|---|
-|[![Bitcoin](https://img.shields.io/badge/bitcoin-%23F7931A.svg?style=for-the-badge&logo=bitcoin&logoColor=white)](#crypto-donations)| **BTC** | `bc1qp9qsdgnwfpce307crhguhjvvq8hdlcjwn4260c` |
-|[![Ethers](https://img.shields.io/badge/ethers-%232535A0.svg?style=for-the-badge&logo=ethers&logoColor=white)](#crypto-donations)| **ETC / USDT** | `0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45` |
-|[![Solana](https://img.shields.io/badge/solana-%239945FF.svg?style=for-the-badge&logo=solana&logoColor=white)](#crypto-donations)| **SOLANA / USDT** | `DLmb29BaPDGZk3iSv3enaLiHRFjQ1mvwdjk4mNkfLjXM` |
-|[![Polygon](https://img.shields.io/badge/polygon-%238247E5.svg?style=for-the-badge&logo=polygon&logoColor=white)](#crypto-donations)| **POLYGON / USDT** | `0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45` |
+|[![Bitcoin](https://img.shields.io/badge/bitcoin-%23F7931A.svg?style=for-the-badge&logo=bitcoin&logoColor=white)](#crypto-donations) | `bc1qp9qsdgnwfpce307crhguhjvvq8hdlcjwn4260c` |
+|[![Ethers](https://img.shields.io/badge/ethers-%232535A0.svg?style=for-the-badge&logo=ethers&logoColor=white)](#crypto-donations) | `0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45` |
+|[![Solana](https://img.shields.io/badge/solana-%239945FF.svg?style=for-the-badge&logo=solana&logoColor=white)](#crypto-donations) | `DLmb29BaPDGZk3iSv3enaLiHRFjQ1mvwdjk4mNkfLjXM` |
+|[![Polygon](https://img.shields.io/badge/polygon-%238247E5.svg?style=for-the-badge&logo=polygon&logoColor=white)](#crypto-donations) | `0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45` |
 
 > USDT transfers can go via ERC-20, SPL, or Polygon. BTC is native. Verify the address before sending.
 
