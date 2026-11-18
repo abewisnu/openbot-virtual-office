@@ -27,6 +27,9 @@ logs/
 *.sqlite3
 *.sqlite-journal
 
+# Trae IDE share artifacts — generated locally, never part of the project
+.trae-html-share-packages/
+
 # Test / tool caches
 coverage/
 .vite/
