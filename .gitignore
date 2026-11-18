@@ -35,6 +35,8 @@ coverage/
 .vite/
 .cache/
 .eslintcache
+# Screenshot scratch space: the shipped images live in docs/assets/ (tracked)
+screenshot/
 screenshots/
 
 # OS and editor cruft
