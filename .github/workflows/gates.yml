@@ -23,10 +23,13 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Set up Node 20
+      # 22 is the floor, not a preference: the verify scripts import `.ts` modules
+      # directly and rely on Node's type stripping, which only runs unflagged from
+      # 22.18. Node 20 fails with ERR_UNKNOWN_FILE_EXTENSION.
+      - name: Set up Node 22
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
 
       - name: Install dependencies

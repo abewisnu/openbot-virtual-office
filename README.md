@@ -7,7 +7,7 @@
 <!-- Badges built with https://github.com/ileriayo/markdown-badges (shields.io) -->
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge&logo=open-source-initiative&logoColor=white)](LICENSE)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg?style=for-the-badge)](package.json)
-[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A520-339933.svg?style=for-the-badge&logo=nodedotjs&logoColor=white)](package.json)
+[![Node.js](https://img.shields.io/badge/Node.js-%E2%89%A522.18-339933.svg?style=for-the-badge&logo=nodedotjs&logoColor=white)](package.json)
 [![React](https://img.shields.io/badge/React-18-61DAFB.svg?style=for-the-badge&logo=react&logoColor=black)](package.json)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6.svg?style=for-the-badge&logo=typescript&logoColor=white)](package.json)
 [![Vite](https://img.shields.io/badge/Vite-5-646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)](package.json)
@@ -126,7 +126,8 @@ you can watch.
 
 ## Prerequisites
 
-- **Node.js 20+** (tested on Node 24) and npm.
+- **Node.js 22.18+** (tested on Node 24) and npm. The `npm run verify` scripts
+  import `.ts` modules directly and need Node's unflagged type stripping.
 - OpenBot installed on the same machine, because OVO reads OpenBot's `openbot.db` in read-only mode.
   Default per-OS locations are listed in
   [`docs/OPENBOT_OFFICE_RUNTIME.md`](docs/OPENBOT_OFFICE_RUNTIME.md); override with
