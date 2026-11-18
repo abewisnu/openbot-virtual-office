@@ -13,7 +13,12 @@ import {
   walkFolder,
   workspacePathInside,
 } from '../src/data/workspaceSize.node.ts';
-import { fetchAgentProfiles, closeOpenBotDb } from '../src/data/openbotSource.node.ts';
+import Database from 'better-sqlite3';
+import {
+  fetchAgentProfiles,
+  closeOpenBotDb,
+  resolveDbPath,
+} from '../src/data/openbotSource.node.ts';
 import { formatBytes } from '../src/constants.ts';
 
 let fail = 0;
@@ -46,30 +51,56 @@ try {
 }
 
 // 3. Live DB: every profile reports a number or an explicit null, never a path.
-const profiles = fetchAgentProfiles();
-const measured = profiles.filter((p) => typeof p.workspaceBytes === 'number');
-check('live profiles return a byte count', measured.length > 0, `${measured.length}/${profiles.length}`);
-check(
-  'byte counts are non-negative integers',
-  measured.every((p) => Number.isInteger(p.workspaceBytes) && p.workspaceBytes >= 0),
-);
-check(
-  'no profile reports zero for a real folder',
-  measured.every((p) => p.workspaceBytes > 0),
-  `min ${Math.min(...measured.map((p) => p.workspaceBytes))} bytes`,
-);
-check(
-  'every profile has the key (number or null)',
-  profiles.every((p) => p.workspaceBytes === null || typeof p.workspaceBytes === 'number'),
-);
+//    Machines without OpenBot installed (CI, a contributor clone) have no DB to
+//    read, so these three checks report SKIP instead of crashing the gate. The
+//    derivation itself is still covered there by verify-openbot-source.mjs, which
+//    builds a fixture DB.
+const liveDb = (() => {
+  try {
+    new Database(resolveDbPath(), { readonly: true, fileMustExist: true }).close();
+    return true;
+  } catch {
+    return false;
+  }
+})();
 
-const serialised = JSON.stringify(profiles);
-check('the payload never carries workspacePath', !/workspacePath|workspace_path/.test(serialised));
-check('the payload never carries an absolute Agents path', !serialised.includes(WORKSPACE_ROOT));
-console.log(
-  '  sizes: ' + profiles.map((p) => `${p.name}=${formatBytes(p.workspaceBytes)}`).join(', '),
-);
-closeOpenBotDb();
+if (liveDb) {
+  const profiles = fetchAgentProfiles();
+  const measured = profiles.filter((p) => typeof p.workspaceBytes === 'number');
+  check('live profiles return a byte count', measured.length > 0, `${measured.length}/${profiles.length}`);
+  check(
+    'byte counts are non-negative integers',
+    measured.every((p) => Number.isInteger(p.workspaceBytes) && p.workspaceBytes >= 0),
+  );
+  check(
+    'no profile reports zero for a real folder',
+    measured.every((p) => p.workspaceBytes > 0),
+    `min ${Math.min(...measured.map((p) => p.workspaceBytes))} bytes`,
+  );
+  check(
+    'every profile has the key (number or null)',
+    profiles.every((p) => p.workspaceBytes === null || typeof p.workspaceBytes === 'number'),
+  );
+
+  const serialised = JSON.stringify(profiles);
+  check('the payload never carries workspacePath', !/workspacePath|workspace_path/.test(serialised));
+  check('the payload never carries an absolute Agents path', !serialised.includes(WORKSPACE_ROOT));
+  console.log(
+    '  sizes: ' + profiles.map((p) => `${p.name}=${formatBytes(p.workspaceBytes)}`).join(', '),
+  );
+  closeOpenBotDb();
+} else {
+  for (const label of [
+    'live profiles return a byte count',
+    'byte counts are non-negative integers',
+    'no profile reports zero for a real folder',
+    'every profile has the key (number or null)',
+    'the payload never carries workspacePath',
+    'the payload never carries an absolute Agents path',
+  ]) {
+    console.log(`SKIP ${label} — no OpenBot DB at ${resolveDbPath()}`);
+  }
+}
 
 // 4. Source guards across the hops.
 const plugin = readFileSync(new URL('../vite-plugin-openbot.ts', import.meta.url), 'utf8');
