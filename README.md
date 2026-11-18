@@ -320,6 +320,33 @@ Two details worth knowing:
   mounts, so a light desktop never flashes the dark defaults. It is kept in sync with `src/theme.ts`
   by hand, and its `theme-color` metas are split per `prefers-color-scheme` for the browser UI.
 
+## Art style
+
+The office is **16-bit-era pixel art**. That is a statement about drawing scale and colour economy,
+not about file depth — every tone is a literal `#rrggbb` written into an RGBA canvas, so nothing is
+indexed and no per-sprite palette cap is enforced.
+
+| Measure | Value |
+|---|---|
+| Base tile | 16×16 art px (`TILE = 32` screen px at `ART = 2`) |
+| Floor plate | 960×640 art px = 60×40 tiles (`COLS × ROWS`) |
+| Character frame | 16×24 art px; idle 1 frame, walk 2, sit 2 |
+| Largest props | whiteboard 64×52, meeting table 64×36, rack 16×38, desk 32×28 art px |
+| Colours per sprite | 2–10 opaque tones (whiteboard and bookshelf 10, desk 8, monitor 7, cabinet 3) |
+| Master palette | 123 hex values in the generator, 337 distinct tones once the sky gradient counts |
+| Upscale | props at 4 screen px per art px (`PROP_SCALE 2`), floor stays at 2 (`ART`) |
+
+Why 16-bit rather than 8-bit: a 16 px tile and a 16×24 character carrying two or three shading steps
+per material are SNES conventions, while an NES sprite is 8×16 with three colours and the whole
+console has 54. The 8-bit economy survives in the animation instead — two frames per walk cycle and
+one for idle — so OVO reads as 16-bit drawing with a deliberately cheap frame count, not as a
+downgraded 16-bit game.
+
+Edges stay hard because the art is drawn once into textures with
+`TextureStyle.defaultOptions.scaleMode = 'nearest'`, `antialias: false` and `roundPixels: true`, then
+scaled by whole numbers only. Anything drawn at `ART` (floor, glass, doors) never leaves the tile
+grid; only props follow `?props=`.
+
 ## Avatars
 The info panel draws each agent's face from its **seed**, not from a picture. OpenBot keeps no
 avatar image in `openbot.db`: `projection_agents.agent_json` carries `avatarSeed` (always set),
