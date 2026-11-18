@@ -142,15 +142,18 @@ npm install
 npm run dev      # http://localhost:5173  (the only mode that has /api/agents)
 npm run build    # type-check + production build into dist/
 npm run preview  # static dist/ — NO API, the UI falls back to mock
+npm run verify   # every gate below, in one run; exits 1 on the first failure
 
 node scripts/verify-monitor.mjs        # phase × seated matrix + monitor source guards
 node scripts/verify-openbot-source.mjs # check the SQL queries stay read-only
 node scripts/verify-lounge.mjs         # `starting`/`restarting` agents stay inside the Lounge room
 node scripts/verify-store.mjs          # roster source states: never mock before a failed fetch
 node scripts/verify-workspace.mjs      # workspace-folder size walker + no path leak to the browser
+node scripts/verify-avatar.mjs         # per-theme tint contrast on both avatar surfaces
 node --import ./scripts/register-ts.mjs scripts/verify-chairs.mjs  # chair collision + meeting-room chat
 node --import ./scripts/register-ts.mjs scripts/verify-rooms.mjs  # pantry spacing, NOC server-room dressing, carpet
 node --import ./scripts/register-ts.mjs scripts/verify-idle.mjs  # standby agents sit and chat in the social rooms
+node --import ./scripts/register-ts.mjs scripts/verify-rack-leds.mjs # rack LED blink rate table
 node scripts/verify-labels.mjs         # agent name plate + status dot size and seated height
 ```
 
