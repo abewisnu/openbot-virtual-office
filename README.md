@@ -68,10 +68,20 @@ Start here: [`docs/OPENBOT_OFFICE_API.md`](docs/OPENBOT_OFFICE_API.md) (data con
 
 ## Screenshots
 
-Everything in `docs/assets/` was captured from the running app in a **1600 × 1000** viewport at
-2× device pixels (so the full-canvas shot is 3200 × 2000; the sidebar and panel shots are crops),
-dark theme, fed by a **dummy roster of 10 agents** served on the normal `/api/agents` route
-(same field set as the real endpoint, so the sidebar badge reads `Live`). The workspace identity is
+Every shot in `docs/assets/` came from the running app in a **1600 × 1000** viewport at 2× device
+pixels, dark theme, fed by a **dummy roster of 10 agents** served on the normal `/api/agents` route
+(same field set as the real endpoint, so the sidebar badge reads `Live`). Only the first file is a
+full frame; the others are crops, so their pixel sizes differ:
+
+| File | Pixels | Frame |
+|---|---|---|
+| `office-overview.png` | 3200 × 2000 | full viewport (1600 × 1000 at 2×), sidebar hidden |
+| `sidebar.png` | 343 × 911 | crop of the floating sidebar |
+| `info-panel.png` | 1396 × 238 | crop of the info card |
+| `agent-panel.png` | 1414 × 911 | crop around the selected agent and its card |
+| `office-activity.gif` | 640 × 400 | 10 s clip, 10 fps, downscaled from the capture |
+
+The workspace identity is
 a demo one — name **Nusantara Studio**, custom pixel logo — so the documentation never shows a real
 account name or logo. No mock lives in a component: the world, the sidebar and the info card all
 read the same store shape they read in production.
