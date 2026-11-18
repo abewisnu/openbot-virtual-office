@@ -287,6 +287,12 @@ exceptions:
 - Text the browser paints outside the canvas (names in the 3D scene, HUD chips on the canvas) is
   not part of the sidebar.
 
+The static site in `docs/` goes further and uses Geist Pixel for **all** text, not just headings:
+`docs/site.css` starts both `:root` and `--mono` with `'Geist Pixel'`, `--pixel` aliases `--mono`,
+and the same two 400 woff2 files are vendored in `docs/assets/` (with the latin subset preloaded in
+`docs/index.html`). Heavier rules still request 520–700, but `font-synthesis: none` keeps the browser
+from faking those cuts, so the page renders one weight on the pixel grid at every size.
+
 Licence: SIL Open Font License 1.1, `Copyright 2026 The Geist Project Authors`
 (<https://github.com/vercel/geist-font>); the full text ships as `public/fonts/OFL.txt`.
 
