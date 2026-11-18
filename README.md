@@ -1,7 +1,7 @@
 # OpenBot Virtual Office (OVO)
 
 <p align="center">
-  <img src="public/logo.png" alt="OpenBot Virtual Office (OVO) logo" width="50%">
+  <img src="docs/assets/logo.png" alt="OpenBot Virtual Office (OVO) logo" width="50%">
 </p>
 
 <!-- Badges built with https://github.com/ileriayo/markdown-badges (shields.io) -->
