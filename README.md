@@ -170,6 +170,11 @@ node scripts/verify-labels.mjs         # agent name plate + status dot size and 
 `npm run preview` and any other static host do not serve `/api/agents`: the request falls through to
 `index.html` with status `200`. Check `Content-Type`, do not trust the status code alone.
 
+GitHub Actions runs the same gates on every push and pull request: `.github/workflows/gates.yml`
+installs with `npm ci`, runs `npm run typecheck` (browser **and** Node side), then `npm run verify`
+and a throwaway `vite build` into `$RUNNER_TEMP`, so CI never writes `dist/`. A second workflow,
+`.github/workflows/pages.yml`, uploads `docs/` to GitHub Pages when anything under `docs/` changes.
+
 ## Controls
 WASD / arrow keys / drag = camera · scroll or `+`/`-` = zoom (`0.70x`–`3x`, starts at `0.75x`) · click a
 character **or its workstation computer** = info panel · `E` = randomise simulation status · `Esc` = close panel.

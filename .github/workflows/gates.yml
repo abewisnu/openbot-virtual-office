@@ -35,8 +35,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # `npm run typecheck` is both projects: `tsc --noEmit` for the browser app
+      # and `tsc -p tsconfig.node.json` for the dev plugin, the Vite config and
+      # the verify scripts. Plain `tsc --noEmit` would silently skip the Node side.
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Verify scripts
         run: npm run verify
