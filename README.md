@@ -16,8 +16,6 @@
 [![SQLite: read-only](https://img.shields.io/badge/SQLite-read--only-003B57.svg?style=for-the-badge&logo=sqlite&logoColor=white)](docs/OPENBOT_OFFICE_API.md)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](#license)
 
-🌐 **Project site:** [abewisnu.github.io/openbot-virtual-office](https://abewisnu.github.io/openbot-virtual-office/) — an overview of OVO, its local-only data flow, and setup instructions, with dark/light/system themes and Indonesian/English language options. The static site source is in `docs/` and is deployed by GitHub Actions. To enable deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
-
 💙 **Support OVO:** If you find this project useful, you can support its maintenance and future development with a voluntary donation.
 
 ### Crypto donations
