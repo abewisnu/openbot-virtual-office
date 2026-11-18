@@ -13,7 +13,7 @@ marked **[measured]** were produced by a command quoted in this page; anything n
 code-derived.
 
 Contract and schema: `OPENBOT_OFFICE_API.md`. Wiring walkthrough:
-`OpenBot-OFFICE-API-GUIDE.md`.
+`OPENBOT_OFFICE_GUIDE.md`.
 
 ---
 

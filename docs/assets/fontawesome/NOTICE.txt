@@ -1,0 +1,15 @@
+Font Awesome Free 6.7.2
+https://fontawesome.com
+
+Icons: CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+Fonts: SIL OFL 1.1 — https://scripts.sil.org/OFL
+Code:  MIT — https://opensource.org/licenses/MIT
+
+Vendored so this site loads with no third-party request: css/all.min.css plus
+the woff2 cuts the page actually uses (solid, brands, regular). The .ttf files
+that the upstream CSS lists first for legacy browsers are not shipped; every
+current browser picks the woff2.
+
+Coin marks in ../coins/ (BTC, ETC, POL, SOL) came from cryptoicon.io as SVG and
+are trademarks of their respective projects, used here only to label donation
+addresses.
