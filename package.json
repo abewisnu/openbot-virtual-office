@@ -5,17 +5,34 @@
   "description": "2D pixel-art virtual office that visualizes live OpenBot agents from a read-only SQLite snapshot.",
   "license": "MIT",
   "author": "Abe Wisnu <abewisnu@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/abewisnu/openbot-virtual-office.git"
+  },
+  "homepage": "https://abewisnu.github.io/openbot-virtual-office/",
+  "keywords": [
+    "openbot",
+    "pixel-art",
+    "pixi.js",
+    "virtual-office",
+    "sqlite"
+  ],
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "verify": "for s in scripts/verify-*.mjs; do node --import ./scripts/register-ts.mjs \"$s\" || exit 1; done"
   },
   "dependencies": {
     "better-sqlite3": "^13.2.0",
     "pixi.js": "^8.6.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "zod": "^4.6.7",
     "zustand": "^5.0.0"
   },
   "devDependencies": {
@@ -25,7 +42,6 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
     "typescript": "~5.6.3",
-    "vite": "^5.4.10",
-    "zod": "^4.6.7"
+    "vite": "^5.4.10"
   }
 }
