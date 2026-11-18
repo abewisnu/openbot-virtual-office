@@ -115,7 +115,7 @@ Override with `OPENBOT_DB_PATH`. `OPENBOT_DB` in older documents is **not** read
 ### 3.2 Handle
 
 ```ts
-db = new Database(DEFAULT_DB_PATH, { readonly: true, fileMustExist: true });
+db = new Database(resolveDbPath(), { readonly: true, fileMustExist: true });
 ```
 
 - Module-level singleton, opened on first request, closed on plugin teardown.
@@ -146,8 +146,12 @@ once from `GameCanvas.tsx`; `useStore.ts` owns a `setInterval`. Each tick fetche
 `/api/agents`, and the server recomputes `phase` from the database.
 
 There is no ETag, no `304`, no compression: every tick transfers the whole body
-(**[measured]** ~3.2 KB for 15 agents). No page reload is needed after a deploy-adjacent
+(**[measured]** ~4.7 KB for 16 agents). No page reload is needed after a deploy-adjacent
 change — HMR or one poll tick catches up.
+
+The sidebar header keeps its own, slower loop: `HUD.tsx` refetches `/api/office-logo` and
+`/api/office-profile` every **20 s**, and again on window `focus`. Those two change rarely,
+so they do not share the 3 s roster cadence.
 
 Rules:
 
@@ -293,8 +297,11 @@ These rules apply only once a real server exists. Today Vite's own static handli
 Not read by anything — listed only so nobody assumes they work: `OPENBOT_DB`, `HOST`,
 `PORT`, `NO_BUILD`, `OFFICE_API_URL`.
 
-There is no `.env` file in the project. Only `VITE_`-prefixed keys reach the browser bundle,
-which is exactly why DB paths and tokens must never carry that prefix.
+`.env` is loaded by `vite.config.ts` with Vite's `loadEnv(mode, cwd, '')`: only
+`OPENBOT_DB_PATH` is copied into `process.env` for the Node-side plugin, and nothing else.
+`VITE_`-prefixed keys reach the browser bundle on their own, which is exactly why DB paths and
+tokens must never carry that prefix. A path placed in `.env` therefore works, and an invalid one
+surfaces as `500 { "error": "Agent data unavailable" }`.
 
 ---
 

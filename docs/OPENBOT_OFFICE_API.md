@@ -24,7 +24,7 @@ Vite **dev-only** plugin. The production design (`/api/office` on port 8099, `/h
 | Provider | `vite-plugin-openbot.ts` → `configureServer` middleware |
 | Availability | **dev only**. `vite preview` and any static host do **not** serve it |
 | Response | bare JSON array, browser-safe subset, no envelope |
-| Dataset | 15 agents, ~3.2 KB, ~80 ms first call on loopback |
+| Dataset | 16 agents, ~4.7 KB, ~80 ms first call on loopback (count follows the live roster) |
 | Status model | `phase` (7 values) + one `activity` (or `null`) |
 | Realtime | browser polls every 3 s (`VITE_OFFICE_POLL_MS`) |
 | Writes | none. Connection opened `readonly: true` |
@@ -111,8 +111,6 @@ Rules that follow from the table:
 - An HTTP `200` with a non-array body, invalid JSON, or `!res.ok` is an **error**, not an
   empty roster. `fetchAgentProfilesAsync()` throws `AgentSourceError` for those; a valid
   `[]` is an empty live board and never triggers mock.
-- `polling` is carried through every transition untouched (it is a UI toggle, not fetch
-  state).
 - Verified by `node scripts/verify-store.mjs`: every row of the table as a unit test, plus
   source guards that the store boots empty, that `mockEmployees` is not the initial
   roster, and that the HUD renders the `Connecting` label.
@@ -438,7 +436,7 @@ The older name `OPENBOT_DB` appears in [§9](#9-target-design--not-implemented) 
 `better-sqlite3` (a native Node addon, `package.json:12`), one process-wide singleton:
 
 ```ts
-db = new Database(DEFAULT_DB_PATH, { readonly: true, fileMustExist: true });
+db = new Database(resolveDbPath(), { readonly: true, fileMustExist: true });
 ```
 
 - Opened once (`let db = null; if (db) return db`), closed on plugin teardown.
@@ -464,7 +462,7 @@ call and reused per agent; there is no per-agent query inside a loop beyond thes
 
 | Table | Used for | Rows (snapshot) |
 |---|---|---|
-| `projection_agents` | roster, `sort_order`, `thread_id`, `agent_json` | 15 |
+| `projection_agents` | roster, `sort_order`, `thread_id`, `agent_json` | 16 |
 | `agent_usage_activity` | last usage per agent — the proof of work | ~1,760 |
 | `projection_provider_sessions` | session `state` + `updated_at` | ~176 |
 | `agent_waits` | unwoken waits → `blocked` | 0 |

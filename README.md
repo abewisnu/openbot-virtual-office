@@ -68,35 +68,36 @@ Start here: [`docs/OPENBOT_OFFICE_API.md`](docs/OPENBOT_OFFICE_API.md) (data con
 
 ## Screenshots
 
-Everything in `screenshot/` was captured from the running app at **1600 × 1000**, dark theme,
-2× pixel density, fed by a **dummy roster of 10 agents** served on the normal `/api/agents` route
+Everything in `docs/assets/` was captured from the running app in a **1600 × 1000** viewport at
+2× device pixels (so the full-canvas shot is 3200 × 2000; the sidebar and panel shots are crops),
+dark theme, fed by a **dummy roster of 10 agents** served on the normal `/api/agents` route
 (same field set as the real endpoint, so the sidebar badge reads `Live`). The workspace identity is
 a demo one — name **Nusantara Studio**, custom pixel logo — so the documentation never shows a real
 account name or logo. No mock lives in a component: the world, the sidebar and the info card all
 read the same store shape they read in production.
 
 <!-- Side-by-side on GitHub, stacked on narrow screens: two cells, one image each. -->
-| <img src="screenshot/office-overview.png" alt="Full office canvas with the sidebar hidden" width="100%"> | <img src="screenshot/sidebar.png" alt="Floating sidebar with the team activity list" width="40%"> |
+| <img src="docs/assets/office-overview.png" alt="Full office canvas with the sidebar hidden" width="100%"> | <img src="docs/assets/sidebar.png" alt="Floating sidebar with the team activity list" width="40%"> |
 |:--:|:--:|
 | **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), Meeting Area, Lounge, Pantry & Storage and the raised-floor NOC on the left. Hiding the sidebar reserves no layout space, so the office is pixel-for-pixel identical behind it. | **2 · Sidebar** — the frosted panel floats 16 px from every edge, showing the demo workspace **Nusantara Studio** with its own pixel logo, the `Live` source badge and clock, one row per phase with a clickable count, the recent-updates feed, and the Settings / Help / Exit controls. |
 
-<img src="screenshot/info-panel.png" alt="Info panel for the selected agent" width="100%">
+<img src="docs/assets/info-panel.png" alt="Info panel for the selected agent" width="100%">
 
 **3 · Info panel** — close-up of the card: the agent's name and role, the live `phase` badge with the
 single highest-priority `activity` note, then placement (`Zone`, workstation id), workspace footprint
 on disk, world `Position` and `Unread` count. The pixel face is drawn from `avatarSeed`, so the same
 agent keeps the same face on every reload.
 
-<img src="screenshot/agent-panel.png" alt="Office with an agent selected and its info strip open" width="100%">
+<img src="docs/assets/agent-panel.png" alt="Office with an agent selected and its info strip open" width="100%">
 
 **4 · Agent selected in the office** — the same card in context: clicking an agent in the canvas (or
 a name in the `Working` row) outlines it and pins the info strip to the bottom of the stage, while the
 sidebar keeps the roster visible. This is the whole page, so it also shows how the floating panels sit
 over the office.
 
-<img src="screenshot/office-activity.gif" alt="Ten seconds of office activity" width="100%">
+<img src="docs/assets/office-activity.gif" alt="Ten seconds of office activity" width="100%">
 
-**5 · Ten seconds of activity** — `screenshot/office-activity.gif`: 10 s, 10 fps, 640 × 400,
+**5 · Ten seconds of activity** — `docs/assets/office-activity.gif`: 10 s, 10 fps, 640 × 400,
 looped. Agents walk to their desks and type while `Working`, pair up on the Lounge sofas, the Meeting
 Area and the Pantry when idle, and the name plate under a working workstation rides below its chair.
 
@@ -162,9 +163,16 @@ character **or its workstation computer** = info panel · `E` = randomise simula
 URL `?props=<n>` scales props by `n` (0.5–4, default `2`); the floor, glass partitions and doors stay on the tile grid so nothing overshoots. A door opening is `DOOR_SPAN` tiles wide (`src/constants.ts`, 3) and its leaf is one sprite centred on the opening.
 
 ### Rooms
+Five zones share one floor plate; only the Meeting Room is glassed in. `zoneName()` in
+`src/office/Layout.ts` returns the name the HUD shows for the tile under the pointer.
+
 | Room | Walls | Interior | Door |
 |---|---|---|---|
 | Meeting | column 17 and column 32 (rows 5–19), row 20 | columns 18–31, rows 6–19 | 3-tile opening in column 32, rows 10–12, facing the 3-tile aisle (33–35) before the first desk bay |
+| Workstations | none — open plan, meeting-room glass on its left | columns 36–58, rows 6–31; bays on columns 37/43/49/55 and rows 9/15/21/27 | open bay fronts (no partition) |
+| Lounge | none — open plan, north window band is its only hard edge | columns 1–13, rows 6–15 (`LOUNGE_ROOM`) | open to the columns 15–16 aisle |
+| Pantry & Storage | none — open plan; shelf wall along row 20 in three clusters with one-tile gullies | columns 1–13, rows 16–29 | open at the shelf gullies |
+| NOC | pantry wall on row 30, two openings | columns 1–13, rows 31–38; racks, CRAC, UPS and patch panels | openings at columns 6–7 and column 10 |
 
 The Meeting Room sits one room-width left of the workstation block. Its interior is laid out in pixels so each prop keeps a margin from the glass at 2×: a 3-seat sofa and the 64×52 whiteboard along the top band, an 8-seat table under them, a 10×8 rug beneath the whole bay, and a plant in each bottom corner. The floor runs two rows past the rug (rows 18–19) so the carpet stops clear of the bottom glass, which now sits on row 20 with both side partitions (columns 17 and 32) extended down to meet it. The whiteboard sits at the right end of the top band (x 872–1000, 4 tiles), 88 px clear of the sofa and hung 12 px above its base line, so the pair read as one wall band without covering each other.
 
@@ -292,6 +300,12 @@ The static site in `docs/` goes further and uses Geist Pixel for **all** text, n
 and the same two 400 woff2 files are vendored in `docs/assets/` (with the latin subset preloaded in
 `docs/index.html`). Heavier rules still request 520–700, but `font-synthesis: none` keeps the browser
 from faking those cuts, so the page renders one weight on the pixel grid at every size.
+
+The page also loads **nothing** from a third party: Font Awesome Free 6.7.2 is vendored in
+`docs/assets/fontawesome/` (css plus the solid, brands and regular woff2 cuts, attribution in
+`NOTICE.txt`) and the four coin marks sit in `docs/assets/coins/`. Previously the stylesheet came from
+`cdnjs.cloudflare.com` and the coins from `cryptoicon.io`, which meant a visitor's IP reached both
+hosts and the page broke without network.
 
 Licence: SIL Open Font License 1.1, `Copyright 2026 The Geist Project Authors`
 (<https://github.com/vercel/geist-font>); the full text ships as `public/fonts/OFL.txt`.

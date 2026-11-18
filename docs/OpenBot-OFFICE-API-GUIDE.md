@@ -235,7 +235,7 @@ still renders, so **the source badge must be checked before believing the screen
 | Case | Expected | How to check |
 |---|---|---|
 | Dev server, DB present | `200`, JSON array, `Content-Type: application/json` | `curl -sI .../api/agents` |
-| Payload shape | exactly 9 keys per agent, no `provider`/`model`/`threadId` | `curl -s ... \| python3 -m json.tool` |
+| Payload shape | exactly 10 keys per agent, no `provider`/`model`/`threadId` | `curl -s ... \| python3 -m json.tool` |
 | `POST /api/agents` | `405` + `Allow: GET, HEAD` | `curl -X POST -w '%{http_code}'` |
 | `Host: evil.example` | `421` | `curl -H 'Host: evil.example'` |
 | `GET /health` | `200 text/html` — SPA fallback, **not** a health check | `curl -sI /health` |
