@@ -87,7 +87,9 @@ pixel face from it (§2.5). `provider`, `model`, `threadId` and raw
 disk usage of the agent's workspace folder (§2.2.2); the folder path itself is never
 sent.
 
-Measured: `count 15`, keys as above, phases `{idle: 14, working: 1}` at capture time.
+Measured on loopback: `count 16`, 4753 bytes, keys as above, phases
+`{idle: 9, ready: 4, working: 2, stopped: 1}` at capture time (a snapshot — the count follows the
+live roster).
 
 ### 2.2.1 Client source states — `pending`, `openbot`, `mock`
 
