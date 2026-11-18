@@ -2,8 +2,6 @@
 
 🌐 **Project site:** [abewisnu.github.io/openbot-virtual-office](https://abewisnu.github.io/openbot-virtual-office/) — an overview of OVO, its local-only data flow, and setup instructions, with dark/light/system themes and Indonesian/English language options. The static site source is in `docs/` and is deployed by GitHub Actions. To enable deployment, set **Settings → Pages → Build and deployment → Source** to **GitHub Actions**.
 
-💙 **Support OVO:** If you find this project useful, you can support its maintenance and future development with a voluntary donation via [PayPal](https://paypal.me/abewisnu).
-
 <p align="center">
   <img src="public/logo.png" alt="OpenBot Virtual Office (OVO) logo" width="50%">
 </p>
@@ -19,6 +17,21 @@
 [![Zustand](https://img.shields.io/badge/Zustand-5-2D3748.svg?style=for-the-badge)](package.json)
 [![SQLite: read-only](https://img.shields.io/badge/SQLite-read--only-003B57.svg?style=for-the-badge&logo=sqlite&logoColor=white)](docs/OPENBOT_OFFICE_API.md)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](#license)
+
+💙 **Support OVO:** If you find this project useful, you can support its maintenance and future development with a voluntary donation.
+
+### Crypto donations
+
+| Network | Address |
+|---|---|---|
+|[![Bitcoin](https://img.shields.io/badge/bitcoin-%23F7931A.svg?style=for-the-badge&logo=bitcoin&logoColor=white)](#crypto-donations)| **BTC** | `bc1qp9qsdgnwfpce307crhguhjvvq8hdlcjwn4260c` |
+|[![Ethers](https://img.shields.io/badge/ethers-%232535A0.svg?style=for-the-badge&logo=ethers&logoColor=white)](#crypto-donations)| **ETC / USDT** | `0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45` |
+|[![Solana](https://img.shields.io/badge/solana-%239945FF.svg?style=for-the-badge&logo=solana&logoColor=white)](#crypto-donations)| **SOLANA / USDT** | `DLmb29BaPDGZk3iSv3enaLiHRFjQ1mvwdjk4mNkfLjXM` |
+|[![Polygon](https://img.shields.io/badge/polygon-%238247E5.svg?style=for-the-badge&logo=polygon&logoColor=white)](#crypto-donations)| **POLYGON / USDT** | `0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45` |
+
+> USDT transfers can go via ERC-20, SPL, or Polygon. BTC is native. Verify the address before sending.
+
+**PayPal:** [paypal.me/abewisnu](https://paypal.me/abewisnu)
 
 **OpenBot Virtual Office** — **OVO** for short — is a *visualisation* of the work running inside
 OpenBot, rendered as a 2D pixel-art virtual office. Its role is **observe only**: OVO has no chat, no

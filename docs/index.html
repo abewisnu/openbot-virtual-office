@@ -57,7 +57,7 @@
     <header class="site-header">
       <a class="brand" href="#" aria-label="OpenBot Virtual Office, halaman utama" data-i18n-aria-label="homeLabel">
         <img src="./assets/logo.png" alt="" width="40" height="40" />
-        <span>openbot<span class="brand-light">.office</span></span>
+        <span><span class="brand-light">Virtual</span> Office</span>
       </a>
       <nav class="main-nav" aria-label="Navigasi utama" data-i18n-aria-label="navLabel">
         <a href="#fitur" aria-label="Fitur" data-i18n-aria-label="navFeatures">
@@ -493,11 +493,104 @@
         </div>
       </section>
 
-      <section
-        class="docs-strip page-width"
-        aria-label="Dokumentasi"
-        data-i18n-aria-label="docsLabel"
-      >
+      <section class="crypto-strip page-width" aria-label="Donasi kripto" data-i18n-aria-label="cryptoLabel">
+        <div class="crypto-strip-label">
+          <i class="fa-solid fa-hand-holding-dollar" aria-hidden="true"></i>
+          <span data-i18n="cryptoLabel">Donasi Kripto</span>
+        </div>
+        <div class="crypto-chips">
+          <button
+            class="crypto-chip"
+            type="button"
+            data-coin="btc"
+            data-address="bc1qp9qsdgnwfpce307crhguhjvvq8hdlcjwn4260c"
+            aria-label="Salin alamat Bitcoin"
+            data-i18n-aria-label="cryptoCopyAria"
+          >
+            <span class="chip-coin-icon" aria-hidden="true">
+              <img
+                src="https://cryptoicon.io/wp-content/uploads/cc-assets/SVG/Light/BTC.svg"
+                alt=""
+                width="24"
+                height="24"
+                loading="lazy"
+              />
+            </span>
+            <span class="chip-coin-name">BTC</span>
+            <span class="chip-address">bc1qp9qsdgnwfpce307crhguhjvvq8hdlcjwn4260c</span>
+            <span class="chip-copy" aria-hidden="true"><i class="fa-solid fa-copy"></i></span>
+            <span class="chip-copied" aria-live="polite" data-i18n="cryptoCopied">Tersalin!</span>
+          </button>
+          <button
+            class="crypto-chip"
+            type="button"
+            data-coin="etch"
+            data-address="0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45"
+            aria-label="Salin alamat ETC / USDT"
+            data-i18n-aria-label="cryptoCopyAria"
+          >
+            <span class="chip-coin-icon etch" aria-hidden="true">
+              <img
+                src="https://cryptoicon.io/wp-content/uploads/cc-assets/SVG/Light/ETC.svg"
+                alt=""
+                width="24"
+                height="24"
+                loading="lazy"
+              />
+            </span>
+            <span class="chip-coin-name">ETC / USDT</span>
+            <span class="chip-address">0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45</span>
+            <span class="chip-copy" aria-hidden="true"><i class="fa-solid fa-copy"></i></span>
+            <span class="chip-copied" aria-live="polite" data-i18n="cryptoCopied">Tersalin!</span>
+          </button>
+          <button
+            class="crypto-chip"
+            type="button"
+            data-coin="solana"
+            data-address="DLmb29BaPDGZk3iSv3enaLiHRFjQ1mvwdjk4mNkfLjXM"
+            aria-label="Salin alamat Solana / USDT"
+            data-i18n-aria-label="cryptoCopyAria"
+          >
+            <span class="chip-coin-icon solana" aria-hidden="true">
+              <img
+                src="https://cryptoicon.io/wp-content/uploads/cc-assets/SVG/Light/SOL.svg"
+                alt=""
+                width="24"
+                height="24"
+                loading="lazy"
+              />
+            </span>
+            <span class="chip-coin-name">SOL / USDT</span>
+            <span class="chip-address">DLmb29BaPDGZk3iSv3enaLiHRFjQ1mvwdjk4mNkfLjXM</span>
+            <span class="chip-copy" aria-hidden="true"><i class="fa-solid fa-copy"></i></span>
+            <span class="chip-copied" aria-live="polite" data-i18n="cryptoCopied">Tersalin!</span>
+          </button>
+          <button
+            class="crypto-chip"
+            type="button"
+            data-coin="polygon"
+            data-address="0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45"
+            aria-label="Salin alamat Polygon / USDT"
+            data-i18n-aria-label="cryptoCopyAria"
+          >
+            <span class="chip-coin-icon polygon" aria-hidden="true">
+              <img
+                src="https://cryptoicon.io/wp-content/uploads/cc-assets/SVG/Light/POL.svg"
+                alt=""
+                width="24"
+                height="24"
+                loading="lazy"
+              />
+            </span>
+            <span class="chip-coin-name">POLYGON / USDT</span>
+            <span class="chip-address">0xec37d1638Bcb0241eB2e9e5bE98983e91aa3bE45</span>
+            <span class="chip-copy" aria-hidden="true"><i class="fa-solid fa-copy"></i></span>
+            <span class="chip-copied" aria-live="polite" data-i18n="cryptoCopied">Tersalin!</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="docs-strip page-width" aria-label="Dokumentasi" data-i18n-aria-label="docsLabel">
         <div>
           <p class="eyebrow section-eyebrow" data-i18n="docsEyebrow">INGIN TAHU LEBIH BANYAK?</p>
           <h2 data-i18n="docsTitle">Dokumentasi yang jelas, dari setup sampai detail teknis.</h2>
@@ -528,7 +621,7 @@
           data-i18n-aria-label="backToTop"
         >
           <img src="./assets/logo.png" alt="" width="32" height="32" loading="lazy" />
-          <span>openbot<span class="brand-light">.office</span></span>
+          <span><span class="brand-light">Virtual</span> Office</span>
         </a>
         <p data-i18n="footerTagline">Teman visual untuk pekerjaan yang dilakukan OpenBot.</p>
         <div class="footer-links">
@@ -543,10 +636,8 @@
             <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
           </a>
           <a href="https://github.com/abewisnu/openbot-virtual-office/blob/main/LICENSE" data-i18n="licenseLink">
+            <i class="fa-solid fa-scale-balanced" aria-hidden="true"></i>
             Lisensi MIT
-          </a>
-          <a href="https://fontawesome.com/license/free" target="_blank" rel="noreferrer">
-            <span data-i18n="iconCredit">Ikon: Font Awesome</span>
           </a>
         </div>
       </div>
@@ -676,11 +767,21 @@
           supportDevelopment: 'Untuk pengembangan berikutnya',
           supportButton: 'Donasi via PayPal',
           supportButtonLabel: 'Donasi untuk OpenBot Virtual Office melalui PayPal',
+          cryptoEyebrow: 'DUKUNGAN KRIPTO',
+          cryptoTitle: 'Donasi via Kripto.',
+          cryptoSubtitle:
+            'Dukung pengembangan OVO melalui transfer kripto. Alamat dapat disalin langsung.',
+          cryptoNative: 'Native',
+          cryptoStable: 'Stable',
+          cryptoCopied: 'Tersalin!',
+          cryptoNote:
+            'Pastikan jaringan transfer sesuai. USDT dapat dikirim via ERC-20, SPL, atau Polygon. BTC bersifat native. Verifikasi alamat sebelum mengirim.',
+          cryptoCopyAria: 'Salin alamat kripto',
+          cryptoLabel: 'Donasi Kripto',
           backToTop: 'Kembali ke atas',
           footerTagline: 'Teman visual untuk pekerjaan yang dilakukan OpenBot.',
           openBotLink: 'OpenBot',
           licenseLink: 'Lisensi MIT',
-          iconCredit: 'Ikon: Font Awesome',
           disclaimerPrefix: 'OpenBot Virtual Office adalah project independen untuk',
           disclaimerSuffix: 'Tidak terkait dengan CopilotKit/OpenBot.',
         },
@@ -802,11 +903,21 @@
           supportDevelopment: 'For future development',
           supportButton: 'Donate with PayPal',
           supportButtonLabel: 'Donate to OpenBot Virtual Office through PayPal',
+          cryptoEyebrow: 'CRYPTO SUPPORT',
+          cryptoTitle: 'Donate via Crypto.',
+          cryptoSubtitle:
+            'Support OVO development through crypto transfers. Addresses can be copied directly.',
+          cryptoNative: 'Native',
+          cryptoStable: 'Stable',
+          cryptoCopied: 'Copied!',
+          cryptoNote:
+            'Ensure the transfer network is correct. USDT can be sent via ERC-20, SPL, or Polygon. BTC is native. Verify the address before sending.',
+          cryptoCopyAria: 'Copy crypto address',
+          cryptoLabel: 'Crypto Donations',
           backToTop: 'Back to top',
           footerTagline: 'A visual companion for the work OpenBot is doing.',
           openBotLink: 'OpenBot',
           licenseLink: 'MIT License',
-          iconCredit: 'Icons: Font Awesome',
           disclaimerPrefix: 'OpenBot Virtual Office is an independent project for',
           disclaimerSuffix: 'Not affiliated with CopilotKit/OpenBot.',
         },
@@ -977,6 +1088,25 @@
         setLanguage(language === 'id' ? 'en' : 'id'),
       );
       terminalCopy.addEventListener('click', copyTerminalCommands);
+
+      document.querySelectorAll('.crypto-chip').forEach((button) => {
+        button.addEventListener('click', async () => {
+          const address = button.dataset.address || '';
+          try {
+            await navigator.clipboard.writeText(address);
+            button.classList.add('copied');
+            const feedback = button.querySelector('.chip-copied');
+            if (feedback) feedback.classList.add('visible');
+            setTimeout(() => {
+              button.classList.remove('copied');
+              if (feedback) feedback.classList.remove('visible');
+            }, 2000);
+          } catch (error) {
+            console.error('Unable to copy crypto address.', error);
+          }
+        });
+      });
+
       galleryPreviewTriggers.forEach((trigger, index) => {
         trigger.addEventListener('click', () => openGalleryPreview(index));
       });

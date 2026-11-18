@@ -2227,3 +2227,191 @@ a:focus-visible {
   color: #4b4358;
   text-decoration-color: rgba(60, 48, 74, 0.35);
 }
+
+/* ── Crypto donation strip ─────────────────────────────────────────────── */
+
+.crypto-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 0;
+  border-top: 1px solid var(--border);
+}
+
+.crypto-strip-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.crypto-strip-label i {
+  color: var(--accent);
+  font-size: 11px;
+}
+
+.crypto-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.crypto-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.crypto-chip:hover {
+  border-color: rgba(167, 240, 120, 0.45);
+  background: rgba(36, 31, 45, 0.75);
+}
+
+.crypto-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.crypto-chip.copied {
+  border-color: rgba(167, 240, 120, 0.55);
+  background: rgba(167, 240, 120, 0.07);
+}
+
+.chip-coin-icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.chip-coin-icon img {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.chip-coin-icon.etch {
+  display: grid;
+}
+
+.chip-coin-icon.solana {
+  display: grid;
+}
+
+.chip-coin-icon.polygon {
+  display: grid;
+}
+
+.chip-coin-name {
+  font-weight: 600;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.chip-address {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.chip-copy {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  place-items: center;
+  font-size: 9px;
+  color: var(--muted);
+  transition: color 160ms ease;
+}
+
+.crypto-chip:hover .chip-copy {
+  color: var(--accent);
+}
+
+.chip-copied {
+  position: absolute;
+  right: 8px;
+  top: -18px;
+  opacity: 0;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 600;
+  pointer-events: none;
+  transition: opacity 180ms ease;
+}
+
+.chip-copied.visible {
+  opacity: 1;
+}
+
+/* Light-theme overrides for crypto strip */
+
+:root[data-theme='light'] .crypto-strip {
+  border-color: rgba(60, 48, 74, 0.14);
+}
+
+:root[data-theme='light'] .crypto-chip {
+  border-color: rgba(60, 48, 74, 0.15);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+:root[data-theme='light'] .crypto-chip:hover {
+  border-color: rgba(63, 143, 38, 0.4);
+  background: rgba(244, 241, 234, 0.9);
+}
+
+:root[data-theme='light'] .crypto-chip.copied {
+  border-color: rgba(63, 143, 38, 0.45);
+  background: rgba(63, 143, 38, 0.06);
+}
+
+:root[data-theme='light'] .chip-copy {
+  color: #6c6377;
+}
+
+:root[data-theme='light'] .crypto-chip:hover .chip-copy {
+  color: #3f8f26;
+}
+
+:root[data-theme='light'] .chip-copied {
+  color: #3f8f26;
+}
+
+@media (max-width: 680px) {
+  .crypto-strip {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .crypto-chips {
+    width: 100%;
+  }
+
+  .crypto-chip {
+    width: 100%;
+  }
+}
