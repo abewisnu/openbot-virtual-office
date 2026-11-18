@@ -19,15 +19,16 @@ import { measureWorkspaceFootprint } from './workspaceSize.node.ts';
 // Environment
 // ---------------------------------------------------------------------------
 
-const ENV = z.object({
-  OPENBOT_DB_PATH: z.string().optional(),
-}).parse(process.env ?? {});
-
-// Fallback to the documented default location. This is not a secret, just a
-// path, so it is safe to keep as a constant.
-export const DEFAULT_DB_PATH =
-  ENV.OPENBOT_DB_PATH ??
-  `${process.env.HOME ?? ''}/Library/Application Support/OpenBot/openbot.db`;
+// Resolved per call, not at import time: the Vite plugin is imported before the
+// config function runs, so `OPENBOT_DB_PATH` from `.env` (forwarded by
+// `vite.config.ts`) is only visible once the server is actually starting.
+export function resolveDbPath(): string {
+  const env = z.object({ OPENBOT_DB_PATH: z.string().optional() }).parse(process.env ?? {});
+  return (
+    env.OPENBOT_DB_PATH ??
+    `${process.env.HOME ?? ''}/Library/Application Support/OpenBot/openbot.db`
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Re-export types for consumers that import directly from the node module
@@ -98,7 +99,7 @@ let db: Database.Database | null = null;
 function getDb(): Database.Database {
   if (db) return db;
   // mode: read-only, never create, never mutate.
-  db = new Database(DEFAULT_DB_PATH, { readonly: true, fileMustExist: true });
+  db = new Database(resolveDbPath(), { readonly: true, fileMustExist: true });
   return db;
 }
 

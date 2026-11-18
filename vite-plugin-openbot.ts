@@ -8,7 +8,7 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { fetchAgentProfiles, closeOpenBotDb, DEFAULT_DB_PATH } from './src/data/openbotSource.node.ts';
+import { fetchAgentProfiles, closeOpenBotDb, resolveDbPath } from './src/data/openbotSource.node.ts';
 
 const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 
@@ -61,8 +61,11 @@ function isAllowedHost(host: string | undefined): boolean {
   const name = normalizeHost(host);
   if (!name) return false;
   if (LOOPBACK.has(name)) return true;
-  // Literal IPv4 loopback / private ranges are allowed; DNS names are not.
-  return /^\d{1,3}(\.\d{1,3}){3}$/.test(name);
+  // Any literal in 127.0.0.0/8 is loopback too. Nothing else is accepted: a DNS
+  // name cannot be pointed at this port (rebinding), and a public or LAN
+  // address is not a reason to answer, because the bind is the only boundary.
+  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(name);
+  return v4 !== null && v4[1] === '127';
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -93,7 +96,7 @@ type LogoHit = { bytes: Buffer; mime: string; source: 'config' | 'newest'; versi
  * inside the logo directory.
  */
 function loadServerLogo(): LogoHit | null {
-  const root = dirname(DEFAULT_DB_PATH);
+  const root = dirname(resolveDbPath());
   const logoDir = resolve(root, LOGO_DIR);
   if (!logoDir.startsWith(resolve(root) + sep)) return null;
 
@@ -168,7 +171,7 @@ type WorkspaceProfile = { name: string | null };
  * of them, which matches the single roster the office draws from `openbot.db`.
  */
 function loadWorkspaceProfile(): WorkspaceProfile {
-  const root = dirname(DEFAULT_DB_PATH);
+  const root = dirname(resolveDbPath());
   let config: z.infer<typeof openBotConfig>;
   try {
     config = openBotConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
@@ -299,9 +302,9 @@ export function openBotApiPlugin(): Plugin {
       server.middlewares.use('/api/agents', handleRequest);
       server.middlewares.use('/api/office-logo', handleLogoRequest);
       server.middlewares.use('/api/office-profile', handleProfileRequest);
-    },
-    close() {
-      closeOpenBotDb();
+      // Vite has no plugin `close` hook; the dev server's own lifecycle event is
+      // the supported place to release the SQLite handle.
+      server.httpServer?.on('close', closeOpenBotDb);
     },
   };
 }
