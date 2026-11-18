@@ -5,42 +5,32 @@ import { useStore, startPolling, stopPolling } from '../store/useStore';
 export default function GameCanvas() {
   const host = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    let cancelled = false;
-    let active: World | null = null;
-    let resizeObserver: ResizeObserver | null = null;
     const element = host.current!;
-    const w = new World();
-    active = w;
+    const world = new World();
+    let cancelled = false;
+    let resizeObserver: ResizeObserver | null = null;
 
-    // Load the real agent source first so the canvas initialises with
-    // the correct names. Falls back to mock silently when the DB is unavailable.
-    useStore.getState().loadOpenBot().then(() => {
+    const start = async () => {
+      // Load the real agent source first so the canvas initialises with the
+      // correct names. `loadOpenBot` resolves every fetch error into the mock
+      // fallback itself, so this never rejects on a missing database.
+      await useStore.getState().loadOpenBot();
       if (cancelled) return;
-      return w.init(element).then(() => {
-        if (cancelled) return;
-        // Refresh live agent state while the office is open. Cleanup stops it.
-        startPolling(Number(import.meta.env.VITE_OFFICE_POLL_MS ?? 3000));
-        resizeObserver = new ResizeObserver(() => active?.resize());
-        resizeObserver.observe(element);
-        active?.resize();
-      });
-    }).catch(() => {
+      await world.init(element);
       if (cancelled) return;
-      // World module unavailable — still mount the canvas; the store may be empty
-      // until the first fetch lands.
-      return w.init(element).then(() => {
-        if (cancelled) return;
-        resizeObserver = new ResizeObserver(() => active?.resize());
-        resizeObserver.observe(element);
-        active?.resize();
-      });
-    });
+      // Refresh live agent state while the office is open. Cleanup stops it.
+      startPolling(Number(import.meta.env.VITE_OFFICE_POLL_MS ?? 3000));
+      resizeObserver = new ResizeObserver(() => world.resize());
+      resizeObserver.observe(element);
+      world.resize();
+    };
+    void start();
 
     return () => {
       cancelled = true;
       stopPolling();
       resizeObserver?.disconnect();
-      active?.destroy();
+      world.destroy();
     };
   }, []);
   return <div ref={host} className="canvas-host" />;

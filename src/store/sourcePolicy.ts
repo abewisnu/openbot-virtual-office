@@ -22,8 +22,6 @@ export interface SourceState {
   source: SourceKind;
   /** Human-readable reason, e.g. "database not found". */
   reason: string | null;
-  /** True while the live DB is being polled. */
-  polling: boolean;
 }
 
 export type FetchOutcome =
@@ -43,8 +41,6 @@ export interface SourceTransition {
  * - `empty`     -> empty live roster, `openbot`. Never mock: the API answered.
  * - `error`     -> keep the last live snapshot if there is one, otherwise fall
  *                  back to `fallback` (the mock roster).
- *
- * `polling` is carried over untouched: it is a UI toggle, not fetch state.
  */
 export function resolveSource(
   current: SourceState,
@@ -52,14 +48,12 @@ export function resolveSource(
   outcome: FetchOutcome,
   fallback: Employee[],
 ): SourceTransition {
-  const polling = current.polling;
-
   if (outcome.kind === 'ok') {
-    return { employees: outcome.employees, source: { source: 'openbot', reason: null, polling } };
+    return { employees: outcome.employees, source: { source: 'openbot', reason: null } };
   }
 
   if (outcome.kind === 'empty') {
-    return { employees: [], source: { source: 'openbot', reason: outcome.reason, polling } };
+    return { employees: [], source: { source: 'openbot', reason: outcome.reason } };
   }
 
   // A live snapshot is a fact; a failed refresh must not replace it with fake
@@ -71,7 +65,6 @@ export function resolveSource(
     source: {
       source: hasLiveSnapshot ? 'openbot' : 'mock',
       reason: outcome.reason,
-      polling,
     },
   };
 }

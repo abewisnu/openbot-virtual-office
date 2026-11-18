@@ -15,9 +15,9 @@ const check = (label, ok, extra = '') => {
 const live = [{ id: 'agent-1' }, { id: 'agent-2' }];
 const mock = [{ id: 'WS-01' }, { id: 'WS-02' }, { id: 'WS-03' }];
 const ids = (rows) => rows.map((r) => r.id).join(',');
-const pending = { source: 'pending', reason: null, polling: false };
-const openbot = { source: 'openbot', reason: null, polling: true };
-const mocked = { source: 'mock', reason: 'db missing', polling: false };
+const pending = { source: 'pending', reason: null };
+const openbot = { source: 'openbot', reason: null };
+const mocked = { source: 'mock', reason: 'db missing' };
 
 // 1. Boot: empty board while the first fetch is in flight.
 check('boot state is empty before any fetch', ids([]) === '' && pending.source === 'pending');
@@ -69,8 +69,7 @@ check('boot state is empty before any fetch', ids([]) === '' && pending.source =
     resolveSource(openbot, live, { kind: 'error', reason: 'x' }, mock),
     resolveSource(pending, [], { kind: 'error', reason: 'x' }, mock),
   ];
-  check('polling flag survives every transition', outs.every((o) => o.source.polling === openbot.polling || o.source.polling === pending.polling));
-  check('polling=true carried through an error', outs[2].source.polling === true);
+  check('no dead polling flag in the source state', outs.every((o) => !('polling' in o.source)));
 }
 
 // 8. Source guards: the store must boot empty and route through the policy.

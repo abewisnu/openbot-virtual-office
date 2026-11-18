@@ -39,8 +39,6 @@ interface State {
   setExited: (v: boolean) => void;
   /** Load the real agents (option b). Falls back to mock on error. */
   loadOpenBot: () => Promise<void>;
-  /** Start/stop the periodic live refresh. */
-  setPolling: (on: boolean) => void;
 }
 
 let nid = 0;
@@ -83,7 +81,7 @@ export const useStore = create<State>((set, get) => ({
   helpOpen: false,
   settingsOpen: false,
   exited: false,
-  source: { source: 'pending', reason: null, polling: false },
+  source: { source: 'pending', reason: null },
   select: (id) => set({ selectedId: id }),
   setStatus: (id, status) => {
     const emp = get().employees.find((x) => x.id === id);
@@ -114,9 +112,6 @@ export const useStore = create<State>((set, get) => ({
       const reason = err instanceof Error ? err.message : String(err);
       set(resolveSource(source, employees, { kind: 'error', reason }, mockEmployees));
     }
-  },
-  setPolling: (on) => {
-    set((s) => ({ source: { ...s.source, polling: on } }));
   },
 }));
 
