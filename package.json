@@ -10,6 +10,9 @@
     "url": "git+https://github.com/abewisnu/openbot-virtual-office.git"
   },
   "homepage": "https://abewisnu.github.io/openbot-virtual-office/",
+  "bugs": {
+    "url": "https://github.com/abewisnu/openbot-virtual-office/issues"
+  },
   "keywords": [
     "openbot",
     "pixel-art",
@@ -23,9 +26,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.node.json --noEmit",
+    "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "verify": "for s in scripts/verify-*.mjs; do node --import ./scripts/register-ts.mjs \"$s\" || exit 1; done"
+    "verify": "node scripts/verify-all.mjs"
   },
   "dependencies": {
     "better-sqlite3": "^13.2.0",

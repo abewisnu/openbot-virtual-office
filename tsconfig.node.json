@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    // DOM is here only so the shared modules the plugin imports (`src/constants.ts`)
+    // resolve; nothing in this project is meant to run in a browser context.
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "types": ["node"],
+    "strict": true,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    // The verify scripts are plain JS with no JSDoc, so `checkJs` would report
+    // ~120 inference errors that say nothing about correctness. They are still
+    // parsed and checked for syntax, and their behaviour is covered by running
+    // them (`npm run verify`). The two TS files below are fully type-checked.
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true
+  },
+  "include": ["vite.config.ts", "vite-plugin-openbot.ts", "scripts/**/*.mjs"]
+}
