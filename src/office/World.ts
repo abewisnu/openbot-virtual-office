@@ -1,8 +1,8 @@
 import { Application, Container, Graphics, Sprite, Text, TextureStyle } from 'pixi.js';
-import { ART, PROP, PROP_SCALE, RACK_W, FOOT_OFFSET, PHASE_COLORS, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
+import { ART, PROP, PROP_SCALE, RACK_BLINK_BASE, RACK_W, FOOT_OFFSET, PHASE_COLORS, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
 import type { Status, AgentPhase, Employee } from '../types';
 import { useStore } from '../store/useStore';
-import { generateAssets, makeCharFrames, makeLook, makeRackLeds, type Assets, type FurnitureType, type RackLed } from './AssetGenerator';
+import { generateAssets, makeCharFrames, makeLook, makeRackLeds, rackBlinkRate, type Assets, type FurnitureType, type RackLed } from './AssetGenerator';
 import { buildLayout, zoneName, type ChatSpot, type Layout, type RoomLabel, type Seat } from './Layout';
 import { isChattingSeat, isSocialZone, pickIdleSeat, pickIdleTile } from './Idle';
 import { isInLounge, staysInLounge } from './Lounge';
@@ -60,6 +60,8 @@ export class World {
   private keys = new Set<string>();
   private drag = { active: false, moved: 0, lx: 0, ly: 0 };
   private clockT = 0; private liveT = 0; private rackT = 0; private monitorT = 0;
+  /** Current rack-LED clock speed, eased toward the rate the workload asks for. */
+  private rackRate = RACK_BLINK_BASE;
   private cleanups: (() => void)[] = [];
   private ready = false;
   private host!: HTMLElement;
@@ -521,7 +523,13 @@ export class World {
       ch.tag.visible = st.showLabels;
       ch.setSelected(st.selectedId === ch.id);
     }
-    this.clockT += dt; this.liveT += dt; this.rackT += dt; this.monitorT += dt;
+    this.clockT += dt; this.liveT += dt; this.monitorT += dt;
+    // The rack panel answers the workload: every `working` agent is one notch of
+    // blink speed. Easing the rate (never the phase) keeps the LEDs from jumping
+    // when a phase changes, and makes a busy office read visibly quicker.
+    const working = st.employees.reduce((n, e) => n + (e.phase === 'working' ? 1 : 0), 0);
+    this.rackRate += (rackBlinkRate(working) - this.rackRate) * Math.min(1, dt * 1.2);
+    this.rackT += dt * this.rackRate;
     if (this.clockT >= 1) { this.clockT = 0; this.updateClock(); }
     if (this.liveT >= 0.4) {
       this.liveT = 0;
@@ -577,7 +585,7 @@ export class World {
   private updateRackLeds() {
     this.rackLedGraphics.clear();
     for (const led of this.rackLeds) {
-      const green = Math.sin(this.rackT * 2.5 + led.phase) > 0;
+      const green = Math.sin(this.rackT * led.rate + led.phase) > 0;
       this.rackLedGraphics
         .circle(led.x, led.y, 2 * PROP_SCALE)
         .fill(green ? 0x5fd068 : 0xd9534f);

@@ -3,7 +3,7 @@
  * Image unit = "pixel art"; sprites are scaled 2x on screen with nearest filter.
  */
 import { Texture } from 'pixi.js';
-import { ART, COLS, RACK_COLS, RACK_ROWS, ROWS, TILE } from '../constants';
+import { ART, COLS, RACK_BLINK_BASE, RACK_BLINK_MAX, RACK_BLINK_STEP, RACK_COLS, RACK_ROWS, ROWS, TILE } from '../constants';
 
 const OL = '#1d1722';
 // Semi-transparent glass partitions: pane tint keeps floor visible through the texture.
@@ -429,7 +429,23 @@ export function generateAssets(night: boolean, looks: Look[]): Assets {
   };
 }
 
-export interface RackLed { x: number; y: number; phase: number; }
+export interface RackLed {
+  x: number;
+  y: number;
+  /** Random start angle, so no two LEDs on the panel blink in step. */
+  phase: number;
+  /** Small random multiplier on the shared blink rate: organic panel, not a chorus. */
+  rate: number;
+}
+/**
+ * Blink speed for the NOC rack LEDs. One notch per `working` agent; the idle
+ * office keeps a slow heartbeat and the busiest office is capped so the panel
+ * still reads as status, not as a warning light.
+ */
+export function rackBlinkRate(workingAgents: number): number {
+  const n = Number.isFinite(workingAgents) ? Math.max(0, Math.floor(workingAgents)) : 0;
+  return Math.min(RACK_BLINK_MAX, RACK_BLINK_BASE + RACK_BLINK_STEP * n);
+}
 /**
  * LED dots on the NOC racks. `scale` is the prop pixel scale and `widthTiles`
  * the rack footprint, so the dots stay centred on the rack face when a prop
@@ -437,16 +453,19 @@ export interface RackLed { x: number; y: number; phase: number; }
  */
 export function makeRackLeds(scale = ART, widthTiles = 1): RackLed[] {
   const leds: RackLed[] = [];
-  let idx = 0;
   for (const ty of RACK_ROWS) {
     for (const tx of RACK_COLS) {
       const x = (tx + widthTiles / 2) * TILE;
       const spriteTop = (ty + 1) * TILE - 38 * scale;
       for (let j = 0; j < 4; j++) {
         const y = spriteTop + (2 + j * 9) * scale;
-        leds.push({ x, y, phase: idx * 0.5 + j * 0.3 });
+        leds.push({
+          x,
+          y,
+          phase: Math.random() * Math.PI * 2,
+          rate: 0.9 + Math.random() * 0.2,
+        });
       }
-      idx++;
     }
   }
   return leds;

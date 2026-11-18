@@ -30,6 +30,15 @@ export const RACK_COLS = [2, 4];
 /** Tiles a rack footprint spans: rack art is 16 art px = 1 tile at `ART`. */
 export const RACK_W = Math.max(1, Math.round(PROP_SCALE));
 /**
+ * NOC rack LEDs, in radians per second of the shared blink clock. The office
+ * starts at a slow idle heartbeat and gains one notch per `working` agent, so
+ * a busy day reads as a busier rack without turning into a strobe: `MAX` caps
+ * the full green/red cycle at about 1.4 s.
+ */
+export const RACK_BLINK_BASE = 1.5;
+export const RACK_BLINK_STEP = 0.4;
+export const RACK_BLINK_MAX = 4.6;
+/**
  * Clear tiles a door spans in a partition wall. Doors are drawn at `ART`, so a
  * `24 art px` door is 3 tiles; the divider leaves that many cells for it and
  * every door in the office uses the same opening.
