@@ -3,7 +3,7 @@
 // It is lazy-loaded via dynamic import() from openbotSource.ts to keep the
 // browser bundle clean (better-sqlite3 is a native Node addon, not usable in-browser).
 
-import { existsSync } from 'node:fs';
+import Database from 'better-sqlite3';
 import { z } from 'zod';
 import {
   AGENT_PHASES,
@@ -94,36 +94,12 @@ const agentJsonSchema = z.object({
 // Database handle
 // ---------------------------------------------------------------------------
 
-interface MockStatement {
-  get: (...params: unknown[]) => unknown;
-  all: (...params: unknown[]) => unknown[];
-  run: (...params: unknown[]) => { changes: number };
-}
+let db: Database.Database | null = null;
 
-interface MockDatabase {
-  prepare: (sql: string) => MockStatement;
-  close: () => void;
-}
-
-// Mocked SQLite handle replacing native better-sqlite3 in AI Studio runtime.
-export const mockDb: MockDatabase = {
-  prepare: () => ({
-    get: () => undefined,
-    all: () => [],
-    run: () => ({ changes: 0 }),
-  }),
-  close: () => {},
-};
-
-let db: MockDatabase | null = null;
-
-function getDb(): MockDatabase {
+function getDb(): Database.Database {
   if (db) return db;
-  const dbPath = resolveDbPath();
-  if (!existsSync(dbPath)) {
-    throw new Error(`OpenBot database not found at ${dbPath}`);
-  }
-  db = mockDb;
+  // mode: read-only, never create, never mutate.
+  db = new Database(resolveDbPath(), { readonly: true, fileMustExist: true });
   return db;
 }
 

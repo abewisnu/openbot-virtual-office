@@ -487,6 +487,9 @@ export const makeLook = (shirt: string, i: number): Look => ({ skin: SKINS[i % S
 export const CHAR_IDLE_FRAMES = 4;
 export const CHAR_WALK_FRAMES = 4;
 export const CHAR_SIT_FRAMES = 2;
+export const CHAR_H = 24;
+/** Extra height (art px) below the seat anchor so downward-facing sitters show dangling legs and shoes. */
+export const CHAR_SIT_DOWN_H = 27;
 /**
  * Torso lift per idle frame, in art px. The legs stay planted, so the chest and
  * head rise a pixel and settle back: a breath, not a hop.
@@ -510,12 +513,28 @@ function drawChar(c: Ctx, L: Look, dir: D3, pose: number, sit: boolean, bob = 0)
       if (pose === 1) { leg(3); leg(9); } else if (pose === 2) { leg(6); leg(7); } else if (pose === 3) { leg(2); leg(10); } else { leg(5); leg(8); }
     } else { lift(4, pose === 1); lift(9, pose === 3); }
   }
-  const th = sit ? 8 : 9;
+  const th = sit ? (dir === 'down' ? 7 : 8) : 9;
   B(c, 3, 9 + ty, 10, th, L.shirt);
   // Shirt bevel: lit shoulder line plus a dithered hem, so the torso reads round.
   R(c, 'rgba(255,246,222,0.16)', 4, 10 + ty, 8, 1);
   dither(c, 'rgba(16,10,26,0.20)', 4, 12 + ty, 8, th - 3);
-  if (sit) { R(c, OL, 3, 21, 10, 3); R(c, L.pants, 4, 21, 8, 2); }
+  if (sit) {
+    if (dir === 'down') {
+      R(c, OL, 3, 20, 10, 2);
+      R(c, L.pants, 4, 20, 8, 1);
+      const sitLeg = (x: number) => {
+        R(c, OL, x, 21, 4, 6);
+        R(c, L.pants, x + 1, 21, 2, 4);
+        R(c, 'rgba(255,246,222,0.12)', x + 1, 21, 2, 1);
+        R(c, '#2a2230', x + 1, 25, 2, 1);
+      };
+      sitLeg(4);
+      sitLeg(9);
+    } else {
+      R(c, OL, 3, 21, 10, 3);
+      R(c, L.pants, 4, 21, 8, 2);
+    }
+  }
   // lengan
   if (dir === 'left' || dir === 'right') {
     // The right-facing arm is the left one mirrored around the 16 px sprite.
@@ -535,7 +554,7 @@ function drawChar(c: Ctx, L: Look, dir: D3, pose: number, sit: boolean, bob = 0)
   else { R(c, L.hair, 4, 1 + ty, 8, 3); R(c, L.hair, 8, 3 + ty, 4, 5); R(c, OL, 5, 5 + ty, 1, 2); }
 }
 export function makeCharFrames(L: Look): CharFrames {
-  const mk = (d: D3, p: number, s = false, bob = 0) => make(16, 24, (c) => drawChar(c, L, d, p, s, bob));
+  const mk = (d: D3, p: number, s = false, bob = 0, h = CHAR_H) => make(16, h, (c) => drawChar(c, L, d, p, s, bob));
   const dirs: D3[] = ['up', 'down', 'left', 'right'];
   const idle = {} as CharFrames['idle'], walk = {} as CharFrames['walk'];
   for (const d of dirs) {
@@ -546,7 +565,7 @@ export function makeCharFrames(L: Look): CharFrames {
   return {
     idle,
     walk,
-    sit: { up: sitPoses.map((p) => mk('up', p, true)), down: sitPoses.map((p) => mk('down', p, true)) },
+    sit: { up: sitPoses.map((p) => mk('up', p, true)), down: sitPoses.map((p) => mk('down', p, true, 0, CHAR_SIT_DOWN_H)) },
   };
 }
 function makeBubble(): Texture {

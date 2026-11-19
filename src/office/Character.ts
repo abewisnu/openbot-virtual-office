@@ -1,6 +1,6 @@
 import { Container, Graphics, Sprite, Text, type Texture } from 'pixi.js';
 import { DENSITY, PROP, PROP_SCALE, CHAR_SPEED, type Dir } from '../constants';
-import { CHAR_IDLE_FRAMES, CHAR_SIT_FRAMES, CHAR_WALK_FRAMES, type CharFrames } from './AssetGenerator';
+import { CHAR_H, CHAR_IDLE_FRAMES, CHAR_SIT_DOWN_H, CHAR_SIT_FRAMES, CHAR_WALK_FRAMES, type CharFrames } from './AssetGenerator';
 import type { Seat } from './Layout';
 import type { Status } from '../types';
 
@@ -148,8 +148,9 @@ export class Character {
     if (this.state === 'sit' && this.seat) tex = this.seat.facing === 'up' ? f.sit.up[this.frame] : f.sit.down[this.frame];
     else tex = this.state === 'walk' ? f.walk[this.facing][this.frame] : f.idle[this.facing][this.frame];
     this.sprite.texture = tex;
-    this.sprite.scale.set(PROP / DENSITY);
     const sitting = this.state === 'sit' && !!this.seat;
+    this.sprite.anchor.set(0.5, sitting && this.seat!.facing === 'down' ? CHAR_H / CHAR_SIT_DOWN_H : 1);
+    this.sprite.scale.set(PROP / DENSITY);
     this.container.position.set(Math.round(this.x), Math.round(this.y));
     this.container.zIndex = this.y + (sitting ? this.seat!.zOffset : 0);
     this.shadow.visible = !sitting;
