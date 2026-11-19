@@ -15,14 +15,48 @@ type CState = 'idle' | 'walk' | 'sit';
  */
 const BELOW_CHAIR = -10;
 
+function makePixelShadow(): Graphics {
+  const g = new Graphics();
+  const s = PROP_SCALE;
+  // Stepped pixel oval centered on (0, -2*s): outer feather + denser core
+  g.rect(-6 * s, -5 * s, 12 * s, s).fill({ color: 0x090610, alpha: 0.18 });
+  g.rect(-8 * s, -4 * s, 16 * s, s).fill({ color: 0x090610, alpha: 0.24 });
+  g.rect(-9 * s, -3 * s, 18 * s, 2 * s).fill({ color: 0x090610, alpha: 0.30 });
+  g.rect(-8 * s, -1 * s, 16 * s, s).fill({ color: 0x090610, alpha: 0.22 });
+  g.rect(-5 * s, 0, 10 * s, s).fill({ color: 0x090610, alpha: 0.14 });
+  return g;
+}
+
+function makePixelRing(color: number, alpha: number): Graphics {
+  const g = new Graphics();
+  const s = PROP_SCALE;
+  // Crisp stepped pixel isometric selection ring centered at (0, -2*s), radius 14*s x 6*s
+  const spans: [number, number][] = [
+    [-7, 6], [-6, 10], [-5, 12], [-4, 13], [-3, 14], [-2, 14],
+    [-1, 14], [0, 13], [1, 12], [2, 10], [3, 6],
+  ];
+  for (let i = 0; i < spans.length; i++) {
+    const [dy, rx] = spans[i];
+    if (i === 0 || i === spans.length - 1) {
+      g.rect(-rx * s, dy * s, rx * 2 * s, s).fill({ color, alpha });
+    } else {
+      const prevRx = spans[i - 1][1];
+      const step = Math.max(1, Math.abs(rx - prevRx));
+      g.rect(-rx * s, dy * s, step * s, s).fill({ color, alpha });
+      g.rect((rx - step) * s, dy * s, step * s, s).fill({ color, alpha });
+    }
+  }
+  return g;
+}
+
 export class Character {
   readonly container = new Container();
   readonly tag = new Container();
   private sprite = new Sprite();
-  private shadow = new Graphics().ellipse(0, -2 * PROP_SCALE, 10 * PROP_SCALE, 4 * PROP_SCALE).fill({ color: 0x000000, alpha: 0.28 });
-  private ring = new Graphics().ellipse(0, -2 * PROP_SCALE, 14 * PROP_SCALE, 6 * PROP_SCALE).stroke({ width: 2, color: 0xfff3a0 });
+  private shadow = makePixelShadow();
+  private ring = makePixelRing(0xfff3a0, 1);
   /** Soft echo of the selection ring: pointer feedback, never a click state. */
-  private hoverRing = new Graphics().ellipse(0, -2 * PROP_SCALE, 14 * PROP_SCALE, 6 * PROP_SCALE).stroke({ width: 1, color: 0xfff3a0, alpha: 0.45 });
+  private hoverRing = makePixelRing(0xfff3a0, 0.5);
   private dot = new Graphics();
   private bubble: Sprite;
   x = 0; y = 0; facing: Dir = 'down'; state: CState = 'idle';

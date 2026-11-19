@@ -42,47 +42,67 @@ grid; only props follow `?props=`.
 Four layers sit on top of the base sprite art and none of them changes a sprite size, a collision
 box or a hit target.
 
-### Prop Detail
+### Prop Detail & Material Variants
 
 `AssetGenerator.ts` has two surface helpers: `grain()` scatters a fixed dark/light dither over a
 rect, `sheen()` lays a low-alpha highlight band across it. They are baked into the desk tops, the
 coffee, dining and meeting tables, the storage table, both sofas, the fridge fronts (two sheens) and
-the perforated `TEXEL` faceplates of the server racks and the CRAC louvres. The art is still drawn
-once at load; nothing here runs per frame.
+the perforated `TEXEL` faceplates of the server racks and the CRAC louvres. Glass partitions use
+2.5D top-down mullions with top-cap shading (`partitionH`, `partitionHHalf`, `partitionV`,
+`partitionCorner`). The art is drawn once at load; nothing here runs per frame.
+
+Settings allows live switching between **5 floor styles** (`Warm Oak`, `Dark Walnut`, `Herringbone`,
+`Slate Check`, `Light Grid` — persisted under `ovo-floor`) and **6 plant styles** (`Classic Bush`,
+`Monstera`, `Areca Palm`, `Zen Bonsai`, `Desert Cactus`, `Assorted Mix` — persisted under `ovo-plant`).
+Three interior lamp sprites (`floorLamp`, `deskLamp`, `wallSconce`) ship with dual unlit (`lampOff`)
+and warm-amber lit (`lampOn`) textures.
 
 ### Day Cycle
 
-`DayCycle.ts` is a pure curve over the local hour: seven keyframes (0 and 4.5 night, 6 dawn,
-8 and 16 day, 17.5 dusk, 19.5 night). `mixColor()` blends `tint` per channel and the mix
-returns `{ key, night, tint, tintAlpha, rayScale }`. `World` re-runs `refreshDaylight()` once a
-clock second comes due and rebuilds the window skyline only when `night` actually flips, so the
-dusk transition costs one texture swap, not one per frame.
+`DayCycle.ts` is a pure curve over the local hour (or an explicit `Settings → Atmosphere` override:
+`Auto (Clock)`, `Dawn`, `Day`, `Dusk`, `Night`): seven keyframes (`0` and `4.5` night, `6` dawn,
+`8` and `16` day, `17.5` dusk, `19.5` night). `mixColor()` blends `tint` per channel and returns
+`{ key, night, tint, tintAlpha, rayScale, ambientDark }`. `World` re-runs `refreshDaylight()` once
+per second (or immediately on Settings change) and swaps the cached background texture when `night`
+or `floorStyle` changes.
 
-### Atmosphere
+### Atmosphere & Moody Night Lighting
 
-`Atmosphere.ts` draws god rays and floor light pools in world space and the vignette plus ambient
-colour wash in screen space. Ray strength follows `rayScale` with a slow
-breathe (`0.72 + 0.28 × sin(t × 0.55)`) and gains up to `0.35` as `working` agents approach six.
-The vignette is captured from a 96×60 canvas and upscaled with `nearest`, so the gradient bands
-into chunky pixel steps instead of a smooth modern falloff.
+`Atmosphere.ts` operates on a pixel-aligned grid (`ATMO_STEP = 2`, `960×640` texels upscaled with
+`nearest` filtering) and renders **no screen-edge black vignette**:
+
+- **Window God Rays & Floor Pools**: Stepped luminance bands with `4×4` ordered Bayer dithering
+  beneath the three north windows, tinted warm gold during Day/Dawn, sunset amber at Dusk, and cool
+  moonlight at Night. Ray strength follows `rayScale` with a calm breathe (`0.72 + 0.28 × sin(t × 0.55)`)
+  and gains up to `0.35` as `working` agents approach six.
+- **Emissive Local Pools**: Bayer-dithered glow pools under active monitors, NOC hardware (`serverRack`,
+  `crac`, `ups`), pantry appliances (`fridge`, `dispenser`), and active interior lamps (`floorLamp`,
+  `deskLamp`, `wallSconce`).
+- **Moody / Low-Key Night Lighting (Dark Ambient + Pools of Light)**: Enabled by default via
+  **Settings → Moody night lighting** (`ovo-moody-lighting`). At Night (`ambientDark = 0.56`) and
+  Dusk (`0.28`), a deep `#070918` pixel-grid ambient veil sits between sorted world sprites and room/name
+  labels while active lamps, glowing monitors, NOC racks, and the three north windows carve warm and
+  cool Bayer-dithered **Pools of Light** using `destination-out` radial cutouts. Turning the option
+  off disables the dark ambient veil and lamp glow for a uniformly lit night scene.
+- **Screen Colour Wash**: A flat full-viewport tint (`tint`, `tintAlpha`) without darkening edges.
 
 ### Particles
 
 `Particles.ts` keeps 56 dust motes drifting inside the three window shafts and
-opens timed emitters over `dispenser` and `coffeeTable` (steam) and `crac` (cool air) after
-`World.buildEmitters()` scans `layout.furniture`. Motes are drawn into a single `Graphics` per
-frame and capped at `MAX_MOTES = 150`; the layer mounts between `sortLayer` and `roomLabelLayer`
-so a mote passes over a desk but never over a room plate.
+opens timed emitters over `dispenser` (hot/cold steam), `coffeeTable` (steam aligned over the cup)
+and `crac` (cool air) after `World.buildEmitters()` scans `layout.furniture`. Motes are drawn into
+a single `Graphics` per frame and capped at `MAX_MOTES = 150`; the layer mounts between `sortLayer`
+and `roomLabelLayer` so a mote passes over a desk but never over a room plate.
 
-### Hover and Selection
+### Hover, Selection & Room Navigation
 
-`Character` carries two non-click graphics: `ring` (selection, `0xfff3a0`,
-2 px, alpha pulsing `0.72 + 0.28 × sin(anim × 4)`) and `hoverRing` (pointer feedback, 1 px, alpha
-`0.45`, hidden while the ring is shown). On top of that, `World.hoverMark` draws a rounded bay
-around the hovered workstation — two strokes, `2 / zoom` at alpha 0.55 and `1 / zoom` at 0.9, so
-the line keeps a constant screen weight at every zoom step. `pointermove` sets the cursor to
-`pointer` over an employee and `default` elsewhere, `pointerup` selects only when the drag moved
-less than 5 px (so a camera pan never opens a panel), and `Escape` clears the selection.
+`Character` carries crisp pixel graphics: `ring` (selection, `0xfff3a0`, 2 px, pulsing
+`0.72 + 0.28 × sin(anim × 4)`) and `hoverRing` (pointer feedback, 1 px, alpha `0.45`). `World.hoverMark`
+draws a pixel-crisp corner-pipped workstation outline around hovered desks, while hovering an agent
+or desk surfaces a compact HUD tooltip (`hoveredAgent`). Clicking a room button in the top-right
+camera bar (`Lounge`, `Meeting`, `Pantry`, `NOC`, `Desks`) glides the camera there at `125%` zoom and
+renders a 3-second slow-flashing pixel highlight box (`roomHighlight`) around that room. `pointerup`
+selects only when the drag moved less than 5 px, and `Escape` clears the selection.
 
 ## Motion and Performance
 

@@ -15,32 +15,47 @@ The office world is one shared floor plate with five zones. `zoneName()` in
 
 ## Meeting Room
 
-The Meeting Room sits one room-width left of the workstation block. Its interior is laid out in
-pixels so each prop keeps a margin from the glass at 2×: a 3-seat sofa and the 64×52 whiteboard
-along the top band, an 8-seat table under them, a 10×8 rug beneath the whole bay, and a plant in
-each bottom corner. The floor runs two rows past the rug (rows 18–19) so the carpet stops clear of
-the bottom glass, which now sits on row 20 with both side partitions (columns 17 and 32) extended
-down to meet it. The whiteboard sits at the right end of the top band (x 872–1000, 4 tiles),
-88 px clear of the sofa and hung 12 px above its base line, so the pair read as one wall band
-without covering each other.
+The Meeting Room sits one room-width left of the workstation block, enclosed by 2.5D top-down
+glass partitions (`partitionV`, `partitionH`, `partitionHHalf`, `partitionCorner`) with metallic
+mullions and specular glass highlights. Its interior is laid out in pixels so each prop keeps a
+margin from the glass at 2×: a 3-seat sofa and the 64×52 whiteboard along the top band, an 8-seat
+table under them, a 10×8 rug beneath the whole bay, a plant in each bottom corner, and two
+`floorLamp` fixtures at cols 18 and 31 on row 7. The floor runs two rows past the rug (rows 18–19)
+so the carpet stops clear of the bottom glass on row 20, with both side partitions (columns 17 and
+32) joined cleanly via corner mullions. The whiteboard sits at the right end of the top band
+(x 872–1000, 4 tiles), 88 px clear of the sofa and hung 12 px above its base line, so the pair
+read as one wall band without covering each other.
 
 ## Lounge
 
 A 6-tile three-seat sofa one row off the window band (cols 4–9, row 8), a 4×2 coffee table
-centred under it (cols 5–8, rows 10–11), and a 4-tile loveseat on each side facing up
-(cols 1–4 and 10–13, row 13), so the three pieces ring the table without overlapping sprites.
-A 10×6 rug sits under the bay, a tall plant flanks each side of the sofa on row 8, and rows 9 and
-14 stay open wall to wall so every seat is reachable from the door on rows 10–12.
+centred under it (cols 5–8, rows 10–11, with coffee-cup steam emitted directly over the cup), and a
+4-tile loveseat on each side facing up (cols 1–4 and 10–13, row 13), so the three pieces ring the
+table without overlapping sprites. A 10×6 rug sits under the bay, a tall plant flanks each side of
+the sofa on row 8, a `floorLamp` sits in the lower-left corner at `(1, 15)`, and rows 9 and 14 stay
+open wall to wall so every seat is reachable from the open-plan aisle.
 Seven lounge seats (`LS-1/3/5`, `LL-1/3`, `LR-1/3`).
 
 ## Pantry & Storage
 
 Three shelf clusters on row 20 (two tiles below the top wall) with a one-tile gutter at col 5 and
 col 10 (bookshelf 4 tiles, cabinet, fridge and dispenser 2 tiles each), a 4-tile `diningTable`
-with two chairs per long side on the 7×6 rug at rows 22–27 (chairs centred at x 192 and 256,
-one 2-tile sprite apart so nothing overlaps, approach rows 22 and 27), and a plant in each bottom
-corner. Footprint widths follow the art at the 2× prop scale, and `place()`/`block()` now reject
+with two chairs per long side centred on a 6×6.5 rug (`x: 4, y: 21.5`, chairs centred at x 192 and
+256, one 2-tile sprite apart so nothing overlaps, approach rows 22 and 27), a `floorLamp` at `(1, 26)`,
+and balanced corner plants at `(1, 28)` and `(12, 28)`. Circulation lanes remain clear of decorative
+plants. Footprint widths follow the art at the 2× prop scale, and `place()`/`block()` reject
 fractional tiles.
+
+## Lighting Fixtures
+
+Interior light fixtures double as architectural props (unlit during Day) and warm pools of light
+when **Moody night lighting** is active at Dusk/Night:
+- **`floorLamp`**: Lounge `(1, 15)`, Meeting Room `(18, 7)` and `(31, 7)`, Pantry `(1, 26)`, and
+  the Workstation entrance corner `(33, 7)`.
+- **`wallSconce`**: North corridor wall pillar (`x: 1280, y: 124`) and NOC partition transom
+  (`x: 128` and `x: 352` at `y: 970`).
+- **`deskLamp`**: Alternating workstation desks (`n % 2 === 0`), mounted on the desk corner without
+  adding floor collision.
 
 ## NOC — Network Operations Centre
 
@@ -64,10 +79,10 @@ glass.
 
 ## Rack LEDs as a Workload Gauge
 
-The eight dots (4 per rack, r `2 × PROP_SCALE`, green `0x5fd068` / red `0xd9534f`, 1 px halo
-stroke at `3.5 × PROP_SCALE`, alpha 0.4) are not decoration — they read the roster. Each LED
-opens at `Math.random() * 2π` with a `0.9–1.1` rate jitter (`makeRackLeds`), so the panel never
-blinks in chorus. The shared blink clock runs one notch per `working` agent,
+The eight LEDs (4 per rack, `2 × PROP_SCALE` square core with a `4 × PROP_SCALE` pixel cross halo
+and bright specular corner pixel, green `0x5fd068` / red `0xd9534f`) are not decoration — they read
+the roster. Each LED opens at `Math.random() * 2π` with a `0.9–1.1` rate jitter (`makeRackLeds`),
+so the panel never blinks in chorus. The shared blink clock runs one notch per `working` agent,
 `RACK_BLINK_BASE 1.5` + `RACK_BLINK_STEP 0.4` rad/s, capped at `RACK_BLINK_MAX 4.6` the moment
 eight agents work (about a 1.4 s full green/red cycle), and `World` eases the rate toward that
 target (`dt * 1.2`) instead of the phase, so a phase change makes the panel speed up smoothly and
@@ -122,4 +137,6 @@ Room, Lounge or Pantry; a `waiting` or `unread` agent walks to its own desk inst
 agent keeps its chair for 18–40 s (`Math.random() < 0.6` = stay put) and shows a talk bubble when
 somebody sits facing it, so two standby agents read as a conversation. Goals come from
 `src/office/Idle.ts` (`pickIdleSeat()` / `pickIdleTile()` / `isChattingSeat()` / `visAVis()`) —
-the office stays alive when the database cannot be read.
+the office stays alive when the database cannot be read. Last known idle, break, and lounge poses
+are persisted in `localStorage` under `ovo-agent-poses`, so refreshing the page restores each
+idle/lounge agent to its exact spot and facing direction.

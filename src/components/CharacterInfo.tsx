@@ -3,7 +3,7 @@ import { useStore } from '../store/useStore';
 import { badgeFor, formatBytes } from '../constants';
 
 export default function CharacterInfo() {
-  const { employees, selectedId, live, select } = useStore();
+  const { employees, selectedId, live, select, followSelected, setFollowSelected } = useStore();
   const emp = employees.find((e) => e.id === selectedId);
   if (!emp) return null;
   const badge = badgeFor(emp);
@@ -18,6 +18,15 @@ export default function CharacterInfo() {
           <span className="badge" style={{ background: badge.color }} title={badge.label} />
           <span className="badge-label">{badge.label}</span>
           {badge.note && <span className="badge-note">{badge.note}</span>}
+          <button
+            type="button"
+            className="follow-btn"
+            aria-pressed={followSelected}
+            onClick={() => setFollowSelected(!followSelected)}
+            title={followSelected ? 'Stop following agent' : 'Center and follow agent'}
+          >
+            {followSelected ? 'Following' : 'Follow'}
+          </button>
         </div>
       </div>
       <dl className="info-facts">

@@ -1,28 +1,27 @@
 import { Application, Container, Graphics, Sprite, Text, TextureStyle, type Texture } from 'pixi.js';
-import { ART, DENSITY, PROP, PROP_SCALE, RACK_BLINK_BASE, RACK_W, FOOT_OFFSET, PHASE_COLORS, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
+import { ART, DEFAULT_ZOOM_INDEX, DENSITY, PROP, PROP_SCALE, RACK_BLINK_BASE, RACK_W, FOOT_OFFSET, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
 import type { Status, AgentPhase, Employee } from '../types';
-import { useStore } from '../store/useStore';
-import { generateAssets, makeBackground, makeCharFrames, makeLook, makeRackLeds, rackBlinkRate, type Assets, type FurnitureType, type RackLed } from './AssetGenerator';
+import { useStore, type RoomHighlightRect } from '../store/useStore';
+import { generateAssets, makeBackground, makeCharFrames, makeLook, makeRackLeds, rackBlinkRate, type Assets, type ConcretePlantStyle, type FloorStyle, type FurnitureType, type LampType, type Look, type PlantStyle, type RackLed } from './AssetGenerator';
+import { avatarSpec } from './Avatar';
 import { buildLayout, zoneName, type ChatSpot, type Layout, type RoomLabel, type Seat } from './Layout';
-import { isChattingSeat, isSocialZone, pickIdleSeat, pickIdleTile } from './Idle';
+import { isChattingSeat, isSocialSeat, isSocialZone, pickIdleSeat, pickIdleTile } from './Idle';
 import { isInLounge, staysInLounge } from './Lounge';
 import { Character, type Vec } from './Character';
 import { monitorStateFor } from './Monitor';
 import { findPath, type Tile } from './Pathfinder';
-import { Atmosphere } from './Atmosphere';
+import { Atmosphere, type EmissiveLight } from './Atmosphere';
 import { Particles, type EmitSpot } from './Particles';
-import { daylightAt, type Daylight } from './DayCycle';
+import { daylightAt, daylightForMode, type Daylight, type DaylightMode } from './DayCycle';
 
 const STATUSES: Status[] = ['working', 'working', 'working', 'meeting', 'chatting', 'break', 'idle'];
 /**
- * Room shell: glass partitions, doors and the wall-mounted whiteboard keep
- * `ART` instead of `PROP`. They own the tile grid, so enlarging them would hang
- * a run a tile past its last tile and eat the aisle; at `ART` a run ends
- * exactly where the layout says, and a 64 x 40 art board stays 4 x 2.5 tiles
- * on the meeting-room wall instead of eating half the room.
+ * Room shell & small desk/wall fixtures: glass partitions, doors, whiteboard,
+ * desk lamps and wall sconces keep `ART` instead of `PROP` so they stay
+ * proportional to walls and desk corners.
  */
 const SHELL: ReadonlySet<FurnitureType> = new Set<FurnitureType>([
-  'partitionH', 'partitionHHalf', 'partitionV', 'partitionCorner', 'doorH', 'doorV', 'whiteboard',
+  'partitionH', 'partitionHHalf', 'partitionV', 'partitionCorner', 'doorH', 'doorV', 'whiteboard', 'deskLamp', 'wallSconce',
 ]);
 /** Workstation monitor: a bit denser than the props (1.25x), so the 16 x 14 art
  * screen covers ~2.5 of its 4-tile desk without towering over it. Textures hold
@@ -36,11 +35,58 @@ const MONITOR_H = 14 * DENSITY * MONITOR_SCALE;
 const MONITOR_FRAME_MS = 220;
 /** Last camera + selection, kept across reloads so the office reopens where it left off. */
 const VIEW_KEY = 'ovo-view';
+/** Last known poses for idle/break/lounge agents so page reloads preserve their spot. */
+const POSES_KEY = 'ovo-agent-poses';
+const DIRS: ReadonlySet<Dir> = new Set(['up', 'down', 'left', 'right']);
+interface SavedPose { seatId: string | null; x: number; y: number; facing: Dir }
+
 const tileOf = (x: number, y: number): Tile => ({ tx: Math.floor(x / TILE), ty: Math.floor((y - FOOT_OFFSET) / TILE) });
 const centerOf = (t: Tile): Vec => ({ x: (t.tx + 0.5) * TILE, y: (t.ty + 0.5) * TILE + FOOT_OFFSET });
 
 const num = (v: unknown): number | null =>
   typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : null;
+
+function loadAgentPoses(): Map<string, SavedPose> {
+  const out = new Map<string, SavedPose>();
+  try {
+    const raw = localStorage.getItem(POSES_KEY);
+    if (!raw) return out;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return out;
+    for (const [id, v] of Object.entries(parsed as Record<string, unknown>)) {
+      if (!v || typeof v !== 'object') continue;
+      const rec = v as Record<string, unknown>;
+      const x = num(rec.x);
+      const y = num(rec.y);
+      const facing = DIRS.has(rec.facing as Dir) ? (rec.facing as Dir) : 'down';
+      const seatId = typeof rec.seatId === 'string' && rec.seatId ? rec.seatId : null;
+      if (x !== null && y !== null) out.set(id, { seatId, x, y, facing });
+    }
+  } catch {
+    /* corrupt or unavailable storage */
+  }
+  return out;
+}
+
+function saveAgentPoses(chars: Character[]) {
+  if (!chars.length) return;
+  try {
+    const out: Record<string, SavedPose> = {};
+    for (const ch of chars) {
+      if (ch.appliedStatus !== 'idle' && ch.appliedStatus !== 'break') continue;
+      if (ch.seat && ch.seat.kind === 'desk') continue;
+      out[ch.id] = {
+        seatId: ch.seat ? ch.seat.id : null,
+        x: Math.round(ch.x),
+        y: Math.round(ch.y),
+        facing: ch.facing,
+      };
+    }
+    localStorage.setItem(POSES_KEY, JSON.stringify(out));
+  } catch {
+    /* ignore unavailable storage */
+  }
+}
 
 function restoreView(): { cam: { x: number; y: number; zi: number } | null; selected: string | null } {
   const selected = new URLSearchParams(location.search).get('agent');
@@ -87,6 +133,9 @@ export class World {
   private rackLedGraphics = new Graphics();
   /** Soft outline under the workstation the pointer rests on. */
   private hoverMark = new Graphics();
+  /** 3-second slow-flashing highlight box around a room clicked in the quick-jump bar. */
+  private roomHighlight = new Graphics();
+  private roomHighlightState: (RoomHighlightRect & { age: number; duration: number }) | null = null;
   /** Agent currently under the pointer, or null. Drives the hover ring. */
   private hoverId: string | null = null;
   private atmosphere = new Atmosphere();
@@ -95,11 +144,21 @@ export class World {
   private emitters: EmitSpot[] = [];
   /** Night pass of the background, re-used by the atmosphere wash. */
   private night = false;
+  /** Selected office floor pattern from Settings. */
+  private floorStyle: FloorStyle = 'oak';
+  /** Selected plant variant from Settings. */
+  private plantStyle: PlantStyle = 'classic';
+  /** Whether Moody / Low-Key dark ambient + warm lamps are enabled in Settings. */
+  private moodyLighting = true;
+  private plantSprites: Sprite[] = [];
+  private lampSprites: { type: LampType; sprite: Sprite }[] = [];
   /** Live daylight curve; recomputed from the clock each frame. */
   private daylight: Daylight = daylightAt(12);
   private background!: Sprite;
-  /** Baked background per pass, so a dawn/dusk flip never rebuilds twice. */
-  private backgroundCache = new Map<boolean, Texture>();
+  /** Baked background per pass + floor style, so switching never rebuilds twice. */
+  private backgroundCache = new Map<string, Texture>();
+  /** One-shot saved poses for idle/lounge agents read on startup. */
+  private savedPoses = loadAgentPoses();
   private rackLeds: RackLed[] = [];
   /** Desk monitors: dark unless a working/ready agent occupies the desk; animated while working. */
   private monitors: { seat: Seat; sprite: Sprite }[] = [];
@@ -115,7 +174,7 @@ export class World {
   private loungeSeats: Seat[] = [];
   /** Floor tiles in the social rooms (Meeting, Lounge, Pantry): the idle stage. */
   private socialTiles: Tile[] = [];
-  private cam = { x: WORLD_W / 2, y: WORLD_H / 2 + 60, zi: 1 };
+  private cam = { x: WORLD_W / 2, y: WORLD_H / 2 + 60, zi: DEFAULT_ZOOM_INDEX };
   private keys = new Set<string>();
   private drag = { active: false, moved: 0, lx: 0, ly: 0 };
   private clockT = 0; private liveT = 0; private rackT = 0; private monitorT = 0;
@@ -131,6 +190,13 @@ export class World {
   private budgetT = 0;
   /** Particle budget scale; 1 is the shipped density, 1/3 is the emergency floor. */
   private particleQuality = 1;
+  /** Smooth camera glide goal (room jump or selected-agent follow). */
+  private camGoal: { x: number; y: number } | null = null;
+  private lastCamSeq = 0;
+  private lastZoomSeq = 0;
+  private lastDaylightMode: DaylightMode = 'auto';
+  /** Precomputed hardware & appliance glow anchors (NOC racks, CRAC, UPS, pantry). */
+  private staticLights: EmissiveLight[] = [];
 
   async init(host: HTMLElement) {
     this.host = host;
@@ -139,11 +205,16 @@ export class World {
     host.appendChild(this.app.canvas);
     this.app.canvas.style.display = 'block';
 
-    const h = new Date().getHours();
-    this.daylight = daylightAt(h);
+    const st = useStore.getState();
+    this.lastDaylightMode = st.daylightMode;
+    this.moodyLighting = st.moodyLighting;
+    this.floorStyle = st.floorStyle;
+    this.plantStyle = st.plantStyle;
+    this.daylight = daylightForMode(this.lastDaylightMode);
     this.night = this.daylight.night;
-    const emps = useStore.getState().employees;
-    this.assets = generateAssets(this.night, emps.map((e, i) => makeLook(shirtColorFor(e), i)));
+    const emps = st.employees;
+    this.assets = generateAssets(this.night, emps.map((e, i) => this.lookFor(e, i)), this.floorStyle);
+    this.backgroundCache.set(`${this.night}:${this.floorStyle}`, this.assets.background);
     // Size the workstation block to the live roster: one desk per agent.
     this.layout = buildLayout(emps.length);
     this.layout.blocked.forEach((row, ty) => row.forEach((b, tx) => { if (!b) this.walkable.push({ tx, ty }); }));
@@ -170,9 +241,10 @@ export class World {
     // Hover mark slides in just under the props: it outlines a desk bay without
     // covering the chair, the monitor or the name plate.
     this.root.addChildAt(this.hoverMark, this.root.getChildIndex(this.sortLayer));
-    // Atmosphere sits between the floor art and the sorted props: the light
-    // pools tint the floor, and the props stay crisp on top of the haze.
-    this.atmosphere.mountWorld(this.root, this.sortLayer);
+    this.root.addChildAt(this.roomHighlight, this.root.getChildIndex(this.labelLayer));
+    // Atmosphere floor pools sit beneath sorted props; dark ambient veil sits
+    // right above sorted props (and under room plates/name tags).
+    this.atmosphere.mountWorld(this.root, this.sortLayer, this.roomLabelLayer);
     // Particles ride between the props and the room plates, so steam reads over
     // the furniture without ever covering a plate or a name tag.
     this.particles.mount(this.root, this.sortLayer, this.roomLabelLayer);
@@ -180,11 +252,19 @@ export class World {
     this.atmosphere.mountScreen(this.app.stage);
     this.atmosphere.resize(this.app.screen.width, this.app.screen.height);
 
+    this.plantSprites = [];
+    this.lampSprites = [];
     for (const f of this.layout.furniture) {
       const s = new Sprite(this.assets.furn[f.type]);
       s.anchor.set(0.5, 1); s.scale.set(SHELL.has(f.type) ? ART / DENSITY : PROP / DENSITY); s.position.set(f.x, f.y); s.zIndex = f.z;
       this.sortLayer.addChild(s);
+      if (f.type === 'plant') this.plantSprites.push(s);
+      else if (f.type === 'floorLamp' || f.type === 'deskLamp' || f.type === 'wallSconce') {
+        this.lampSprites.push({ type: f.type, sprite: s });
+      }
     }
+    this.applyPlantStyle();
+    this.updateLamps();
     // One monitor per workstation, lit only while a working/ready agent sits there.
     this.monitors = [];
     for (const seat of this.layout.seats) {
@@ -199,6 +279,7 @@ export class World {
     }
     this.layout.roomLabels.forEach((label) => this.roomLabelLayer.addChild(this.buildRoomLabel(label)));
     this.emitters = this.buildEmitters();
+    this.staticLights = this.buildStaticLights();
     this.rebuildCharacters();    this.bindInput(); this.bindMotion();
     this.restoreView();
     this.updateClock();
@@ -230,7 +311,7 @@ export class World {
     };
     document.addEventListener('visibilitychange', onVisibility);
     this.cleanups.push(() => document.removeEventListener('visibilitychange', onVisibility));
-    const onUnload = () => saveView(this.cam);
+    const onUnload = () => { saveView(this.cam); saveAgentPoses(this.chars); };
     window.addEventListener('pagehide', onUnload);
     this.cleanups.push(() => window.removeEventListener('pagehide', onUnload));
   }
@@ -244,35 +325,87 @@ export class World {
 
   destroy() {
     saveView(this.cam);
+    saveAgentPoses(this.chars);
     this.cleanups.forEach((f) => f());
     this.particles.destroy();
     const live = this.background?.texture;
     this.app.destroy({ removeView: true }, { children: true, texture: true });
-    // The off-pass background never joined the stage, so the stage-wide texture
-    // teardown above cannot reach it.
+    // Off-pass cached backgrounds never joined the stage, so destroy them here.
     this.backgroundCache.forEach((tex) => { if (tex !== live) tex.destroy(true); });
     this.backgroundCache.clear();
   }
 
   // ---------- Input & kamera ----------
   /**
-   * Emitter outlets, derived from the placed props so moving a fridge in the
-   * layout moves its steam with it. Height is the art height times the prop
-   * draw scale, which puts the outlet on the sprite's top edge.
+   * Emitter outlets, derived from the placed props so moving a prop in the
+   * layout moves its steam/haze with it. Offsets are in art pixels scaled by
+   * `PROP`, placing each emitter precisely at its visual source (e.g. directly
+   * over the coffee cup on the lounge coffeeTable).
    */
   private buildEmitters(): EmitSpot[] {
-    const SPOTS: Partial<Record<FurnitureType, { artH: number; kind: 'steam' | 'air' }>> = {
-      dispenser: { artH: 30, kind: 'steam' },
-      coffeeTable: { artH: 16, kind: 'steam' },
-      crac: { artH: 32, kind: 'air' },
+    const SPOTS: Partial<Record<FurnitureType, { dx: number; dy: number; kind: 'steam' | 'air' }>> = {
+      dispenser: { dx: 1, dy: 15, kind: 'steam' },
+      coffeeTable: { dx: 5.5, dy: 10.5, kind: 'steam' },
+      crac: { dx: 0, dy: 19, kind: 'air' },
     };
     const out: EmitSpot[] = [];
     for (const f of this.layout.furniture) {
       const spot = SPOTS[f.type];
       if (!spot) continue;
-      out.push({ x: f.x, y: f.y - spot.artH * (PROP / DENSITY) + 2, kind: spot.kind });
+      out.push({ x: f.x + spot.dx * PROP, y: f.y - spot.dy * PROP, kind: spot.kind });
     }
     return out;
+  }
+  private staticLampLights: EmissiveLight[] = [];
+  private buildStaticLights(): EmissiveLight[] {
+    const out: EmissiveLight[] = [];
+    this.staticLampLights = [];
+    for (const f of this.layout.furniture) {
+      if (f.type === 'serverRack') out.push({ x: f.x, y: f.y - 24, w: 132, h: 108, color: 0x4aa3d8, intensity: 0.48, pulse: 2.2, cutout: 0.72 });
+      else if (f.type === 'crac') out.push({ x: f.x, y: f.y - 16, w: 120, h: 90, color: 0x6fd8ff, intensity: 0.38, pulse: 1.5, cutout: 0.65 });
+      else if (f.type === 'ups') out.push({ x: f.x, y: f.y - 12, w: 104, h: 72, color: 0xd9a441, intensity: 0.34, pulse: 1.8, cutout: 0.62 });
+      else if (f.type === 'fridge') out.push({ x: f.x, y: f.y - 12, w: 108, h: 80, color: 0xbfe6fa, intensity: 0.24, cutout: 0.45 });
+      else if (f.type === 'dispenser') out.push({ x: f.x, y: f.y - 20, w: 96, h: 70, color: 0x7ec8f0, intensity: 0.28, cutout: 0.50 });
+      else if (f.type === 'floorLamp') {
+        this.staticLampLights.push({ x: f.x, y: f.y - 36, w: 280, h: 220, color: 0xffb85c, intensity: 0.85, pulse: 0.8, cutout: 0.96 });
+      } else if (f.type === 'deskLamp') {
+        this.staticLampLights.push({ x: f.x - 10, y: f.y + 4, w: 172, h: 134, color: 0xffc66d, intensity: 0.72, cutout: 0.88 });
+      } else if (f.type === 'wallSconce') {
+        this.staticLampLights.push({ x: f.x, y: f.y + 24, w: 190, h: 156, color: 0xffb259, intensity: 0.70, cutout: 0.84 });
+      }
+    }
+    return out;
+  }
+  private collectEmissiveLights(): EmissiveLight[] {
+    const lights = [...this.staticLights];
+    const lampScale = !this.moodyLighting
+      ? 0
+      : this.daylight.key === 'night'
+        ? 1
+        : this.daylight.key === 'dusk'
+          ? 0.68
+          : this.daylight.key === 'dawn'
+            ? 0.40
+            : 0;
+    if (lampScale > 0) {
+      for (const l of this.staticLampLights) {
+        lights.push({ ...l, intensity: l.intensity * lampScale, cutout: (l.cutout ?? 0.85) * Math.min(1, lampScale * 1.1) });
+      }
+    }
+    for (const { seat } of this.monitors) {
+      if (!seat.monitor) continue;
+      const ch = seat.occupant ? this.chars.find((c) => c.id === seat.occupant) : undefined;
+      const seated = !!ch && ch.state === 'sit' && ch.seat === seat;
+      const state = monitorStateFor(seated && ch ? this.empOf(ch.id)?.phase : undefined, seated);
+      if (state === 'moving') {
+        lights.push({ x: seat.monitor.x, y: seat.monitor.y + 18, w: 164, h: 116, color: 0x4aa3d8, intensity: 0.78, pulse: 3.4, cutout: 0.90 });
+      } else if (state === 'still') {
+        lights.push({ x: seat.monitor.x, y: seat.monitor.y + 18, w: 148, h: 102, color: 0x3b8ac4, intensity: 0.56, cutout: 0.78 });
+      } else if (state === 'waiting') {
+        lights.push({ x: seat.monitor.x, y: seat.monitor.y + 18, w: 132, h: 92, color: 0x94a3b8, intensity: 0.40, cutout: 0.65 });
+      }
+    }
+    return lights;
   }
   private buildRoomLabel(label: RoomLabel): Container {
     const plate = new Container();
@@ -302,6 +435,10 @@ export class World {
         const dx = e.clientX - this.drag.lx, dy = e.clientY - this.drag.ly, z = ZOOM_STEPS[this.cam.zi];
         this.drag.moved += Math.abs(dx) + Math.abs(dy); this.drag.lx = e.clientX; this.drag.ly = e.clientY;
         this.cam.x -= dx / z; this.cam.y -= dy / z; cv.style.cursor = 'grabbing';
+        if (this.drag.moved > 4) {
+          this.camGoal = null;
+          if (useStore.getState().followSelected) useStore.getState().setFollowSelected(false);
+        }
         this.setHover(null);
       } else {
         const id = this.pickEmployeeId(e);
@@ -318,6 +455,10 @@ export class World {
     on(window, 'keydown', (e: KeyboardEvent) => {
       this.keys.add(e.code);
       if (e.code.startsWith('Arrow')) e.preventDefault();
+      if (e.code === 'KeyW' || e.code === 'KeyA' || e.code === 'KeyS' || e.code === 'KeyD' || e.code.startsWith('Arrow')) {
+        this.camGoal = null;
+        if (useStore.getState().followSelected) useStore.getState().setFollowSelected(false);
+      }
       if (e.code === 'KeyE') this.shuffle();
       if (e.code === 'Escape') useStore.getState().select(null);
       if (e.code === 'Equal' || e.code === 'NumpadAdd') this.zoomBy(1);
@@ -393,20 +534,47 @@ export class World {
     }
     if (id) for (const ch of this.chars) if (ch.id === id) ch.setHovered(true);
     this.hoverMark.clear();
-    if (!id || !e) return;
+    const st = useStore.getState();
+    if (!id || !e) {
+      if (st.hoveredAgent !== null) st.setHoveredAgent(null);
+      return;
+    }
+    const emp = this.empOf(id);
+    if (emp) {
+      const ch = this.chars.find((c) => c.id === id);
+      const badge = badgeFor(emp);
+      const t = ch ? tileOf(ch.x, ch.y) : null;
+      const zone = t ? zoneName(t.tx, t.ty) : (emp.currentWorkstation ?? 'Office');
+      st.setHoveredAgent({
+        id: emp.id,
+        name: emp.name,
+        role: emp.role,
+        phaseLabel: badge.label,
+        phaseColor: badge.color,
+        zone,
+        screenX: e.clientX,
+        screenY: e.clientY,
+      });
+    }
     const seat = this.pickDesk(e);
     if (!seat) return;
-    // World-space geometry is scaled by the camera, so a 1 px stroke would drop
-    // under a screen pixel at the default 0.75 zoom. Width follows the zoom step
-    // to stay a visible 2 px outline at every zoom level.
+    // Crisp 32-bit pixel frame + corner pips around the hovered workstation bay.
     const w = 34 * PROP_SCALE * 2, h = 24 * PROP_SCALE;
     const z = ZOOM_STEPS[this.cam.zi];
-    const x = seat.pos.x - w / 2, y = seat.pos.y - h;
+    const x = Math.round(seat.pos.x - w / 2), y = Math.round(seat.pos.y - h);
+    const t = Math.max(2, Math.round(2 / z));
+    const pip = 6;
     this.hoverMark
-      .roundRect(x, y, w, h, 6)
-      .stroke({ width: 2 / z, color: 0xfff3a0, alpha: 0.55 })
-      .roundRect(x, y, w, h, 6)
-      .stroke({ width: 1 / z, color: 0xfffbe0, alpha: 0.9 });
+      .rect(x, y, w, h)
+      .stroke({ width: t, color: 0xfff3a0, alpha: 0.65 })
+      .rect(x, y, pip, t).fill({ color: 0xfffbe0, alpha: 0.95 })
+      .rect(x, y, t, pip).fill({ color: 0xfffbe0, alpha: 0.95 })
+      .rect(x + w - pip, y, pip, t).fill({ color: 0xfffbe0, alpha: 0.95 })
+      .rect(x + w - t, y, t, pip).fill({ color: 0xfffbe0, alpha: 0.95 })
+      .rect(x, y + h - t, pip, t).fill({ color: 0xfffbe0, alpha: 0.95 })
+      .rect(x, y + h - pip, t, pip).fill({ color: 0xfffbe0, alpha: 0.95 })
+      .rect(x + w - pip, y + h - t, pip, t).fill({ color: 0xfffbe0, alpha: 0.95 })
+      .rect(x + w - t, y + h - pip, t, pip).fill({ color: 0xfffbe0, alpha: 0.95 });
   }
   private applyCamera() {
     const vw = this.app.screen.width, vh = this.app.screen.height, z = ZOOM_STEPS[this.cam.zi];
@@ -420,8 +588,23 @@ export class World {
   // ---------- Simulasi ----------
   private empOf(id: string) { return useStore.getState().employees.find((e) => e.id === id); }
 
+  private lookFor(e: Employee, i: number): Look {
+    const spec = avatarSpec({
+      seed: e.avatarSeed,
+      hue: e.avatarHue,
+      color: e.avatarColor,
+      agentId: e.id,
+      fallbackSeed: e.id,
+    });
+    return makeLook(shirtColorFor(e), i, spec.accessory, spec.hair);
+  }
+
   /** Rebuilds every character when the employee list changes (mock → live, poll refresh). */
   private rebuildCharacters() {
+    if (this.chars.length) {
+      saveAgentPoses(this.chars);
+      this.savedPoses = loadAgentPoses();
+    }
     for (const ch of this.chars) {
       ch.container.destroy({ children: true });
       ch.tag.destroy({ children: true });
@@ -430,7 +613,7 @@ export class World {
     this.phases.clear();
     const emps = useStore.getState().employees;
     emps.forEach((e, i) => {
-      const frames = this.assets.chars[i] ?? makeCharFrames(makeLook(shirtColorFor(e), i));
+      const frames = this.assets.chars[i] ?? makeCharFrames(this.lookFor(e, i));
       const ch = new Character(e.id, e.name, frames, this.assets.bubble);
       ch.setCalm(this.calm);
       this.sortLayer.addChild(ch.container);
@@ -524,6 +707,9 @@ export class World {
       return;
     }
     let seat: Seat | null = null, spot: ChatSpot | null = null;
+    let restoredPos: { x: number; y: number; facing: Dir } | null = null;
+    const saved = instant ? this.savedPoses.get(ch.id) : undefined;
+    if (instant) this.savedPoses.delete(ch.id);
     if (status === 'working' || owesDesk) {
       // Prefer the agent's own desk, then any free desk, then a seat elsewhere.
       const freeDesks = this.layout.seats.filter(
@@ -541,11 +727,21 @@ export class World {
       seat = this.freeMeetingChatSeat();
       if (!seat) spot = this.freeSpot();
     } else {
-      // `idle` and `break` share one stage: a chair in the Meeting Area, the
-      // Lounge or the Pantry, preferring one that already faces somebody seated
-      // (so the bubble reads as a conversation). A standby agent never picks a
-      // workstation aisle, which is what made the office look busy.
-      seat = pickIdleSeat(this.layout.seats, ch.id);
+      // `idle` and `break` share one stage: restore the last saved social pose on
+      // initial reload if still valid; otherwise pick a chair in Meeting, Lounge
+      // or Pantry, preferring one that faces somebody seated.
+      if (saved?.seatId) {
+        const candidate = this.layout.seats.find(
+          (s) => s.id === saved.seatId && isSocialSeat(s) && (!s.occupant || s.occupant === ch.id),
+        );
+        if (candidate) seat = candidate;
+      } else if (saved) {
+        const t = tileOf(saved.x, saved.y);
+        if (!this.layout.blocked[t.ty]?.[t.tx] && isSocialZone(zoneName(t.tx, t.ty))) {
+          restoredPos = { x: saved.x, y: saved.y, facing: saved.facing };
+        }
+      }
+      if (!seat && !restoredPos) seat = pickIdleSeat(this.layout.seats, ch.id);
     }
     if (seat) seat.occupant = ch.id;
     if (spot) spot.occupant = ch.id;
@@ -554,9 +750,14 @@ export class World {
     // blocked agent is parked there waiting for a human, so it does not type.
     ch.typing = ch.typing || (owesDesk && seat?.kind === 'desk' && emp?.phase !== 'blocked');
     if (instant) {
-      if (seat) ch.sitAt(seat);
-      else if (spot) ch.placeAt(centerOf(spot), spot.facing);
-      else {
+      if (seat) {
+        ch.sitAt(seat);
+        ch.wanderTimer = 18 + Math.random() * 20;
+      } else if (spot) ch.placeAt(centerOf(spot), spot.facing);
+      else if (restoredPos) {
+        ch.placeAt({ x: restoredPos.x, y: restoredPos.y }, restoredPos.facing);
+        ch.wanderTimer = 18 + Math.random() * 20;
+      } else {
         const t = this.socialSpot();
         if (t) ch.placeAt(centerOf(t), 'down');
         else ch.placeAt(centerOf(this.walkable[Math.floor(Math.random() * this.walkable.length)]), 'down');
@@ -622,12 +823,35 @@ export class World {
   private owedDesk(emp: Employee | undefined): boolean {
     return staysInLounge(emp?.phase) ? false : this.owesDesk(emp);
   }
+  private restoreLoungePose(ch: Character): boolean {
+    const saved = this.savedPoses.get(ch.id);
+    this.savedPoses.delete(ch.id);
+    if (!saved) return false;
+    if (saved.seatId) {
+      const seat = this.loungeSeats.find((s) => s.id === saved.seatId && (!s.occupant || s.occupant === ch.id));
+      if (seat) {
+        seat.occupant = ch.id;
+        ch.sitAt(seat);
+        ch.wanderTimer = 18 + Math.random() * 20;
+        return true;
+      }
+      return false;
+    }
+    const t = tileOf(saved.x, saved.y);
+    if (!this.layout.blocked[t.ty]?.[t.tx] && isInLounge(t.tx, t.ty)) {
+      ch.placeAt({ x: saved.x, y: saved.y }, saved.facing);
+      ch.wanderTimer = 18 + Math.random() * 20;
+      return true;
+    }
+    return false;
+  }
   /**
    * `starting` and `restarting` agents wait inside the Lounge: a free lounge
    * seat, or a lounge floor tile. No desk, meeting chair or chat spot, so the
    * room is their only stage until the phase moves on.
    */
   private assignLounge(ch: Character, instant: boolean) {
+    if (instant && this.restoreLoungePose(ch)) return;
     const free = this.loungeSeats.filter((s) => !s.occupant || s.occupant === ch.id);
     const seat = free.length ? free[Math.floor(Math.random() * free.length)] : null;
     if (seat) {
@@ -661,7 +885,41 @@ export class World {
     if (!this.ready) return;
     dt = Math.min(dt, 0.1);
     this.tuneParticles(dt);
-    const st = useStore.getState(), z = ZOOM_STEPS[this.cam.zi], sp = (480 / z) * dt;
+    const st = useStore.getState();
+    if (st.daylightMode !== this.lastDaylightMode) {
+      this.lastDaylightMode = st.daylightMode;
+      this.refreshDaylight();
+    }
+    if (st.moodyLighting !== this.moodyLighting) {
+      this.moodyLighting = st.moodyLighting;
+      this.updateLamps();
+    }
+    if (st.floorStyle !== this.floorStyle) {
+      this.floorStyle = st.floorStyle;
+      this.applyBackground();
+    }
+    if (st.plantStyle !== this.plantStyle) {
+      this.plantStyle = st.plantStyle;
+      this.applyPlantStyle();
+    }
+    if (st.zoomAction && st.zoomAction.seq !== this.lastZoomSeq) {
+      this.lastZoomSeq = st.zoomAction.seq;
+      if (st.zoomAction.kind === 'in') this.zoomBy(1);
+      else if (st.zoomAction.kind === 'out') this.zoomBy(-1);
+      else this.cam.zi = DEFAULT_ZOOM_INDEX;
+    }
+    if (st.cameraTarget && st.cameraTarget.seq !== this.lastCamSeq) {
+      this.lastCamSeq = st.cameraTarget.seq;
+      this.camGoal = { x: st.cameraTarget.x, y: st.cameraTarget.y };
+      if (typeof st.cameraTarget.zoom === 'number') {
+        const targetZi = ZOOM_STEPS.indexOf(st.cameraTarget.zoom);
+        if (targetZi >= 0) this.cam.zi = targetZi;
+      }
+      if (st.cameraTarget.highlight) {
+        this.roomHighlightState = { ...st.cameraTarget.highlight, age: 0, duration: 3.0 };
+      }
+    }
+    const z = ZOOM_STEPS[this.cam.zi], sp = (480 / z) * dt;
     if (!this.charactersMatchSource()) this.rebuildCharacters();
     const k = this.keys;
     if (k.has('KeyW') || k.has('ArrowUp')) this.cam.y -= sp;
@@ -718,7 +976,7 @@ export class World {
     this.rackRate += (rackBlinkRate(working) - this.rackRate) * Math.min(1, dt * 1.2);
     // Reduced motion: the panels hold their current LED pattern instead of blinking.
     if (!this.calm) this.rackT += dt * this.rackRate;
-    if (this.clockT >= 1) { this.clockT = 0; this.updateClock(); this.refreshDaylight(); }
+    if (this.clockT >= 1) { this.clockT = 0; this.updateClock(); this.refreshDaylight(); saveAgentPoses(this.chars); }
     if (this.liveT >= 0.4) {
       this.liveT = 0;
       const ch = this.chars.find((c) => c.id === st.selectedId);
@@ -739,8 +997,30 @@ export class World {
     }
     this.updateRackLeds();
     this.updateMonitors();
-    this.atmosphere.update(dt, { daylight: this.daylight, working });
+    this.particles.setDayKey(this.daylight.key);
+    this.atmosphere.update(dt, {
+      daylight: this.daylight,
+      working,
+      moodyLighting: this.moodyLighting,
+      lights: this.collectEmissiveLights(),
+    });
     this.particles.update(dt, this.emitters);
+    this.updateRoomHighlight(dt);
+    if (st.followSelected && st.selectedId) {
+      const targetCh = this.chars.find((c) => c.id === st.selectedId);
+      if (targetCh) this.camGoal = { x: targetCh.x, y: targetCh.y - 16 };
+    }
+    if (this.camGoal && !this.drag.active) {
+      const factor = this.calm ? 1 : 1 - Math.exp(-7 * dt);
+      this.cam.x += (this.camGoal.x - this.cam.x) * factor;
+      this.cam.y += (this.camGoal.y - this.cam.y) * factor;
+      if (!st.followSelected && Math.hypot(this.camGoal.x - this.cam.x, this.camGoal.y - this.cam.y) < 1.5) {
+        this.cam.x = this.camGoal.x;
+        this.cam.y = this.camGoal.y;
+        this.camGoal = null;
+      }
+    }
+    st.setZoomPercent(Math.round(ZOOM_STEPS[this.cam.zi] * 100));
     this.applyCamera();
   }
   /**
@@ -797,22 +1077,38 @@ export class World {
   }
   private updateRackLeds() {
     this.rackLedGraphics.clear();
+    const core = 2 * PROP_SCALE;
+    const half = core / 2;
+    const halo = 4 * PROP_SCALE;
     for (const led of this.rackLeds) {
       const green = Math.sin(this.rackT * led.rate + led.phase) > 0;
+      const col = green ? 0x5fd068 : 0xd9534f;
+      const lx = Math.round(led.x);
+      const ly = Math.round(led.y);
+      // Pixel cross halo + crisp square LED core
       this.rackLedGraphics
-        .circle(led.x, led.y, 2 * PROP_SCALE)
-        .fill(green ? 0x5fd068 : 0xd9534f);
-      this.rackLedGraphics
-        .circle(led.x, led.y, 3.5 * PROP_SCALE)
-        .stroke({ width: 1, color: green ? 0x5fd068 : 0xd9534f, alpha: 0.4 });
+        .rect(lx - halo / 2, ly - half, halo, core).fill({ color: col, alpha: 0.34 })
+        .rect(lx - half, ly - halo / 2, core, halo).fill({ color: col, alpha: 0.34 })
+        .rect(lx - half, ly - half, core, core).fill({ color: col, alpha: 1 })
+        .rect(lx - half, ly - half, PROP_SCALE, PROP_SCALE).fill({ color: 0xffffff, alpha: 0.45 });
     }
   }
   private updateClock() {
     const d = new Date(), s = d.getSeconds(), m = d.getMinutes() + s / 60, h = (d.getHours() % 12) + m / 60;
     const cx = 640, cy = 60, a = (v: number, max: number) => (v / max) * Math.PI * 2 - Math.PI / 2;
-    const hand = (ang: number, len: number, w: number, color: number) => this.hands.moveTo(cx, cy).lineTo(cx + Math.cos(ang) * len, cy + Math.sin(ang) * len).stroke({ width: w, color });
+    const snap = (v: number) => Math.round(v / ART) * ART;
+    const hand = (ang: number, len: number, color: number) => {
+      const steps = Math.max(2, Math.round(len / ART));
+      for (let i = 0; i <= steps; i++) {
+        const px = snap(cx + Math.cos(ang) * ((len * i) / steps));
+        const py = snap(cy + Math.sin(ang) * ((len * i) / steps));
+        this.hands.rect(px - 1, py - 1, ART, ART).fill(color);
+      }
+    };
     this.hands.clear();
-    hand(a(h, 12), 6, 2, 0x1d1722); hand(a(m, 60), 9, 2, 0x1d1722); hand(a(s, 60), 10, 1, 0xd9534f);
+    hand(a(h, 12), 6, 0x1d1722);
+    hand(a(m, 60), 9, 0x1d1722);
+    hand(a(s, 60), 10, 0xd9534f);
   }
   /**
    * Re-reads the wall clock and follows the daylight curve. The wash and the
@@ -821,15 +1117,64 @@ export class World {
    * dawn and once at dusk. Both passes are cached, so a flip costs one texture
    * swap after the first build.
    */
+  private updateRoomHighlight(dt: number) {
+    this.roomHighlight.clear();
+    const h = this.roomHighlightState;
+    if (!h) return;
+    h.age += dt;
+    if (h.age >= h.duration) {
+      this.roomHighlightState = null;
+      return;
+    }
+    const rem = h.duration - h.age;
+    const fade = rem < 0.45 ? rem / 0.45 : h.age < 0.15 ? h.age / 0.15 : 1;
+    // Slow flash wave (~0.85 Hz) over 3 seconds, static under reduced motion
+    const pulse = this.calm ? 0.8 : 0.22 + 0.78 * (0.5 - 0.5 * Math.cos(h.age * Math.PI * 2 * 0.85));
+    const alpha = pulse * fade;
+    const x = Math.round(h.x), y = Math.round(h.y), w = Math.round(h.w), hh = Math.round(h.h);
+    const t = 4;
+    const corner = 18;
+    this.roomHighlight
+      .rect(x, y, w, hh)
+      .fill({ color: 0xfde68a, alpha: 0.07 * alpha })
+      .stroke({ width: t, color: 0xfef08a, alpha: 0.88 * alpha })
+      .rect(x - 2, y - 2, corner, t).fill({ color: 0xffffff, alpha: 0.95 * alpha })
+      .rect(x - 2, y - 2, t, corner).fill({ color: 0xffffff, alpha: 0.95 * alpha })
+      .rect(x + w - corner + 2, y - 2, corner, t).fill({ color: 0xffffff, alpha: 0.95 * alpha })
+      .rect(x + w - t + 2, y - 2, t, corner).fill({ color: 0xffffff, alpha: 0.95 * alpha })
+      .rect(x - 2, y + hh - t + 2, corner, t).fill({ color: 0xffffff, alpha: 0.95 * alpha })
+      .rect(x - 2, y + hh - corner + 2, t, corner).fill({ color: 0xffffff, alpha: 0.95 * alpha })
+      .rect(x + w - corner + 2, y + hh - t + 2, corner, t).fill({ color: 0xffffff, alpha: 0.95 * alpha })
+      .rect(x + w - t + 2, y + hh - corner + 2, t, corner).fill({ color: 0xffffff, alpha: 0.95 * alpha });
+  }
+  private updateLamps() {
+    const lit = this.moodyLighting && (this.daylight.key === 'night' || this.daylight.key === 'dusk');
+    const bank = lit ? this.assets.lampOn : this.assets.lampOff;
+    for (const item of this.lampSprites) {
+      const tex = bank[item.type];
+      if (item.sprite.texture !== tex) item.sprite.texture = tex;
+    }
+  }
+  private applyPlantStyle() {
+    const order: readonly ConcretePlantStyle[] = ['monstera', 'bonsai', 'palm', 'cactus', 'classic'];
+    this.plantSprites.forEach((sprite, idx) => {
+      const kind = this.plantStyle === 'mixed' ? order[idx % order.length] : this.plantStyle;
+      const tex = this.assets.plantVariants[kind];
+      if (sprite.texture !== tex) sprite.texture = tex;
+    });
+  }
+  private applyBackground() {
+    const key = `${this.night}:${this.floorStyle}`;
+    const cached = this.backgroundCache.get(key);
+    const tex = cached ?? makeBackground(this.night, this.floorStyle);
+    if (!cached) this.backgroundCache.set(key, tex);
+    this.background.texture = tex;
+  }
   private refreshDaylight() {
-    const d = new Date();
-    const hours = d.getHours() + d.getMinutes() / 60;
-    this.daylight = daylightAt(hours);
+    this.daylight = daylightForMode(useStore.getState().daylightMode);
+    this.updateLamps();
     if (this.daylight.night === this.night) return;
     this.night = this.daylight.night;
-    const cached = this.backgroundCache.get(this.night);
-    const tex = cached ?? makeBackground(this.night);
-    if (!cached) this.backgroundCache.set(this.night, tex);
-    this.background.texture = tex;
+    this.applyBackground();
   }
 }

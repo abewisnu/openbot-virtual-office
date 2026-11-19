@@ -1,17 +1,17 @@
 /**
- * Runtime particle layer for the 32-bit look. Three cheap emitters carry the
- * whole effect:
+ * Runtime pixel-aligned particle layer for the 32-bit look. Three emitters
+ * carry the whole effect:
  *
- * - dust motes drifting through the window light (world-wide, very low alpha)
- * - steam curling off the pantry dispenser and the lounge coffee table
- * - cool air haze spilling from the NOC CRAC louvres
+ * - dust motes drifting through the window light (pixel-grid snapped)
+ * - stepped pixel steam puffs curling off the pantry dispenser and lounge coffee table
+ * - cool air pixel wisps spilling from the NOC CRAC louvres
  *
- * Everything is drawn into one `Graphics` per frame: a few dozen one-to-two px
- * circles cost far less than a sprite per mote, and nothing here touches a
- * sprite size, a collision box or a hit target.
+ * Everything is snapped to the 2 px art grid and drawn into one `Graphics` per
+ * frame so motes never look like smooth anti-aliased vector circles.
  */
 import { Container, Graphics } from 'pixi.js';
-import { WORLD_H, WORLD_W } from '../constants';
+import { ART, WORLD_H, WORLD_W } from '../constants';
+import type { DayKey } from './DayCycle';
 
 export type EmitKind = 'steam' | 'air';
 
@@ -28,7 +28,7 @@ interface Mote {
   vy: number;
   age: number;
   life: number;
-  r: number;
+  size: number;
   kind: EmitKind | 'dust';
 }
 
@@ -39,6 +39,14 @@ const DUST_COUNT = 56;
 const MAX_MOTES = 150;
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+const snap = (v: number) => Math.round(v / ART) * ART;
+
+const DUST_COLOR: Record<DayKey, number> = {
+  day: 0xfff2c8,
+  dawn: 0xffd5a8,
+  dusk: 0xffb380,
+  night: 0xaec6ff,
+};
 
 export class Particles {
   private layer = new Container();
@@ -46,6 +54,7 @@ export class Particles {
   private motes: Mote[] = [];
   /** 0 hides the layer, 1 is the full budget. Set from measured frame time. */
   private quality = 1;
+  private dayKey: DayKey = 'day';
 
   constructor() {
     this.layer.eventMode = 'none';
@@ -59,7 +68,7 @@ export class Particles {
         vy: rnd(-7, -2),
         age: Math.random() * 9,
         life: rnd(7, 14),
-        r: rnd(0.8, 1.6),
+        size: Math.random() < 0.35 ? 3 : 2,
         kind: 'dust',
       });
     }
@@ -85,17 +94,21 @@ export class Particles {
     if (q === 0) this.g.clear();
   }
 
+  setDayKey(key: DayKey) {
+    this.dayKey = key;
+  }
+
   private spawn(spot: EmitSpot) {
     if (this.motes.length >= this.budget()) return;
     const steam = spot.kind === 'steam';
     this.motes.push({
-      x: spot.x + rnd(-4, 4),
+      x: spot.x + rnd(steam ? -2 : -5, steam ? 2 : 5),
       y: spot.y + rnd(-2, 2),
-      vx: rnd(steam ? -4 : -7, steam ? 4 : 7),
+      vx: rnd(steam ? -3 : -7, steam ? 3 : 7),
       vy: steam ? rnd(-16, -10) : rnd(-6, -3),
       age: 0,
       life: steam ? rnd(1.6, 2.6) : rnd(2.4, 3.6),
-      r: steam ? rnd(1, 2.2) : rnd(1.4, 2.6),
+      size: steam ? 2 : 3,
       kind: spot.kind,
     });
   }
@@ -137,7 +150,7 @@ export class Particles {
         vy: rnd(-7, -2),
         age: 0,
         life: rnd(7, 14),
-        r: rnd(0.8, 1.6),
+        size: Math.random() < 0.35 ? 3 : 2,
         kind: 'dust',
       });
       dust++;
@@ -148,15 +161,23 @@ export class Particles {
 
   private draw() {
     this.g.clear();
+    const dustCol = DUST_COLOR[this.dayKey];
     for (const m of this.motes) {
       const t = m.age / m.life;
       const fade = t < 0.18 ? t / 0.18 : 1 - (t - 0.18) / 0.82;
+      const sx = snap(m.x);
+      const sy = snap(m.y);
       if (m.kind === 'dust') {
-        this.g.circle(m.x, m.y, m.r).fill({ color: 0xfff2c8, alpha: 0.16 * fade });
+        const s = m.size;
+        this.g.rect(sx, sy, s, s).fill({ color: dustCol, alpha: 0.22 * fade });
       } else if (m.kind === 'steam') {
-        this.g.circle(m.x, m.y, m.r * (1 + t)).fill({ color: 0xe8f4ff, alpha: 0.22 * fade });
+        const s = t > 0.45 ? 4 : 2;
+        this.g.rect(sx, sy, s, s).fill({ color: 0xe8f4ff, alpha: 0.24 * fade });
+        if (t > 0.25) {
+          this.g.rect(sx + ART, sy - ART, 2, 2).fill({ color: 0xffffff, alpha: 0.12 * fade });
+        }
       } else {
-        this.g.circle(m.x, m.y, m.r).fill({ color: 0xa8dcf6, alpha: 0.14 * fade });
+        this.g.rect(sx, sy, 4, 2).fill({ color: 0xa8dcf6, alpha: 0.18 * fade });
       }
     }
   }

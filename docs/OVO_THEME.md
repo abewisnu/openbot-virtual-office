@@ -11,8 +11,9 @@ The sidebar font is a theme picked in **Settings → Sidebar font**, with two op
 
 The choice is held in memory by the store (`sidebarFont`) and applied as
 `<aside class="hud-sidebar" data-font="mono|pixel">`; CSS keys everything off `[data-font='pixel']`.
-Like every other UI toggle in this app, it resets on reload — the only things OVO keeps across
-sessions are the camera view and the selected agent.
+Display toggles (`sidebarFont`, `themeMode`, `daylightMode`) reset on reload, while visual
+environment preferences (`ovo-floor`, `ovo-plant`, `ovo-moody-lighting`), camera view (`ovo-view`),
+idle/lounge poses (`ovo-agent-poses`), and the selected agent (`?agent=`) persist across reloads.
 
 ### Geist Pixel, self-hosted
 

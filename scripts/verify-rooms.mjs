@@ -161,7 +161,7 @@ check(
 const art = readFileSync(new URL('../src/office/AssetGenerator.ts', import.meta.url), 'utf8');
 const layoutSrc = readFileSync(new URL('../src/office/Layout.ts', import.meta.url), 'utf8');
 const guards = [
-  ['pantry carpet moved to the upper room', /rug\(c, 4, 22, 7, 6, '#7a8a5a', '#4e5a38'\)/.test(art)],
+  ['pantry carpet moved to the upper room', /rug\(c, 4, 21\.5, 6, 6\.5, '#7a8a5a', '#4e5a38'\)/.test(art)],
   ['pantry shelves sit two tiles below the top wall', /place\("bookshelf", 1, 20, 4, 1\)/.test(layoutSrc)],
   ['no carpet left in the old pantry spot', !/rug\(c, 3, 35, 8, 4/.test(art)],
   ['NOC draws a raised floor', /NOC raised floor/.test(art) && /for \(let ty = 30; ty <= ROWS - 1; ty\+\+\)/.test(art)],

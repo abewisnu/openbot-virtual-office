@@ -23,7 +23,7 @@ Contract and schema: `OPENBOT_OFFICE_API.md`. Wiring walkthrough:
 OpenBot app ──writes──▶ openbot.db (WAL, ~450 MB)
                               │  readonly: true, fileMustExist: true
                               ▼
-                    Vite dev server (localhost:5173)
+                    Vite dev server (localhost:3000)
                     ├── src/ (HMR, ESM)
                     └── GET /api/agents   ← middleware from vite-plugin-openbot.ts
                               ▲  poll every 3 s
@@ -49,7 +49,7 @@ one unparseable `agent_json` row costs one agent, not the whole list.
 ### 2.1 Development — the only supported mode
 
 ```
-npm run dev ──▶ Vite dev server (localhost:5173)
+npm run dev ──▶ Vite dev server (localhost:3000)
 ├── src/ (HMR, ESM)
 └── /api/agents ──▶ in-process middleware ──▶ SQLite (read-only)
 ```
@@ -81,7 +81,7 @@ process (see `OPENBOT_OFFICE_API.md` §9 for the target design). Until then, "de
 
 | Mode | Port | Serves | API |
 |---|---|---|---|
-| dev | `5173` (Vite default, `--port` to change) | app + HMR | `GET /api/agents` |
+| dev | `3000` (configured in `vite.config.ts` / `package.json`, `--port` to override) | app + HMR | `GET /api/agents` |
 | preview | `4173` (Vite default) | `dist/` static | none — SPA fallback |
 | production | — | — | — |
 
@@ -200,15 +200,15 @@ started by hand:
 
 ```bash
 cd /path/to/openbot-virtual-office
-npm run dev                     # Vite dev server on localhost:5173
+npm run dev                     # Vite dev server on localhost:3000
 ```
 
 Stop by PID, never by pattern. `pkill -f vite` can kill an unrelated project's dev server.
 
 ```bash
-pgrep -f "vite --port 5199"     # find the exact PID
+pgrep -f "vite --port 3000"     # find the exact PID
 kill <pid>                      # SIGTERM
-lsof -nP -iTCP:5173 -sTCP:LISTEN   # must be empty afterwards
+lsof -nP -iTCP:3000 -sTCP:LISTEN   # must be empty afterwards
 ```
 
 If a process ignores `SIGTERM`, escalate to `SIGKILL` on that PID only.
@@ -230,8 +230,8 @@ so it cannot distinguish a healthy process from a broken one.
 Use this instead — it fails loudly when the API is not answering:
 
 ```bash
-curl -s http://127.0.0.1:5173/api/agents | head -c 1     # '[' means JSON
-curl -sI http://127.0.0.1:5173/api/agents | grep -i content-type
+curl -s http://127.0.0.1:3000/api/agents | head -c 1     # '[' means JSON
+curl -sI http://127.0.0.1:3000/api/agents | grep -i content-type
 ```
 
 A JSON array of agents is a real answer. `text/html` means the plugin is not attached (for
@@ -321,20 +321,20 @@ node --import ./scripts/register-ts.mjs scripts/verify-monitor.mjs
 
 # 3. endpoint reality (must be JSON, not HTML)
 curl -s -o /dev/null -w 'status=%{http_code} bytes=%{size_download} time=%{time_total}\n' \
-  http://127.0.0.1:5173/api/agents
-curl -sI http://127.0.0.1:5173/api/agents | grep -i 'content-type\|cache-control'
+  http://127.0.0.1:3000/api/agents
+curl -sI http://127.0.0.1:3000/api/agents | grep -i 'content-type\|cache-control'
 
 # 4. guards
-curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:5173/api/agents   # 405
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:3000/api/agents   # 405
 curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: evil.example' \
-  http://127.0.0.1:5173/api/agents                                                   # 421
+  http://127.0.0.1:3000/api/agents                                                   # 421
 
 # 5. DB truth, read-only
 sqlite3 "file:$HOME/Library/Application Support/OpenBot/openbot.db?mode=ro" \
   "SELECT COUNT(*) FROM projection_agents;"
 
 # 6. port is clean after stopping
-lsof -nP -iTCP:5173 -sTCP:LISTEN
+lsof -nP -iTCP:3000 -sTCP:LISTEN
 ```
 
 Step 4b — motion and performance in the browser (Chrome DevTools MCP, same page id):

@@ -57,17 +57,18 @@ The browser never holds a DB path, a credential, or SQL. It knows one URL and on
 | `vite-plugin-openbot.ts` | `/api/agents`, Host/method guards, headers, field strip | transport or security changes |
 | `vite.config.ts` | Registers `react()` and the OpenBot plugin; dev server config | the dev server or its plugins change |
 | `scripts/verify-openbot-source.mjs` | Pins the SQL queries to `readonly` and the phase windows | the SQL or window constants change |
-| `src/store/useStore.ts` | `toEmployee`, `statusForPhase`, `startPolling` / `stopPolling`, mock fallback | state or polling changes |
+| `src/store/useStore.ts` | `toEmployee`, `statusForPhase`, `startPolling` / `stopPolling`, mock fallback, camera/zoom & persisted Settings state (`floorStyle`, `plantStyle`, `moodyLighting`) | state, polling, or settings changes |
 | `src/data/mockEmployees.ts` | fallback roster | the demo scene changes |
-| `src/constants.ts` | `PHASE_COLORS`, `PHASE_LABEL`, `ACTIVITY_LABEL`, `badgeFor`, `shirtColorFor` | colours or labels change |
-| `src/office/World.ts` | `assign`, `owesDesk`, desk seats, typing, `setDot`, hover + selection, `bindMotion` (reduced motion + hidden tab), `tuneParticles` (adaptive budget) | behaviour, movement or performance policy changes |
+| `src/constants.ts` | `PHASE_COLORS`, `PHASE_LABEL`, `ACTIVITY_LABEL`, `ZOOM_STEPS` (`0.50x–3x`), `badgeFor`, `shirtColorFor` | colours, zoom steps, or labels change |
+| `src/office/AssetGenerator.ts` | 32-bit pixel-art textures, 5 floor styles, 6 plant variants, `lampOn`/`lampOff` fixtures, 2.5D glass partitions | sprite or material textures change |
+| `src/office/World.ts` | `assign`, `owesDesk`, desk seats, typing, `setDot`, hover tooltip + selection, room jump + 3 s highlight, pose persistence (`ovo-agent-poses`), `bindMotion`, `tuneParticles` | behaviour, movement, lighting sync, or performance policy changes |
 | `src/office/Character.ts` | sprite, idle/walk/sit + typing frames, four native facings, selection and hover rings, `setCalm` | character animation changes |
-| `src/office/Layout.ts` | `buildLayout(deskCount)`, seats `WS-NN` | office geometry changes |
-| `src/office/DayCycle.ts` | pure daylight curve, seven keyframes → `{ key, night, tint, tintAlpha, rayScale }` | the day-night schedule changes |
-| `src/office/Particles.ts` | dust motes in the window shafts, steam/air emitters, `MAX_MOTES` cap, `setQuality` budget scale | particle density or emitter kinds change |
-| `src/office/Atmosphere.ts` | window god rays, floor light pools, pixel-stepped vignette, `setCalm` | the atmospheric pass changes |
-| `src/components/HUD.tsx` | sidebar phase counts and rows | sidebar changes |
-| `src/components/CharacterInfo.tsx` | detail panel: dot, phase label, activity note | panel changes |
+| `src/office/Layout.ts` | `buildLayout(deskCount)`, seats `WS-NN`, room partitions, lamps & plants | office geometry changes |
+| `src/office/DayCycle.ts` | pure daylight curve, seven keyframes → `{ key, night, tint, tintAlpha, rayScale, ambientDark }`, `daylightForMode()` | the day-night schedule changes |
+| `src/office/Particles.ts` | dust motes in the window shafts, steam/air emitters (`coffeeTable`, `dispenser`, `crac`), `MAX_MOTES` cap, `setQuality` budget scale | particle density or emitter kinds change |
+| `src/office/Atmosphere.ts` | Bayer-dithered god rays, floor light pools, emissive local pools, Low-Key dark ambient veil & Pool-of-Light cutouts (`moodyLighting`), `setCalm` | the atmospheric pass changes |
+| `src/components/HUD.tsx` | sidebar phase counts and expandable rows, Settings (`Theme`, `Atmosphere`, `Moody night lighting`, `Floor style`, `Plant style`, `Sidebar font`), top-right room quick-jump & zoom toolbar, hover tooltip | sidebar or toolbar changes |
+| `src/components/CharacterInfo.tsx` | detail panel: dot, phase label, activity note, `Follow` toggle | panel changes |
 | `src/store/sourcePolicy.ts` | Pure roster-source policy: `resolveSource()` maps each fetch outcome to `{ employees, source }` — `pending` first, then `openbot`, then `mock` only when a fetch fails with nothing to keep | roster source changes |
 | `src/office/Avatar.ts` | Pure avatar recipe: `stableIndex()` + `avatarSpec()` from `avatarSeed`, `agentId`, `avatarHue`/`avatarColor`; per-theme 3:1 contrast clamps | the face or tint recipe changes |
 | `src/office/Lounge.ts` | Pure Lounge box (`LOUNGE_ROOM`, `isInLounge`) plus the phase rule `staysInLounge(phase)` | the Lounge pen changes |
@@ -247,9 +248,10 @@ still renders, so **the source badge must be checked before believing the screen
 | badge dot | `badgeFor(emp).color` → `badgeFor` reads `PHASE_COLORS[phase]` only |
 | sidebar counts | `HUD.tsx` reduces `employees` by `phase` |
 | direction | `Character.facing` picks one of four native frame sets; no sprite is mirrored |
-| day tint | `DayCycle.daylightAt(hours)` → `{ key, night, tint, tintAlpha, rayScale }`, applied by `Atmosphere` |
-| hover | `World.pickEmployeeId` → `Character.setHovered` (ring + cursor) and `World.hoverMark` (desk bay) |
-| selection | `pointerup` with `drag.moved < 5` → `useStore.select`; `Escape` clears it |
+| day lighting | `DayCycle.daylightForMode(mode)` → `{ key, night, tint, tintAlpha, rayScale, ambientDark }`, applied by `Atmosphere` (`moodyLighting` controls dark ambient & lamp pools) |
+| hover | `World.pickEmployeeId` → `Character.setHovered` (ring + cursor), `World.hoverMark` (pixel corner-pipped desk bay) and `hoveredAgent` tooltip |
+| room jump & zoom | Top-right bar calls `focusPoint(x, y, 1.25, box)` (glides at `125%` with a 3 s flashing highlight box) or `triggerZoom` (`50%–300%`) |
+| selection | `pointerup` with `drag.moved < 5` → `useStore.select`; `Escape` clears it; `Follow` button locks camera on selected agent |
 | reduced motion | `World.bindMotion` → `Character.setCalm` / `Atmosphere.setCalm` / `Particles.setQuality(0)` |
 | hidden tab | `visibilitychange` → `app.ticker.stop()` / `start()` on return |
 

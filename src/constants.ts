@@ -60,7 +60,8 @@ export const WALL_ROWS = 5;
 export const MIN_WALK_ROW = 6;
 export const CHAR_SPEED = 72; // px/detik
 export const FOOT_OFFSET = 8; // character feet offset relative to tile center
-export const ZOOM_STEPS = [0.70, 0.75, 1, 1.25, 1.5, 2, 3];
+export const ZOOM_STEPS = [0.5, 0.6, 0.7, 0.75, 1, 1.25, 1.5, 2, 3];
+export const DEFAULT_ZOOM_INDEX = ZOOM_STEPS.indexOf(0.75);
 export const STATUS_COLORS: Record<Status, string> = {
   working: '#4ade80', meeting: '#60a5fa', chatting: '#f59e0b', break: '#c084fc', idle: '#9ca3af',
 };

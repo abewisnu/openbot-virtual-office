@@ -163,20 +163,20 @@ export function buildLayout(deskCount = 12): Layout {
     if (!isBoundary && blocked[ty][tx])
       throw new Error(`Partition overlaps an occupied tile at (${tx}, ${ty})`);
     if (type === "partitionH" || type === "partitionHHalf") {
-      const y = ty * TILE + 8;
+      const y = ty * TILE + 24;
       furniture.push({ type, x: (tx + 0.5) * TILE + xOffset, y, z: y });
       block(tx, ty, 1, 1);
     } else place(type, tx, ty);
   };
   const placeCorner = (tx: number, ty: number) => {
-    const y = ty * TILE + 8;
+    const y = ty * TILE + 24;
     furniture.push({ type: "partitionCorner", x: (tx + 0.5) * TILE, y, z: y });
   };
   const placeDoor = (type: "doorH" | "doorV", tx: number, ty: number) => {
     if (blocked[ty][tx])
       throw new Error(`Door overlaps an occupied tile at (${tx}, ${ty})`);
     if (type === "doorH") {
-      const y = ty * TILE + 8;
+      const y = ty * TILE + 24;
       // The sprite is centred on the whole `DOOR_SPAN` opening: `tx` is its
       // rightmost tile, so the opening starts at `tx - DOOR_SPAN + 1`.
       furniture.push({
@@ -242,9 +242,20 @@ export function buildLayout(deskCount = 12): Layout {
           z: (ty + 1) * TILE + 0.5,
         },
       });
+      // Place desk lamp on alternating desks for warm/cool night pool-of-light contrast
+      if (n % 2 === 0) {
+        furniture.push({
+          type: "deskLamp",
+          x: (tx + 1) * TILE + 38,
+          y: (ty + 1) * TILE - 12,
+          z: (ty + 1) * TILE + 0.6,
+        });
+      }
       placed++;
     }
   }
+  place("floorLamp", 33, 7, 1, 1);
+  furniture.push({ type: "wallSconce", x: 1280, y: 124, z: 124 });
   // --- Lounge (kiri)
   // One seat per sofa cushion: `ks` are tile offsets from the sofa's left edge,
   // so a 6-tile 3-seat sofa gets cushions at +1/+3/+5 and a 4-tile loveseat at
@@ -309,6 +320,7 @@ export function buildLayout(deskCount = 12): Layout {
   }
   place("plant", 1, 8, 2, 1);
   place("plant", 12, 8, 2, 1);
+  place("floorLamp", 1, 15, 1, 1);
   // Open plan on the left: the Lounge and the Pantry have no glass at all —
   // neither the old row-16 band with its T-junction corner panes nor the
   // column-14 wall that used to run down their right side. The two rooms share
@@ -378,8 +390,10 @@ export function buildLayout(deskCount = 12): Layout {
   dividerV(17, 5, 19);
   dividerV(32, 5, 19, 12);
   dividerH(20, 17, 32, null, true, true);
-  place("plant", 19, 16);
-  place("plant", 30, 16);
+  place("plant", 18, 17, 2, 1);
+  place("plant", 30, 17, 2, 1);
+  place("floorLamp", 18, 7, 1, 1);
+  place("floorLamp", 31, 7, 1, 1);
   // --- Pantry & Storage (kiri tengah, ruang atas): shelves and storage along
   // the room's top wall, dining nook below them. The NOC used to live here and
   // the two rooms have swapped places, so the upper room now holds the pantry.
@@ -396,7 +410,8 @@ export function buildLayout(deskCount = 12): Layout {
   place("fridge", 8, 20, 2, 1);
   place("dispenser", 11, 20, 2, 1);
   place("plant", 1, 28, 2, 1);
-  place("plant", 11, 28, 2, 1);
+  place("plant", 12, 28, 2, 1);
+  place("floorLamp", 1, 26, 1, 1);
   // Dining nook in the pantry: a 4x2 table with two chairs on each long side.
   // The 4-tile `diningTable` sprite matches its footprint exactly, so the aisle
   // is not clipped by a table drawn wider than its collision.
@@ -451,7 +466,7 @@ export function buildLayout(deskCount = 12): Layout {
   // Mirror of the lounge joint: the horizontal run stops at tile 13, a half pane bridges into the left half of tile 14,
   // and the corner sits on the band line to seal the junction with the vertical run. Both pieces render after the first
   // vertical pane (z above 31 * TILE) so the frame lines stay joined.
-  const bandY = 30 * TILE + 8;
+  const bandY = 30 * TILE + 24;
   furniture.push({
     type: "partitionHHalf",
     x: (14 + 0.5) * TILE - TILE / 4,
@@ -464,6 +479,8 @@ export function buildLayout(deskCount = 12): Layout {
     y: bandY,
     z: 31 * TILE + 2,
   });
+  furniture.push({ type: "wallSconce", x: 128, y: 970, z: 992 });
+  furniture.push({ type: "wallSconce", x: 352, y: 970, z: 992 });
 
   // The plate is 14 px tall and centred on its tile, so it only ever covers its
   // own row. Checking that row is enough to keep a plate off furniture art, and

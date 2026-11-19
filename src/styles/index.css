@@ -966,3 +966,147 @@ kbd {
 .hud-sidebar * {
   border-radius: 0;
 }
+
+.badge {
+  border-radius: 0;
+}
+
+.follow-btn {
+  margin-left: auto;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 0;
+  border: 1px solid var(--ovo-control-border);
+  background: var(--ovo-control-bg);
+  color: var(--ovo-text);
+  box-shadow: inset 1px 1px 0 var(--ovo-edge-hi), inset -1px -1px 0 var(--ovo-edge-lo);
+}
+.follow-btn:hover {
+  background: var(--ovo-control-hover);
+  color: var(--ovo-text-strong);
+}
+.follow-btn[aria-pressed='true'] {
+  background: var(--ovo-accent-wash);
+  border-color: var(--ovo-accent);
+  color: var(--ovo-accent);
+}
+
+.stage-controls {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 0;
+  border: 1px solid var(--ovo-border-strong);
+  background: var(--ovo-panel-bg);
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo),
+    0 12px 28px rgba(0, 0, 0, 0.4);
+}
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .stage-controls {
+    background: var(--ovo-panel-solid);
+  }
+}
+.stage-rooms,
+.stage-zoom {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.stage-rooms {
+  padding-right: 8px;
+  border-right: 1px solid var(--ovo-border-soft);
+}
+.stage-controls button {
+  padding: 4px 8px;
+  font-size: 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+  border-radius: 0;
+  border: 1px solid var(--ovo-control-border);
+  background: var(--ovo-control-bg);
+  color: var(--ovo-text);
+  box-shadow: inset 1px 1px 0 var(--ovo-edge-hi), inset -1px -1px 0 var(--ovo-edge-lo);
+}
+.stage-controls button:hover {
+  background: var(--ovo-control-hover);
+  border-color: var(--ovo-accent);
+  color: var(--ovo-text-strong);
+}
+.stage-controls button:active {
+  transform: translateY(1px);
+  box-shadow: inset -1px -1px 0 var(--ovo-edge-hi), inset 1px 1px 0 var(--ovo-edge-lo);
+}
+.stage-zoom-readout {
+  min-width: 46px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.canvas-hover-tip {
+  position: fixed;
+  z-index: 15;
+  pointer-events: none;
+  min-width: 170px;
+  max-width: 240px;
+  padding: 6px 9px;
+  border-radius: 0;
+  border: 1px solid var(--ovo-border-strong);
+  background: var(--ovo-panel-solid);
+  color: var(--ovo-text);
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo),
+    var(--ovo-pixel-shadow);
+}
+.hover-tip-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+.hover-tip-dot {
+  width: 7px;
+  height: 7px;
+  flex-shrink: 0;
+  border-radius: 0;
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.45);
+}
+.hover-tip-phase {
+  margin-left: auto;
+  font-size: 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  text-transform: uppercase;
+  color: var(--ovo-text-soft);
+}
+.hover-tip-sub {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--ovo-text-soft);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 960px) {
+  .stage-rooms {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .stage-controls {
+    top: 8px;
+    right: 8px;
+  }
+}

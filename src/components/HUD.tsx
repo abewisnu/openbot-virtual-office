@@ -1,8 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { useStore } from "../store/useStore";
+import { useStore, type RoomHighlightRect } from "../store/useStore";
 import { PHASE_COLORS, PHASE_LABEL } from "../constants";
+import { DAYLIGHT_LABEL, DAYLIGHT_MODES, type DaylightMode } from "../office/DayCycle";
+import { FLOOR_STYLE_LABEL, FLOOR_STYLES, PLANT_STYLE_LABEL, PLANT_STYLES, type FloorStyle, type PlantStyle } from "../office/AssetGenerator";
 import { AGENT_PHASES } from "../types";
 import type { AgentPhase } from "../types";
+
+const ROOM_JUMPS: readonly { label: string; x: number; y: number; box: RoomHighlightRect }[] = [
+  { label: "Lounge", x: 240, y: 352, box: { x: 32, y: 192, w: 416, h: 320 } },
+  { label: "Meeting", x: 800, y: 400, box: { x: 576, y: 192, w: 448, h: 448 } },
+  { label: "Pantry", x: 240, y: 784, box: { x: 32, y: 576, w: 416, h: 384 } },
+  { label: "NOC", x: 240, y: 1120, box: { x: 32, y: 992, w: 416, h: 256 } },
+  { label: "Desks", x: 1536, y: 544, box: { x: 1152, y: 192, w: 736, h: 768 } },
+];
 
 export default function HUD() {
   const {
@@ -14,6 +24,14 @@ export default function HUD() {
     setSidebarFont,
     themeMode,
     setThemeMode,
+    daylightMode,
+    setDaylightMode,
+    moodyLighting,
+    setMoodyLighting,
+    floorStyle,
+    setFloorStyle,
+    plantStyle,
+    setPlantStyle,
     helpOpen,
     setHelp,
     settingsOpen,
@@ -21,7 +39,11 @@ export default function HUD() {
     exited,
     setExited,
     source,
-    select,
+    focusAgent,
+    focusPoint,
+    zoomPercent,
+    triggerZoom,
+    hoveredAgent,
   } = useStore();
   const [now, setNow] = useState(Date.now());
   const [sidebarVisible, setSidebarVisible] = useState(true);
@@ -213,8 +235,8 @@ export default function HUD() {
                             <li key={m.id}>
                               <button
                                 type="button"
-                                onClick={() => select(m.id)}
-                                title={`Show ${m.name} in the office`}
+                                onClick={() => focusAgent(m.id)}
+                                title={`Locate and follow ${m.name} in the office`}
                               >
                                 {m.name}
                               </button>
@@ -285,6 +307,65 @@ export default function HUD() {
                     </select>
                   </label>
                   <label className="settings-option settings-select">
+                    <span>Atmosphere</span>
+                    <select
+                      value={daylightMode}
+                      onChange={(e) => {
+                        const v = e.target.value as DaylightMode;
+                        if (DAYLIGHT_MODES.includes(v)) setDaylightMode(v);
+                      }}
+                    >
+                      {DAYLIGHT_MODES.map((m) => (
+                        <option key={m} value={m}>
+                          {DAYLIGHT_LABEL[m]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label
+                    className="settings-option"
+                    title="Enable Low-Key dark ambient shadows, Pools of Light, and warm lamps at night/dusk"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={moodyLighting}
+                      onChange={(e) => setMoodyLighting(e.target.checked)}
+                    />
+                    <span>Moody night lighting</span>
+                  </label>
+                  <label className="settings-option settings-select">
+                    <span>Floor style</span>
+                    <select
+                      value={floorStyle}
+                      onChange={(e) => {
+                        const v = e.target.value as FloorStyle;
+                        if (FLOOR_STYLES.includes(v)) setFloorStyle(v);
+                      }}
+                    >
+                      {FLOOR_STYLES.map((f) => (
+                        <option key={f} value={f}>
+                          {FLOOR_STYLE_LABEL[f]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="settings-option settings-select">
+                    <span>Plant style</span>
+                    <select
+                      value={plantStyle}
+                      onChange={(e) => {
+                        const v = e.target.value as PlantStyle;
+                        if (PLANT_STYLES.includes(v)) setPlantStyle(v);
+                      }}
+                    >
+                      {PLANT_STYLES.map((p) => (
+                        <option key={p} value={p}>
+                          {PLANT_STYLE_LABEL[p]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="settings-option settings-select">
                     <span>Sidebar font</span>
                     <select
                       value={sidebarFont}
@@ -335,14 +416,18 @@ export default function HUD() {
           <div className="panel modal" onClick={(e) => e.stopPropagation()}>
             <h3>Virtual Office – Help</h3>
             <p>
-              2D pixel-art office world (elevated top-down). All data is
-              mock; employee status changes automatically.
+              2D 32-bit pixel-art office (elevated top-down).{' '}
+              {source.source === 'openbot'
+                ? 'Connected live to OpenBot agent telemetry.'
+                : 'Running mock demo data; statuses rotate automatically.'}
             </p>
             <ul>
               <li>WASD / arrows / mouse drag: move camera</li>
-              <li>Scroll or +/-: zoom (pixels stay sharp)</li>
-              <li>Click a character: view info &amp; change status</li>
-              <li>E: randomize employee status</li>
+              <li>Scroll, +/- or toolbar: zoom (pixels stay crisp)</li>
+              <li>Top-right bar: quick-jump to Lounge, Meeting, Pantry, NOC or Desks</li>
+              <li>Click a character or desk: inspect details &amp; toggle Follow</li>
+              <li>Settings → Atmosphere: switch Clock, Dawn, Day, Dusk or Night</li>
+              {source.source === 'mock' && <li>E: randomize mock employee status</li>}
             </ul>
             <button onClick={() => setHelp(false)}>Close</button>
           </div>
@@ -352,8 +437,74 @@ export default function HUD() {
         <div className="overlay solid">
           <div className="panel modal">
             <h3>You have exited</h3>
-            <p>Virtual Office demo session ended.</p>
+            <p>Virtual Office session ended.</p>
             <button onClick={() => setExited(false)}>Re-enter</button>
+          </div>
+        </div>
+      )}
+
+      <div className="stage-controls" role="toolbar" aria-label="Office camera controls">
+        <div className="stage-rooms">
+          {ROOM_JUMPS.map((room) => (
+            <button
+              key={room.label}
+              type="button"
+              onClick={() => focusPoint(room.x, room.y, 1.25, room.box)}
+              title={`Jump camera to ${room.label} (125%)`}
+            >
+              {room.label}
+            </button>
+          ))}
+        </div>
+        <div className="stage-zoom">
+          <button
+            type="button"
+            onClick={() => triggerZoom("out")}
+            aria-label="Zoom out"
+            title="Zoom out (−)"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className="stage-zoom-readout"
+            onClick={() => triggerZoom("reset")}
+            title="Reset zoom to 75%"
+          >
+            {zoomPercent}%
+          </button>
+          <button
+            type="button"
+            onClick={() => triggerZoom("in")}
+            aria-label="Zoom in"
+            title="Zoom in (+)"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      {hoveredAgent && (
+        <div
+          className="canvas-hover-tip"
+          style={{
+            left: Math.min(
+              typeof window !== "undefined" ? Math.max(12, window.innerWidth - 252) : hoveredAgent.screenX + 14,
+              Math.max(12, hoveredAgent.screenX + 14),
+            ),
+            top: Math.max(12, Math.min(
+              typeof window !== "undefined" ? window.innerHeight - 64 : hoveredAgent.screenY - 54,
+              hoveredAgent.screenY - 54,
+            )),
+          }}
+        >
+          <div className="hover-tip-head">
+            <span className="hover-tip-dot" style={{ background: hoveredAgent.phaseColor }} />
+            <strong>{hoveredAgent.name}</strong>
+            <span className="hover-tip-phase">{hoveredAgent.phaseLabel}</span>
+          </div>
+          <div className="hover-tip-sub">
+            {hoveredAgent.role} · {hoveredAgent.zone}
           </div>
         </div>
       )}

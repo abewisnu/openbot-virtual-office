@@ -832,6 +832,10 @@ a:focus-visible {
   background: #1b1721;
 }
 
+.gallery-main {
+  grid-column: 1 / -1;
+}
+
 .gallery-preview-trigger {
   position: relative;
   display: block;
@@ -858,6 +862,14 @@ a:focus-visible {
   image-rendering: pixelated;
   background: #14121c;
   transition: transform 220ms ease;
+}
+
+.gallery-main .gallery-preview-trigger img {
+  aspect-ratio: 16 / 10;
+}
+
+.gallery-card-top .gallery-preview-trigger img {
+  object-position: top center;
 }
 
 .gallery-preview-trigger:hover img,

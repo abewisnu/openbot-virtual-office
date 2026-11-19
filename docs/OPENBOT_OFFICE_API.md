@@ -20,7 +20,7 @@ Vite **dev-only** plugin. The production design (`/api/office` on port 8099, `/h
 | Item | Reality |
 |---|---|
 | Endpoint | `GET /api/agents` (and `HEAD`) — plus `GET /api/office-logo` for the workspace logo (§2.3) and `GET /api/office-profile` for the workspace name (§2.4) |
-| Host | the Vite dev server itself, default `http://localhost:5173` |
+| Host | the Vite dev server itself, configured on `http://localhost:3000` |
 | Provider | `vite-plugin-openbot.ts` → `configureServer` middleware |
 | Availability | **dev only**. `vite preview` and any static host do **not** serve it |
 | Response | bare JSON array, browser-safe subset, no envelope |
@@ -559,13 +559,13 @@ origin so no CORS or token is needed; `/health` must run a real query so it dist
 
 ```bash
 # roster payload from the dev server (must be JSON, not HTML)
-curl -s http://127.0.0.1:5173/api/agents | head -c 300
-curl -sI http://127.0.0.1:5173/api/agents | grep -i 'content-type\|cache-control'
+curl -s http://127.0.0.1:3000/api/agents | head -c 300
+curl -sI http://127.0.0.1:3000/api/agents | grep -i 'content-type\|cache-control'
 
 # guards
-curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:5173/api/agents   # 405
+curl -s -o /dev/null -w '%{http_code}\n' -X POST http://127.0.0.1:3000/api/agents   # 405
 curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: evil.example' \
-  http://127.0.0.1:5173/api/agents                                                   # 421
+  http://127.0.0.1:3000/api/agents                                                   # 421
 
 # source gate (types, schema, phase rules, bundle hygiene)
 node --import ./scripts/register-ts.mjs scripts/verify-openbot-source.mjs

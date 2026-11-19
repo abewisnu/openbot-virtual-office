@@ -53,7 +53,8 @@ The card is square-cornered glass like the sidebar: `border-radius: 0`, `--ovo-p
 `width: fit-content` and `margin-inline: auto` — and on desktop the band starts at `336px` so it
 centres in the space the floating sidebar leaves; that override is scoped to `min-width: 701px`, so
 the mobile card keeps its plain 8px insets and never slides off the right edge. Desktop is one
-horizontal row (avatar · identity · facts); at `700px` and below it collapses to the stacked card,
+horizontal row (avatar · identity · facts), including a `Follow` toggle next to the phase badge to
+keep the camera centred on the selected agent; at `700px` and below it collapses to the stacked card,
 with the `<dl>` spanning both columns behind a top hairline.
 
 `src/components/Avatar.tsx` draws that spec as a 12×12 SVG with `shapeRendering="crispEdges"`:

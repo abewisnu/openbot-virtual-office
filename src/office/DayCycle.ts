@@ -8,6 +8,24 @@
  * without a canvas: `daylightAt()` is a pure function of the hour.
  */
 export type DayKey = 'night' | 'dawn' | 'day' | 'dusk';
+export type DaylightMode = 'auto' | DayKey;
+
+export const DAYLIGHT_MODES: readonly DaylightMode[] = ['auto', 'dawn', 'day', 'dusk', 'night'];
+
+export const DAYLIGHT_LABEL: Record<DaylightMode, string> = {
+  auto: 'Auto (Clock)',
+  dawn: 'Dawn',
+  day: 'Day',
+  dusk: 'Dusk',
+  night: 'Night',
+};
+
+const MODE_HOUR: Record<DayKey, number> = {
+  dawn: 6,
+  day: 12,
+  dusk: 17.5,
+  night: 22.5,
+};
 
 export interface Daylight {
   key: DayKey;
@@ -19,6 +37,8 @@ export interface Daylight {
   tintAlpha: number;
   /** Multiplier on the window god rays; 1 is a bright afternoon. */
   rayScale: number;
+  /** Dark ambient veil strength for low-key / pool-of-light night atmosphere (0 = bright day). */
+  ambientDark: number;
 }
 
 interface Keyframe {
@@ -27,20 +47,22 @@ interface Keyframe {
   tint: number;
   alpha: number;
   rays: number;
+  dark: number;
 }
 
 /**
- * Keyframes in clock order. 19.5 → 24 → 4.5 reads as full night, 6 is the
- * warm dawn edge, 8–16 is steady daylight and 17.5 is the sunset edge.
+ * Keyframes in clock order. 19.5 → 24 → 4.5 reads as full night (low-key dark
+ * ambient lighting with pools of light), 6 is warm dawn, 8–16 bright day,
+ * 17.5 warm sunset dusk.
  */
 const KEYFRAMES: readonly Keyframe[] = [
-  { hour: 0, key: 'night', tint: 0x5a6fff, alpha: 0.085, rays: 0.34 },
-  { hour: 4.5, key: 'night', tint: 0x5a6fff, alpha: 0.085, rays: 0.30 },
-  { hour: 6, key: 'dawn', tint: 0xff9e6b, alpha: 0.075, rays: 0.58 },
-  { hour: 8, key: 'day', tint: 0xffd9a0, alpha: 0.05, rays: 1 },
-  { hour: 16, key: 'day', tint: 0xffd9a0, alpha: 0.05, rays: 1 },
-  { hour: 17.5, key: 'dusk', tint: 0xff7a4d, alpha: 0.08, rays: 0.72 },
-  { hour: 19.5, key: 'night', tint: 0x5a6fff, alpha: 0.085, rays: 0.34 },
+  { hour: 0, key: 'night', tint: 0x16224a, alpha: 0.13, rays: 0.34, dark: 0.56 },
+  { hour: 4.5, key: 'night', tint: 0x16224a, alpha: 0.13, rays: 0.30, dark: 0.54 },
+  { hour: 6, key: 'dawn', tint: 0xff9e6b, alpha: 0.08, rays: 0.58, dark: 0.14 },
+  { hour: 8, key: 'day', tint: 0xffd9a0, alpha: 0.04, rays: 1, dark: 0 },
+  { hour: 16, key: 'day', tint: 0xffd9a0, alpha: 0.04, rays: 1, dark: 0 },
+  { hour: 17.5, key: 'dusk', tint: 0xff7a4d, alpha: 0.10, rays: 0.72, dark: 0.28 },
+  { hour: 19.5, key: 'night', tint: 0x16224a, alpha: 0.13, rays: 0.34, dark: 0.56 },
 ];
 
 /** Wrap an hour into [0, 24). */
@@ -91,5 +113,14 @@ export function daylightAt(hours: number): Daylight {
     tint: mixColor(from.tint, to.tint, t),
     tintAlpha: lerp(from.alpha, to.alpha, t),
     rayScale: lerp(from.rays, to.rays, t),
+    ambientDark: lerp(from.dark, to.dark, t),
   };
+}
+
+/** Resolve daylight from either the system clock (`auto`) or an explicit phase override. */
+export function daylightForMode(mode: DaylightMode, now = new Date()): Daylight {
+  if (mode === 'auto') {
+    return daylightAt(now.getHours() + now.getMinutes() / 60);
+  }
+  return daylightAt(MODE_HOUR[mode]);
 }
