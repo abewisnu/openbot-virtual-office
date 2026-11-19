@@ -2,6 +2,13 @@ import type { Status, AgentPhase, AgentActivity, ActivityKind } from './types';
 export type Dir = 'up' | 'down' | 'left' | 'right';
 /** One "pixel art" = ART screen pixels. All assets are drawn at the same density. */
 export const ART = 2;
+/**
+ * Generator density: every sprite is authored at `DENSITY` art px per legacy
+ * art px and then drawn at `ART / DENSITY` (props: `PROP / DENSITY`) screen px
+ * per art px. On-screen size is unchanged; only the art resolution doubles, so
+ * outlines and bevels land on a finer grid.
+ */
+export const DENSITY = 2;
 /** Shipped prop size: one art pixel is 4 screen px (2x the old look). */
 export const DEFAULT_PROP_SCALE = 2;
 /**

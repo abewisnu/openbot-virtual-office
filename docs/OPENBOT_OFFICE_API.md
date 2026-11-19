@@ -568,12 +568,18 @@ curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: evil.example' \
   http://127.0.0.1:5173/api/agents                                                   # 421
 
 # source gate (types, schema, phase rules, bundle hygiene)
-node scripts/verify-openbot-source.mjs
+node --import ./scripts/register-ts.mjs scripts/verify-openbot-source.mjs
 
-# client gates: first paint must never show the mock roster
-node scripts/verify-store.mjs          # pending/openbot/mock transitions + boot state
-node scripts/verify-avatar.mjs         # tint contrast on avatar tile AND panel gutter, 16 × 2
-node scripts/verify-workspace.mjs      # folder-size walker boundary + symlink skip + no path leak
+# source gate (types, schema, phase rules, bundle hygiene)
+node --import ./scripts/register-ts.mjs scripts/verify-openbot-source.mjs
+
+# all gates at once
+npm run verify
+
+# single gate, when one is enough
+node --import ./scripts/register-ts.mjs scripts/verify-store.mjs          # pending/openbot/mock transitions + boot state
+node --import ./scripts/register-ts.mjs scripts/verify-avatar.mjs         # tint contrast on avatar tile AND panel gutter, 16 × 2
+node --import ./scripts/register-ts.mjs scripts/verify-workspace.mjs      # folder-size walker boundary + symlink skip + no path leak
 
 # raw DB truth, read-only
 sqlite3 "file:$HOME/Library/Application Support/OpenBot/openbot.db?mode=ro" \

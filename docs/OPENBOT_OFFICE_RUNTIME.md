@@ -312,12 +312,12 @@ surfaces as `500 { "error": "Agent data unavailable" }`.
 npx tsc --noEmit
 npm run build
 
-# 2. source gate: phase rules, schema, bundle hygiene
-node scripts/verify-openbot-source.mjs
+# 2. all gates: source, monitor, lounge, avatar, chairs, idle, labels, rack LEDs,
+#    rooms, store, workspace (each one runs with node alone)
+npm run verify
 
-# 2b. desk-screen gate: 13 phase × seated cases + source guards
-node scripts/verify-monitor.mjs
-node scripts/verify-lounge.mjs
+# 2b. a single gate, if you only want one
+node --import ./scripts/register-ts.mjs scripts/verify-monitor.mjs
 
 # 3. endpoint reality (must be JSON, not HTML)
 curl -s -o /dev/null -w 'status=%{http_code} bytes=%{size_download} time=%{time_total}\n' \
@@ -336,6 +336,14 @@ sqlite3 "file:$HOME/Library/Application Support/OpenBot/openbot.db?mode=ro" \
 # 6. port is clean after stopping
 lsof -nP -iTCP:5173 -sTCP:LISTEN
 ```
+
+Step 4b — motion and performance in the browser (Chrome DevTools MCP, same page id):
+
+| Check | How | Expected |
+|---|---|---|
+| reduced motion | `emulate { prefersReducedMotion: 'reduce' }` | `.status-track span` transition `0s`, mote layer hidden, breathe frozen |
+| hidden tab | override `document.hidden` → `visibilitychange` | WebGL `drawElements` count stays flat, resumes on return |
+| adaptive budget | block the main thread ~28 ms per frame | draw indices per second fall to ~⅓ while slow, recover after |
 
 **[measured]** for step 3 on a verification run: `status=200 bytes=3296 time=0.087561`.
 Both numbers drift with activity text and roster size; the useful signal is that the body

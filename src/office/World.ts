@@ -1,14 +1,17 @@
-import { Application, Container, Graphics, Sprite, Text, TextureStyle } from 'pixi.js';
-import { ART, PROP, PROP_SCALE, RACK_BLINK_BASE, RACK_W, FOOT_OFFSET, PHASE_COLORS, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
+import { Application, Container, Graphics, Sprite, Text, TextureStyle, type Texture } from 'pixi.js';
+import { ART, DENSITY, PROP, PROP_SCALE, RACK_BLINK_BASE, RACK_W, FOOT_OFFSET, PHASE_COLORS, TILE, WORLD_H, WORLD_W, ZOOM_STEPS, badgeFor, shirtColorFor, type Dir } from '../constants';
 import type { Status, AgentPhase, Employee } from '../types';
 import { useStore } from '../store/useStore';
-import { generateAssets, makeCharFrames, makeLook, makeRackLeds, rackBlinkRate, type Assets, type FurnitureType, type RackLed } from './AssetGenerator';
+import { generateAssets, makeBackground, makeCharFrames, makeLook, makeRackLeds, rackBlinkRate, type Assets, type FurnitureType, type RackLed } from './AssetGenerator';
 import { buildLayout, zoneName, type ChatSpot, type Layout, type RoomLabel, type Seat } from './Layout';
 import { isChattingSeat, isSocialZone, pickIdleSeat, pickIdleTile } from './Idle';
 import { isInLounge, staysInLounge } from './Lounge';
 import { Character, type Vec } from './Character';
 import { monitorStateFor } from './Monitor';
 import { findPath, type Tile } from './Pathfinder';
+import { Atmosphere } from './Atmosphere';
+import { Particles, type EmitSpot } from './Particles';
+import { daylightAt, type Daylight } from './DayCycle';
 
 const STATUSES: Status[] = ['working', 'working', 'working', 'meeting', 'chatting', 'break', 'idle'];
 /**
@@ -22,16 +25,57 @@ const SHELL: ReadonlySet<FurnitureType> = new Set<FurnitureType>([
   'partitionH', 'partitionHHalf', 'partitionV', 'partitionCorner', 'doorH', 'doorV', 'whiteboard',
 ]);
 /** Workstation monitor: a bit denser than the props (1.25x), so the 16 x 14 art
- * screen covers ~2.5 of its 4-tile desk without towering over it. */
-const MONITOR_SCALE = PROP * 1.25;
+ * screen covers ~2.5 of its 4-tile desk without towering over it. Textures hold
+ * `DENSITY` texels per art px, so the draw scale divides it back out. */
+const MONITOR_SCALE = (PROP * 1.25) / DENSITY;
 /** Sprite footprint in screen px, kept next to the type so the hit test and the
  * layout padding can never drift from the drawn size. */
-const MONITOR_W = 16 * MONITOR_SCALE;
-const MONITOR_H = 14 * MONITOR_SCALE;
+const MONITOR_W = 16 * DENSITY * MONITOR_SCALE;
+const MONITOR_H = 14 * DENSITY * MONITOR_SCALE;
 /** How long one animated monitor frame stays on screen (ms). */
 const MONITOR_FRAME_MS = 220;
+/** Last camera + selection, kept across reloads so the office reopens where it left off. */
+const VIEW_KEY = 'ovo-view';
 const tileOf = (x: number, y: number): Tile => ({ tx: Math.floor(x / TILE), ty: Math.floor((y - FOOT_OFFSET) / TILE) });
 const centerOf = (t: Tile): Vec => ({ x: (t.tx + 0.5) * TILE, y: (t.ty + 0.5) * TILE + FOOT_OFFSET });
+
+const num = (v: unknown): number | null =>
+  typeof v === 'number' && Number.isFinite(v) ? Math.round(v) : null;
+
+function restoreView(): { cam: { x: number; y: number; zi: number } | null; selected: string | null } {
+  const selected = new URLSearchParams(location.search).get('agent');
+  let cam: { x: number; y: number; zi: number } | null = null;
+  try {
+    const raw = localStorage.getItem(VIEW_KEY);
+    if (raw) {
+      const v = JSON.parse(raw);
+      const zi = num(v?.zi);
+      if (zi !== null && zi >= 0 && zi < ZOOM_STEPS.length) {
+        const x = num(v?.x);
+        const y = num(v?.y);
+        cam = {
+          x: x ?? WORLD_W / 2,
+          y: y ?? WORLD_H / 2 + 60,
+          zi,
+        };
+      }
+    }
+  } catch {
+    /* corrupt or unavailable storage: fall back to the shipped view */
+  }
+  return { cam, selected };
+}
+
+function saveView(cam: { x: number; y: number; zi: number }) {
+  try {
+    localStorage.setItem(
+      VIEW_KEY,
+      JSON.stringify({ x: Math.round(cam.x), y: Math.round(cam.y), zi: cam.zi }),
+    );
+  } catch {
+    /* quota or private mode: the office still works, it just forgets the view */
+  }
+}
 
 export class World {
   private app = new Application();
@@ -41,6 +85,21 @@ export class World {
   private labelLayer = new Container();
   private hands = new Graphics();
   private rackLedGraphics = new Graphics();
+  /** Soft outline under the workstation the pointer rests on. */
+  private hoverMark = new Graphics();
+  /** Agent currently under the pointer, or null. Drives the hover ring. */
+  private hoverId: string | null = null;
+  private atmosphere = new Atmosphere();
+  private particles = new Particles();
+  /** Steam and haze outlets, resolved from the layout once at init. */
+  private emitters: EmitSpot[] = [];
+  /** Night pass of the background, re-used by the atmosphere wash. */
+  private night = false;
+  /** Live daylight curve; recomputed from the clock each frame. */
+  private daylight: Daylight = daylightAt(12);
+  private background!: Sprite;
+  /** Baked background per pass, so a dawn/dusk flip never rebuilds twice. */
+  private backgroundCache = new Map<boolean, Texture>();
   private rackLeds: RackLed[] = [];
   /** Desk monitors: dark unless a working/ready agent occupies the desk; animated while working. */
   private monitors: { seat: Seat; sprite: Sprite }[] = [];
@@ -65,6 +124,13 @@ export class World {
   private cleanups: (() => void)[] = [];
   private ready = false;
   private host!: HTMLElement;
+  /** `prefers-reduced-motion`: freeze decorative motion, keep real movement. */
+  private calm = false;
+  /** Slow-frame average, in seconds, driving the particle budget. */
+  private frameAvg = 0;
+  private budgetT = 0;
+  /** Particle budget scale; 1 is the shipped density, 1/3 is the emergency floor. */
+  private particleQuality = 1;
 
   async init(host: HTMLElement) {
     this.host = host;
@@ -74,8 +140,10 @@ export class World {
     this.app.canvas.style.display = 'block';
 
     const h = new Date().getHours();
+    this.daylight = daylightAt(h);
+    this.night = this.daylight.night;
     const emps = useStore.getState().employees;
-    this.assets = generateAssets(h < 6 || h >= 18, emps.map((e, i) => makeLook(shirtColorFor(e), i)));
+    this.assets = generateAssets(this.night, emps.map((e, i) => makeLook(shirtColorFor(e), i)));
     // Size the workstation block to the live roster: one desk per agent.
     this.layout = buildLayout(emps.length);
     this.layout.blocked.forEach((row, ty) => row.forEach((b, tx) => { if (!b) this.walkable.push({ tx, ty }); }));
@@ -91,18 +159,30 @@ export class World {
     this.socialTiles = this.walkable.filter((t) => isSocialZone(zoneName(t.tx, t.ty)));
 
     const bg = new Sprite(this.assets.background);
-    bg.scale.set(ART);
+    bg.scale.set(ART / DENSITY);
+    this.background = bg;
     this.sortLayer.sortableChildren = true;
     // Room plates sit above the furniture: a plate that lands on a tall prop
     // (the NOC CRAC, a rack) would otherwise be hidden behind its sprite.
     this.root.addChild(bg, this.hands, this.sortLayer, this.roomLabelLayer, this.labelLayer);
     this.rackLeds = makeRackLeds(PROP, RACK_W);
     this.root.addChild(this.rackLedGraphics);
+    // Hover mark slides in just under the props: it outlines a desk bay without
+    // covering the chair, the monitor or the name plate.
+    this.root.addChildAt(this.hoverMark, this.root.getChildIndex(this.sortLayer));
+    // Atmosphere sits between the floor art and the sorted props: the light
+    // pools tint the floor, and the props stay crisp on top of the haze.
+    this.atmosphere.mountWorld(this.root, this.sortLayer);
+    // Particles ride between the props and the room plates, so steam reads over
+    // the furniture without ever covering a plate or a name tag.
+    this.particles.mount(this.root, this.sortLayer, this.roomLabelLayer);
     this.app.stage.addChild(this.root);
+    this.atmosphere.mountScreen(this.app.stage);
+    this.atmosphere.resize(this.app.screen.width, this.app.screen.height);
 
     for (const f of this.layout.furniture) {
       const s = new Sprite(this.assets.furn[f.type]);
-      s.anchor.set(0.5, 1); s.scale.set(SHELL.has(f.type) ? ART : PROP); s.position.set(f.x, f.y); s.zIndex = f.z;
+      s.anchor.set(0.5, 1); s.scale.set(SHELL.has(f.type) ? ART / DENSITY : PROP / DENSITY); s.position.set(f.x, f.y); s.zIndex = f.z;
       this.sortLayer.addChild(s);
     }
     // One monitor per workstation, lit only while a working/ready agent sits there.
@@ -118,24 +198,82 @@ export class World {
       this.monitors.push({ seat, sprite: s });
     }
     this.layout.roomLabels.forEach((label) => this.roomLabelLayer.addChild(this.buildRoomLabel(label)));
-    this.rebuildCharacters();    this.bindInput();
+    this.emitters = this.buildEmitters();
+    this.rebuildCharacters();    this.bindInput(); this.bindMotion();
+    this.restoreView();
     this.updateClock();
     this.app.ticker.add((t) => this.update(t.deltaMS / 1000));
     this.ready = true;
+  }
+  /**
+   * Motion preferences and tab visibility. `prefers-reduced-motion` pins the
+   * decorative layer (breathe, idle bob, motes) while the walk cycle keeps
+   * running, because that motion is the simulation itself. A hidden tab stops
+   * the ticker outright: PixiJS keeps rendering rAF frames otherwise, and a
+   * background office burns GPU for pixels nobody can see.
+   */
+  private bindMotion() {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => {
+      this.calm = mq.matches;
+      this.atmosphere.setCalm(this.calm);
+      this.chars.forEach((c) => c.setCalm(this.calm));
+      if (this.calm) this.particles.setQuality(0);
+      else this.particles.setQuality(this.particleQuality);
+    };
+    apply();
+    mq.addEventListener('change', apply);
+    this.cleanups.push(() => mq.removeEventListener('change', apply));
+    const onVisibility = () => {
+      if (document.hidden) this.app.ticker.stop();
+      else { this.frameAvg = 0; this.budgetT = 0; this.app.ticker.start(); }
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    this.cleanups.push(() => document.removeEventListener('visibilitychange', onVisibility));
+    const onUnload = () => saveView(this.cam);
+    window.addEventListener('pagehide', onUnload);
+    this.cleanups.push(() => window.removeEventListener('pagehide', onUnload));
   }
 
   resize() {
     if (!this.ready) return;
     this.app.renderer.resize(this.host.clientWidth, this.host.clientHeight);
+    this.atmosphere.resize(this.app.screen.width, this.app.screen.height);
     this.applyCamera();
   }
 
   destroy() {
+    saveView(this.cam);
     this.cleanups.forEach((f) => f());
+    this.particles.destroy();
+    const live = this.background?.texture;
     this.app.destroy({ removeView: true }, { children: true, texture: true });
+    // The off-pass background never joined the stage, so the stage-wide texture
+    // teardown above cannot reach it.
+    this.backgroundCache.forEach((tex) => { if (tex !== live) tex.destroy(true); });
+    this.backgroundCache.clear();
   }
 
   // ---------- Input & kamera ----------
+  /**
+   * Emitter outlets, derived from the placed props so moving a fridge in the
+   * layout moves its steam with it. Height is the art height times the prop
+   * draw scale, which puts the outlet on the sprite's top edge.
+   */
+  private buildEmitters(): EmitSpot[] {
+    const SPOTS: Partial<Record<FurnitureType, { artH: number; kind: 'steam' | 'air' }>> = {
+      dispenser: { artH: 30, kind: 'steam' },
+      coffeeTable: { artH: 16, kind: 'steam' },
+      crac: { artH: 32, kind: 'air' },
+    };
+    const out: EmitSpot[] = [];
+    for (const f of this.layout.furniture) {
+      const spot = SPOTS[f.type];
+      if (!spot) continue;
+      out.push({ x: f.x, y: f.y - spot.artH * (PROP / DENSITY) + 2, kind: spot.kind });
+    }
+    return out;
+  }
   private buildRoomLabel(label: RoomLabel): Container {
     const plate = new Container();
     const text = new Text({
@@ -164,8 +302,14 @@ export class World {
         const dx = e.clientX - this.drag.lx, dy = e.clientY - this.drag.ly, z = ZOOM_STEPS[this.cam.zi];
         this.drag.moved += Math.abs(dx) + Math.abs(dy); this.drag.lx = e.clientX; this.drag.ly = e.clientY;
         this.cam.x -= dx / z; this.cam.y -= dy / z; cv.style.cursor = 'grabbing';
-      } else cv.style.cursor = this.pickEmployeeId(e) ? 'pointer' : 'default';
+        this.setHover(null);
+      } else {
+        const id = this.pickEmployeeId(e);
+        cv.style.cursor = id ? 'pointer' : 'default';
+        this.setHover(id, e);
+      }
     });
+    on(cv, 'pointerleave', () => { this.setHover(null); cv.style.cursor = 'default'; });
     on(cv, 'pointerup', (e: PointerEvent) => {
       if (this.drag.active && this.drag.moved < 5) useStore.getState().select(this.pickEmployeeId(e));
       this.drag.active = false; cv.style.cursor = 'default';
@@ -182,6 +326,20 @@ export class World {
     on(window, 'keyup', (e: KeyboardEvent) => this.keys.delete(e.code));
   }
   private zoomBy(d: number) { this.cam.zi = Math.max(0, Math.min(ZOOM_STEPS.length - 1, this.cam.zi + d)); }
+  /**
+   * Reopen where the last session left off: the camera from `localStorage`
+   * (clamped to the world by `applyCamera`) and `?agent=<id>` for the selected
+   * employee. Both are inert for a brand-new visitor — no stored view, no
+   * query — so the shipped defaults still win.
+   */
+  private restoreView() {
+    const view = restoreView();
+    if (view.cam) this.cam = view.cam;
+    if (view.selected && useStore.getState().employees.some((e) => e.id === view.selected)) {
+      useStore.getState().select(view.selected);
+    }
+    this.applyCamera();
+  }
   /** Canvas pointer → world coordinates, through the camera transform. */
   private worldPoint(e: PointerEvent): { x: number; y: number } {
     const r = this.app.canvas.getBoundingClientRect();
@@ -223,6 +381,33 @@ export class World {
     if (seat.occupant) return seat.occupant;
     return useStore.getState().employees.find((x) => x.currentWorkstation === seat.id)?.id ?? null;
   }
+  /**
+   * Hover feedback: mirror the pointer target as a faint ring on the agent and,
+   * when the hit came from a desk rather than a body, outline that desk bay. The
+   * mark lives below the sorted layer so it never hides a prop or a name plate.
+   */
+  private setHover(id: string | null, e?: PointerEvent) {
+    if (id !== this.hoverId) {
+      this.hoverId = id;
+      for (const ch of this.chars) ch.setHovered(false);
+    }
+    if (id) for (const ch of this.chars) if (ch.id === id) ch.setHovered(true);
+    this.hoverMark.clear();
+    if (!id || !e) return;
+    const seat = this.pickDesk(e);
+    if (!seat) return;
+    // World-space geometry is scaled by the camera, so a 1 px stroke would drop
+    // under a screen pixel at the default 0.75 zoom. Width follows the zoom step
+    // to stay a visible 2 px outline at every zoom level.
+    const w = 34 * PROP_SCALE * 2, h = 24 * PROP_SCALE;
+    const z = ZOOM_STEPS[this.cam.zi];
+    const x = seat.pos.x - w / 2, y = seat.pos.y - h;
+    this.hoverMark
+      .roundRect(x, y, w, h, 6)
+      .stroke({ width: 2 / z, color: 0xfff3a0, alpha: 0.55 })
+      .roundRect(x, y, w, h, 6)
+      .stroke({ width: 1 / z, color: 0xfffbe0, alpha: 0.9 });
+  }
   private applyCamera() {
     const vw = this.app.screen.width, vh = this.app.screen.height, z = ZOOM_STEPS[this.cam.zi];
     const hw = vw / 2 / z, hh = vh / 2 / z;
@@ -247,6 +432,7 @@ export class World {
     emps.forEach((e, i) => {
       const frames = this.assets.chars[i] ?? makeCharFrames(makeLook(shirtColorFor(e), i));
       const ch = new Character(e.id, e.name, frames, this.assets.bubble);
+      ch.setCalm(this.calm);
       this.sortLayer.addChild(ch.container);
       this.labelLayer.addChild(ch.tag);
       this.chars.push(ch);
@@ -474,6 +660,7 @@ export class World {
   private update(dt: number) {
     if (!this.ready) return;
     dt = Math.min(dt, 0.1);
+    this.tuneParticles(dt);
     const st = useStore.getState(), z = ZOOM_STEPS[this.cam.zi], sp = (480 / z) * dt;
     if (!this.charactersMatchSource()) this.rebuildCharacters();
     const k = this.keys;
@@ -529,8 +716,9 @@ export class World {
     // when a phase changes, and makes a busy office read visibly quicker.
     const working = st.employees.reduce((n, e) => n + (e.phase === 'working' ? 1 : 0), 0);
     this.rackRate += (rackBlinkRate(working) - this.rackRate) * Math.min(1, dt * 1.2);
-    this.rackT += dt * this.rackRate;
-    if (this.clockT >= 1) { this.clockT = 0; this.updateClock(); }
+    // Reduced motion: the panels hold their current LED pattern instead of blinking.
+    if (!this.calm) this.rackT += dt * this.rackRate;
+    if (this.clockT >= 1) { this.clockT = 0; this.updateClock(); this.refreshDaylight(); }
     if (this.liveT >= 0.4) {
       this.liveT = 0;
       const ch = this.chars.find((c) => c.id === st.selectedId);
@@ -551,6 +739,8 @@ export class World {
     }
     this.updateRackLeds();
     this.updateMonitors();
+    this.atmosphere.update(dt, { daylight: this.daylight, working });
+    this.particles.update(dt, this.emitters);
     this.applyCamera();
   }
   /**
@@ -563,10 +753,33 @@ export class World {
    * in front of the computer until a human answers. Everyone else, including an
    * agent still walking to the desk, leaves the monitor dark.
    */
+  /**
+   * Adaptive particle budget. Averages frame time over a short window and steps
+   * the mote budget down when the frame runs long (a 60 Hz frame is ~16.7 ms),
+   * then creeps back up once the machine has headroom again. Reduced motion
+   * owns the layer outright, so this never fights `bindMotion`.
+   */
+  private tuneParticles(dt: number) {
+    if (this.calm) return;
+    // Ignore the first frames after a tab wake-up: one huge delta would read as
+    // a slow machine and drop the effect for no reason.
+    if (dt > 0.25) return;
+    this.frameAvg += (dt - this.frameAvg) * 0.05;
+    this.budgetT += dt;
+    if (this.budgetT < 1.5) return;
+    this.budgetT = 0;
+    const next = this.frameAvg > 0.026 ? Math.max(1 / 3, this.particleQuality - 1 / 3)
+      : this.frameAvg < 0.0185 ? Math.min(1, this.particleQuality + 1 / 3)
+        : this.particleQuality;
+    if (next === this.particleQuality) return;
+    this.particleQuality = next;
+    this.particles.setQuality(next);
+  }
   private updateMonitors() {
     if (!this.monitors.length) return;
     const frames = this.assets.monitorWorking;
-    const frame = frames[Math.floor(this.monitorT / (MONITOR_FRAME_MS / 1000)) % frames.length];
+    // Reduced motion: hold the first working frame instead of scrolling rows.
+    const frame = frames[this.calm ? 0 : Math.floor(this.monitorT / (MONITOR_FRAME_MS / 1000)) % frames.length];
     for (const { seat, sprite } of this.monitors) {
       const ch = seat.occupant ? this.chars.find((c) => c.id === seat.occupant) : undefined;
       const seated = !!ch && ch.state === 'sit' && ch.seat === seat;
@@ -600,5 +813,23 @@ export class World {
     const hand = (ang: number, len: number, w: number, color: number) => this.hands.moveTo(cx, cy).lineTo(cx + Math.cos(ang) * len, cy + Math.sin(ang) * len).stroke({ width: w, color });
     this.hands.clear();
     hand(a(h, 12), 6, 2, 0x1d1722); hand(a(m, 60), 9, 2, 0x1d1722); hand(a(s, 60), 10, 1, 0xd9534f);
+  }
+  /**
+   * Re-reads the wall clock and follows the daylight curve. The wash and the
+   * rays ease every frame, but the baked background is a 1920 x 1280 texture,
+   * so it is only regenerated when the day/night pass actually flips — once at
+   * dawn and once at dusk. Both passes are cached, so a flip costs one texture
+   * swap after the first build.
+   */
+  private refreshDaylight() {
+    const d = new Date();
+    const hours = d.getHours() + d.getMinutes() / 60;
+    this.daylight = daylightAt(hours);
+    if (this.daylight.night === this.night) return;
+    this.night = this.daylight.night;
+    const cached = this.backgroundCache.get(this.night);
+    const tex = cached ?? makeBackground(this.night);
+    if (!cached) this.backgroundCache.set(this.night, tex);
+    this.background.texture = tex;
   }
 }

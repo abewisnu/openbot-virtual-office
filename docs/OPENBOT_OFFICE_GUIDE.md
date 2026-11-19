@@ -55,15 +55,34 @@ The browser never holds a DB path, a credential, or SQL. It knows one URL and on
 | `src/data/openbotSource.ts` | public types, `AGENT_PHASES`, `ACTIVITY_KINDS`, Zod `agentProfileSchema`, `fetchAgentProfilesAsync` | the wire contract changes |
 | `src/data/openbotSource.node.ts` | env parse, DB handle, SQL, `derivePhase`, `ACTIVITY_WEIGHT`, window constants | derivation or query changes |
 | `vite-plugin-openbot.ts` | `/api/agents`, Host/method guards, headers, field strip | transport or security changes |
+| `vite.config.ts` | Registers `react()` and the OpenBot plugin; dev server config | the dev server or its plugins change |
+| `scripts/verify-openbot-source.mjs` | Pins the SQL queries to `readonly` and the phase windows | the SQL or window constants change |
 | `src/store/useStore.ts` | `toEmployee`, `statusForPhase`, `startPolling` / `stopPolling`, mock fallback | state or polling changes |
 | `src/data/mockEmployees.ts` | fallback roster | the demo scene changes |
 | `src/constants.ts` | `PHASE_COLORS`, `PHASE_LABEL`, `ACTIVITY_LABEL`, `badgeFor`, `shirtColorFor` | colours or labels change |
-| `src/office/World.ts` | `assign`, `owesDesk`, desk seats, typing, `setDot` | behaviour or movement changes |
+| `src/office/World.ts` | `assign`, `owesDesk`, desk seats, typing, `setDot`, hover + selection, `bindMotion` (reduced motion + hidden tab), `tuneParticles` (adaptive budget) | behaviour, movement or performance policy changes |
+| `src/office/Character.ts` | sprite, idle/walk/sit + typing frames, four native facings, selection and hover rings, `setCalm` | character animation changes |
 | `src/office/Layout.ts` | `buildLayout(deskCount)`, seats `WS-NN` | office geometry changes |
+| `src/office/DayCycle.ts` | pure daylight curve, seven keyframes → `{ key, night, tint, tintAlpha, rayScale }` | the day-night schedule changes |
+| `src/office/Particles.ts` | dust motes in the window shafts, steam/air emitters, `MAX_MOTES` cap, `setQuality` budget scale | particle density or emitter kinds change |
+| `src/office/Atmosphere.ts` | window god rays, floor light pools, pixel-stepped vignette, `setCalm` | the atmospheric pass changes |
 | `src/components/HUD.tsx` | sidebar phase counts and rows | sidebar changes |
 | `src/components/CharacterInfo.tsx` | detail panel: dot, phase label, activity note | panel changes |
-| `scripts/verify-openbot-source.mjs` | source gate: types, schema, phase rules, bundle hygiene | a rule becomes checkable |
-| `vite.config.ts` | plugins, `better-sqlite3` externalisation | build config changes |
+| `src/store/sourcePolicy.ts` | Pure roster-source policy: `resolveSource()` maps each fetch outcome to `{ employees, source }` — `pending` first, then `openbot`, then `mock` only when a fetch fails with nothing to keep | roster source changes |
+| `src/office/Avatar.ts` | Pure avatar recipe: `stableIndex()` + `avatarSpec()` from `avatarSeed`, `agentId`, `avatarHue`/`avatarColor`; per-theme 3:1 contrast clamps | the face or tint recipe changes |
+| `src/office/Lounge.ts` | Pure Lounge box (`LOUNGE_ROOM`, `isInLounge`) plus the phase rule `staysInLounge(phase)` | the Lounge pen changes |
+| `src/office/Idle.ts` | Pure standby rules: `isSocialZone()`, `pickIdleSeat()` / `pickIdleTile()`, `isChattingSeat()`, `visAVis()` | idle behaviour changes |
+| `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`/`waiting` | the screen gate changes |
+| `docs/OVO_OFFICE_LAYOUT.md` | Room map (Meeting, Workstations, Lounge, Pantry & Storage, NOC) with tile coordinates, sitters, name/room plates, rack LEDs, monitor rules, simulated positions | office geometry or layout rules change |
+| `docs/OVO_ART_STYLE.md` | 32-bit pixel-art spec, 2× texture density, depth pass (props, light, particles, hover), motion & performance | art or rendering changes |
+| `docs/OVO_THEME.md` | Sidebar font (mono / Geist Pixel) and UI theme (system / light / dark) | typography or palette changes |
+| `docs/OVO_AVATARS.md` | Seed-based face recipe, per-theme contrast, info-card chrome, workspace footprint | avatar or panel changes |
+| `docs/OVO_PHASES.md` | `phase` / `activity` rules, activity kinds + weights, per-phase office effects, per-phase × per-activity matrix | derivation or office effects change |
+
+Detailed office content lives in the `OVO_*.md` docs — room geometry, sitters, plates, rack LEDs,
+monitor rules and simulated positions in `OVO_OFFICE_LAYOUT.md`, the rendering pipeline in
+`OVO_ART_STYLE.md`, typography/theme in `OVO_THEME.md`, the avatar recipe in `OVO_AVATARS.md`,
+and the phase/activity rules in `OVO_PHASES.md`.
 
 ---
 
@@ -227,6 +246,12 @@ still renders, so **the source badge must be checked before believing the screen
 | employee → position | `World.assign` (`status === 'working' \|\| owesDesk` → own desk) |
 | badge dot | `badgeFor(emp).color` → `badgeFor` reads `PHASE_COLORS[phase]` only |
 | sidebar counts | `HUD.tsx` reduces `employees` by `phase` |
+| direction | `Character.facing` picks one of four native frame sets; no sprite is mirrored |
+| day tint | `DayCycle.daylightAt(hours)` → `{ key, night, tint, tintAlpha, rayScale }`, applied by `Atmosphere` |
+| hover | `World.pickEmployeeId` → `Character.setHovered` (ring + cursor) and `World.hoverMark` (desk bay) |
+| selection | `pointerup` with `drag.moved < 5` → `useStore.select`; `Escape` clears it |
+| reduced motion | `World.bindMotion` → `Character.setCalm` / `Atmosphere.setCalm` / `Particles.setQuality(0)` |
+| hidden tab | `visibilitychange` → `app.ticker.stop()` / `start()` on return |
 
 ---
 
@@ -248,6 +273,9 @@ still renders, so **the source badge must be checked before believing the screen
 | Agent with unread | `activity.kind: unread`, dot still phase colour | check the payload + panel |
 | Repeated poll | one request in flight; no page reload | network tab, `performance.timeOrigin` |
 | Bundle hygiene | no `better-sqlite3`, no `turn.completed` in `dist/assets/` | `grep -rl` |
+| Reduced motion | mote layer hidden, breathe frozen, walk cycle unchanged | emulate `prefers-reduced-motion: reduce` |
+| Hidden tab | zero WebGL draws while `document.hidden` | stop/start `app.ticker` |
+| Slow frames | particle budget steps down to `1/3` above 26 ms, back to `1` under 18.5 ms | `World.tuneParticles` |
 | Build | `tsc --noEmit` exit 0, `vite build` succeeds | `npm run build` |
 
 ---
@@ -258,7 +286,7 @@ still renders, so **the source badge must be checked before believing the screen
 2. Change the type/schema first (`openbotSource.ts`), then the derivation
    (`openbotSource.node.ts`), then the transport (`vite-plugin-openbot.ts`), then the UI.
 3. Keep one expression of each rule. No second copy of a threshold in a component.
-4. Run `npx tsc --noEmit`, `npm run build`, `node scripts/verify-openbot-source.mjs`.
+4. Run `npm run typecheck`, `npm run build`, `npm run verify`.
 5. Check the endpoint with `curl` — JSON, not HTML.
 6. Update these docs in the same change; state what is measured and what is not.
 

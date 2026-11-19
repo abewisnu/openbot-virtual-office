@@ -64,6 +64,11 @@
   --ovo-accent-glow: rgba(167, 240, 120, 0.7);
   --ovo-accent-ink: #15111a;
   --ovo-danger: #e4a6a6;
+  /* 32-bit UI bevel: one lit edge and one shaded edge on every frame, so the
+     chrome reads as a chunky pixel panel instead of flat glass. */
+  --ovo-edge-hi: rgba(255, 246, 222, 0.14);
+  --ovo-edge-lo: rgba(8, 5, 14, 0.55);
+  --ovo-pixel-shadow: 0 2px 0 var(--ovo-edge-lo);
 }
 /* Light palette: warm paper instead of a grey UI, so the frosted sidebar still
    reads as an overlay on the dark pixel office without turning blue-white. */
@@ -99,6 +104,9 @@
   --ovo-accent-glow: rgba(63, 143, 38, 0.45);
   --ovo-accent-ink: #f7fdf3;
   --ovo-danger: #a8444f;
+  --ovo-edge-hi: rgba(255, 255, 255, 0.85);
+  --ovo-edge-lo: rgba(60, 48, 74, 0.28);
+  --ovo-pixel-shadow: 0 2px 0 var(--ovo-edge-lo);
 }
 
 * {
@@ -213,6 +221,9 @@ body,
   height: 100%;
   object-fit: cover;
   border-radius: 0;
+  /* Workspace logos are small by nature; nearest-neighbour keeps them crisp
+     instead of smearing the pixels the way a smooth resample would. */
+  image-rendering: pixelated;
 }
 
 .brand-mark-pending {
@@ -405,6 +416,9 @@ body,
   width: 7px;
   height: 7px;
   margin: 0;
+  /* A 7 px square with a lit top-left edge reads as a pixel LED instead of a
+     flat swatch, so the phase row looks like the scene's sprite dots. */
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.4), inset -1px -1px 0 rgba(0, 0, 0, 0.35);
 }
 .status-meta {
   display: flex;
@@ -596,15 +610,19 @@ body,
 .panel {
   background: var(--ovo-surface);
   border: 2px solid var(--ovo-control-border);
-  border-radius: 6px;
+  /* Square like the rest of the chrome: a pixel frame has no rounded corner. */
+  border-radius: 0;
   padding: 8px 12px;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.35);
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo),
+    0 4px 0 rgba(0, 0, 0, 0.35);
 }
 .dot {
   display: inline-block;
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  border-radius: 0;
   margin-right: 4px;
 }
 button {
@@ -613,7 +631,7 @@ button {
   color: var(--ovo-text);
   background: var(--ovo-control-border);
   border: 2px solid var(--ovo-ink);
-  border-radius: 4px;
+  border-radius: 0;
   padding: 5px 10px;
   cursor: pointer;
 }
@@ -622,7 +640,7 @@ button:hover {
 }
 kbd {
   background: var(--ovo-control-border);
-  border-radius: 3px;
+  border-radius: 0;
   padding: 1px 5px;
   margin: 0 2px;
 }
@@ -834,6 +852,111 @@ kbd {
     padding-top: 8px;
     border-top: 1px solid var(--ovo-border-soft);
   }
+}
+/* Hint, not a hard stop: the canvas layer reads the same query and freezes the
+   decorative motion there. This only removes the HUD's own transitions. */
+@media (prefers-reduced-motion: reduce) {
+  .status-track span {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   32-bit chrome pass. Same layout, same sizes: depth comes from a one-pixel lit
+   top-left edge, a shaded bottom-right edge and a hard drop line, which is how
+   a pixel-art panel is beveled. Nothing here changes hit targets or flows.
+   --------------------------------------------------------------------------- */
+.hud-sidebar {
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo),
+    0 18px 44px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.3);
+}
+.sidebar-card {
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo);
+}
+/* The clock is the one big number in the sidebar: give it a pixel drop shadow
+   so it lifts off the frosted plate like a sprite on the floor. */
+.clock-time {
+  text-shadow: 2px 2px 0 var(--ovo-edge-lo);
+}
+.brand-mark {
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -2px -2px 0 var(--ovo-edge-lo),
+    var(--ovo-pixel-shadow);
+}
+.sidebar-card .live-badge {
+  box-shadow: inset 1px 1px 0 var(--ovo-edge-hi);
+}
+.source-badge {
+  box-shadow: inset 1px 1px 0 var(--ovo-edge-hi), inset -1px -1px 0 var(--ovo-edge-lo);
+}
+.status-track {
+  box-shadow: inset 1px 1px 0 var(--ovo-edge-lo);
+}
+/* The filled part of a row is a lit bar, so the count reads like a pixel gauge
+   instead of a bare colour strip. */
+.status-track span {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.updates-count {
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo);
+}
+.sidebar-notice {
+  box-shadow: inset 1px 1px 0 var(--ovo-edge-hi);
+}
+.sidebar-actions button,
+.settings-toggle,
+.settings-select select {
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo),
+    var(--ovo-pixel-shadow);
+}
+.sidebar-actions button:active,
+.sidebar-hide-button:active,
+.sidebar-reopen-button:active {
+  box-shadow:
+    inset -1px -1px 0 var(--ovo-edge-hi),
+    inset 1px 1px 0 var(--ovo-edge-lo);
+  transform: translateY(1px);
+}
+.sidebar-hide-button,
+.sidebar-reopen-button {
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo),
+    var(--ovo-pixel-shadow);
+}
+.sidebar-controls kbd {
+  box-shadow: inset -1px -1px 0 var(--ovo-edge-lo);
+}
+/* Info card: the same bevel as the sidebar, plus a pixel rule above the facts. */
+.info {
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo),
+    0 12px 32px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(0, 0, 0, 0.28);
+}
+.info dl {
+  border-left-color: var(--ovo-border-strong);
+}
+.avatar {
+  box-shadow:
+    inset 1px 1px 0 var(--ovo-edge-hi),
+    inset -1px -1px 0 var(--ovo-edge-lo),
+    var(--ovo-pixel-shadow);
+}
+.badge,
+.live-indicator {
+  box-shadow: inset 1px 1px 0 rgba(255, 255, 255, 0.45), inset -1px -1px 0 rgba(0, 0, 0, 0.4);
 }
 
 /* Square pixel look: the sidebar has no rounded corners. Kept last so it also
