@@ -49,14 +49,14 @@ export default function HUD() {
   const [sidebarVisible, setSidebarVisible] = useState(true);
   // Which "Team activity" row is expanded to show the agents behind its count.
   const [openPhase, setOpenPhase] = useState<AgentPhase | null>(null);
-  const [logo, setLogo] = useState<{ src: string; version: string } | null>(null);
-  const [logoChecked, setLogoChecked] = useState(false);
+  const [avatar, setAvatar] = useState<{ src: string; version: string } | null>(null);
+  const [avatarChecked, setAvatarChecked] = useState(false);
   // Profile name of the person using this OpenBot, taken from OpenBot's own
   // config. `null` means the sidebar keeps its neutral "Workspace" label.
   const [profileName, setProfileName] = useState<string | null>(null);
-  const logoUrl = useRef<string | null>(null);
+  const avatarUrl = useRef<string | null>(null);
 
-  // Workspace identity (logo and name) lives in OpenBot's own app-support folder
+  // Profile identity (avatar and name) lives in OpenBot's own app-support folder
   // and is exposed by the dev API as image bytes plus a plain name string. Both
   // are re-read on focus and every 20 s so a change made inside OpenBot shows up
   // without a page reload. Nothing is drawn until the first answer arrives, which
@@ -64,28 +64,28 @@ export default function HUD() {
   useEffect(() => {
     let cancelled = false;
 
-    const loadLogo = async () => {
+    const loadAvatar = async () => {
       try {
-        const res = await fetch('/api/office-logo', { headers: { Accept: 'image/*' }, cache: 'no-store' });
+        const res = await fetch('/api/office-avatar', { headers: { Accept: 'image/*' }, cache: 'no-store' });
         const type = res.headers.get('content-type') ?? '';
         if (cancelled) return;
         if (res.status !== 200 || !type.startsWith('image/')) {
-          setLogoChecked(true);
+          setAvatarChecked(true);
           return;
         }
-        const version = res.headers.get('x-office-logo-version') ?? res.headers.get('etag') ?? '';
+        const version = res.headers.get('x-office-avatar-version') ?? res.headers.get('etag') ?? '';
         const blob = await res.blob();
         if (cancelled) return;
         const url = URL.createObjectURL(blob);
-        setLogo((prev) => {
+        setAvatar((prev) => {
           if (prev && prev.src === url) return prev;
-          if (logoUrl.current) URL.revokeObjectURL(logoUrl.current);
-          logoUrl.current = url;
+          if (avatarUrl.current) URL.revokeObjectURL(avatarUrl.current);
+          avatarUrl.current = url;
           return { src: url, version };
         });
-        setLogoChecked(true);
+        setAvatarChecked(true);
       } catch {
-        if (!cancelled) setLogoChecked(true);
+        if (!cancelled) setAvatarChecked(true);
       }
     };
 
@@ -106,7 +106,7 @@ export default function HUD() {
       }
     };
 
-    const load = () => Promise.all([loadLogo(), loadName()]);
+    const load = () => Promise.all([loadAvatar(), loadName()]);
 
     void load();
     const onFocus = () => void load();
@@ -116,8 +116,8 @@ export default function HUD() {
       cancelled = true;
       window.removeEventListener('focus', onFocus);
       window.clearInterval(t);
-      if (logoUrl.current) URL.revokeObjectURL(logoUrl.current);
-      logoUrl.current = null;
+      if (avatarUrl.current) URL.revokeObjectURL(avatarUrl.current);
+      avatarUrl.current = null;
     };
   }, []);
 
@@ -134,11 +134,11 @@ export default function HUD() {
       {sidebarVisible ? (
         <aside className="hud-sidebar" data-font={sidebarFont} aria-label="Virtual office sidebar">
           <header className="sidebar-header">
-            {logo ? (
-              <div className="brand-mark brand-mark-logo">
-                <img src={logo.src} alt="Workspace logo" />
+            {avatar ? (
+              <div className="brand-mark brand-mark-avatar">
+                <img src={avatar.src} alt="Profile avatar" />
               </div>
-            ) : logoChecked ? (
+            ) : avatarChecked ? (
               <div className="brand-mark">VO</div>
             ) : (
               /* Nothing drawn until the first answer: no green flash on reload. */

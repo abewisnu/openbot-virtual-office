@@ -118,7 +118,7 @@ looped. Agents walk to their desks and type while `Working`, pair up on the Loun
 Area and the Pantry when idle, and the name plate under a working workstation rides below its chair.
 
 > Regenerating these: start `npm run dev`, answer `/api/agents` with any fixture array that matches
-> the real field set, answer `/api/office-logo` and `/api/office-profile` with the demo identity, let
+> the real field set, answer `/api/office-avatar` and `/api/office-profile` with the demo identity, let
 > the agents settle for a few seconds, then capture — full page with the sidebar hidden, the sidebar
 > alone, the info card close-up, the page with an agent selected, and a 10 s screen recording
 > converted to GIF (`ffmpeg -ss 14 -t 10 -i capture.webm -vf "fps=10,scale=640:-1" office-activity.gif`).
@@ -222,7 +222,7 @@ NOC rack / CRAC / UPS dressing live in
 | `src/data/openbotSource.node.ts` | Node side: SQLite `readonly`, 11 queries, derives `phase` + `activity`. |
 | `src/data/workspaceSize.node.ts` | Measures an agent's workspace folder (server-side only). |
 | `src/data/openbotSource.ts` | Type contract, Zod schema, fetch client. |
-| `vite-plugin-openbot.ts` | Dev-only middleware: `/api/agents`, `/api/office-logo`, `/api/office-profile`. |
+| `vite-plugin-openbot.ts` | Dev-only middleware: `/api/agents`, `/api/office-avatar`, `/api/office-profile`. |
 | `src/components/*` | HUD, info panel, canvas host. |
 
 Per-file detail (geometry, pixel-art recipe, pure-module contracts) lives in the `docs/OVO_*.md` docs; file-by-file ownership is in [`docs/OPENBOT_OFFICE_GUIDE.md`](docs/OPENBOT_OFFICE_GUIDE.md) §2.
@@ -318,7 +318,7 @@ Full recipe — the hash, the per-theme contrast table with the worst-case ratio
 - **Identity & boundary**: OVO = OpenBot Virtual Office, a 2D pixel-art visualisation of OpenBot work.
   It is not a control surface: no chat, no instruction box, no way to send a task from the office. The
   only I/O to the server is read-only: `GET /api/agents` for the agent snapshot and
-  `GET /api/office-logo` for the workspace logo bytes and `GET /api/office-profile` for
+  `GET /api/office-avatar` for the profile avatar bytes and `GET /api/office-profile` for
   the OpenBot profile name (`grep 'fetch(' src` = 3 hits, no `POST`).
 - Perspective: horizontal/vertical grid, no vanishing point; depth comes from Y-sorting only.
 - Room layout (lounge, pantry, NOC, sitters, name plates, room plates, rack LEDs, monitor rules)

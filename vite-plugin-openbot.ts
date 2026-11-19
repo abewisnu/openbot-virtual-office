@@ -1,11 +1,13 @@
 // Vite dev-only plugin: exposes GET /api/agents from the OpenBot SQLite
-// database (read-only). One data path only: this plugin delegates derivation
-// to src/data/openbotSource.node.ts, so the endpoint, the CLI verifier and the
-// UI share a single source of truth.
+// database (read-only), plus the profile identity endpoints. One data path
+// only: the agent endpoint delegates derivation to
+// src/data/openbotSource.node.ts, so the endpoint, the CLI verifier and the UI
+// share a single source of truth.
 
 import type { Plugin } from 'vite';
 import type { IncomingMessage, ServerResponse } from 'http';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { dirname, join, resolve, sep } from 'node:path';
 import { z } from 'zod';
 import { fetchAgentProfiles, closeOpenBotDb, resolveDbPath } from './src/data/openbotSource.node.ts';
@@ -14,7 +16,7 @@ const LOOPBACK = new Set(['127.0.0.1', 'localhost', '::1', '[::1]']);
 
 // Only raster formats are served. SVG is excluded on purpose: an SVG can carry
 // script, and this endpoint must never become a way to inject markup.
-const LOGO_MIME_EXT: Record<string, string> = {
+const IMAGE_MIME_EXT: Record<string, string> = {
   'image/webp': 'webp',
   'image/png': 'png',
   'image/jpeg': 'jpg',
@@ -22,7 +24,6 @@ const LOGO_MIME_EXT: Record<string, string> = {
 };
 
 const CONFIG_NAME = 'openbot-team-server-v2.json';
-const LOGO_DIR = `${CONFIG_NAME}.assets/logo`;
 
 // Read only the fields we need. The same file also holds team-server private
 // keys, so nothing else from it is ever forwarded to the browser.
@@ -31,6 +32,7 @@ const memberConfig = z.object({
   name: z.string().optional(),
   role: z.string().optional(),
   disabled: z.boolean().optional(),
+  avatarUrl: z.string().optional(),
 });
 
 const openBotConfig = z.object({
@@ -39,9 +41,6 @@ const openBotConfig = z.object({
     .array(
       z.object({
         members: z.array(memberConfig).optional(),
-        serverLogo: z
-          .object({ version: z.string().min(1), mimeType: z.string().min(1) })
-          .optional(),
       }),
     )
     .optional(),
@@ -75,7 +74,32 @@ const SECURITY_HEADERS: Record<string, string> = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self'",
 };
 
-const SAFE_FILE_STEM = /^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$/;
+type OpenBotConfig = z.infer<typeof openBotConfig>;
+type MemberConfig = z.infer<typeof memberConfig>;
+
+function readOpenBotConfig(): OpenBotConfig | null {
+  const root = dirname(resolveDbPath());
+  try {
+    return openBotConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The member this office speaks for: `activeAccountId` first, then the owner,
+ * then the first enabled member. OpenBot may list several team servers, but the
+ * office renders exactly one roster, so one member is resolved across all hosts.
+ */
+function pickActiveMember(config: OpenBotConfig): MemberConfig | undefined {
+  const members = (config.hosts ?? []).flatMap((h) => h.members ?? []).filter((m) => !m.disabled);
+  const active = config.activeAccountId;
+  return (
+    (active ? members.find((m) => m.accountId === active) : undefined) ??
+    members.find((m) => m.role === 'owner') ??
+    members[0]
+  );
+}
 
 const EXT_MIME: Record<string, string> = {
   webp: 'image/webp',
@@ -85,74 +109,133 @@ const EXT_MIME: Record<string, string> = {
   gif: 'image/gif',
 };
 
-type LogoHit = { bytes: Buffer; mime: string; source: 'config' | 'newest'; version: string };
+type AvatarHit = { bytes: Buffer; mime: string; source: 'remote' | 'stale' | 'disk' };
 
-/**
- * Reads the workspace logo that OpenBot itself stores next to its team-server
- * config. The version named in the config wins; if OpenBot replaced the picture
- * without bumping that field, the newest allowed file in the logo folder is used
- * instead, so a new logo shows up without waiting for the config to catch up.
- * Only the two identifying fields are parsed and the resolved path must stay
- * inside the logo directory.
- */
-function loadServerLogo(): LogoHit | null {
-  const root = dirname(resolveDbPath());
-  const logoDir = resolve(root, LOGO_DIR);
-  if (!logoDir.startsWith(resolve(root) + sep)) return null;
+// The avatar URL only ever points at OpenBot's own avatar service. A fixed
+// host allowlist plus a path prefix is the SSRF guard: a tampered local config
+// can make this fetch, but it cannot point it at an internal address.
+const AVATAR_HOST = 'api.openbot.run';
+const AVATAR_PATH_PREFIX = '/v1/avatars/';
+const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
+const AVATAR_TTL_MS = 60_000;
+const AVATAR_FETCH_TIMEOUT_MS = 5_000;
 
-  let config: z.infer<typeof openBotConfig> | null = null;
+// In-memory layer, refreshed on demand; the disk layer under node_modules/.cache
+// survives a dev-server restart so the office still shows the picture offline.
+const avatarMemory = new Map<string, { bytes: Buffer; mime: string; fetchedAt: number }>();
+const avatarInflight = new Map<string, Promise<AvatarHit | null>>();
+
+function diskCacheDir(): string {
+  return resolve(process.cwd(), 'node_modules/.cache/openbot-virtual-office/avatar');
+}
+
+function avatarCacheKey(url: string): string {
+  return createHash('sha256').update(url).digest('hex');
+}
+
+function readDiskCache(url: string): Omit<AvatarHit, 'source'> | null {
+  const key = avatarCacheKey(url);
+  const dir = diskCacheDir();
+  let names: string[];
   try {
-    config = openBotConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
+    names = readdirSync(dir);
   } catch {
-    config = null;
+    return null;
   }
-
-  const logo = config?.hosts?.find((h) => h.serverLogo)?.serverLogo;
-  if (logo && SAFE_FILE_STEM.test(logo.version)) {
-    const ext = LOGO_MIME_EXT[logo.mimeType];
-    if (ext) {
-      const file = resolve(logoDir, `${logo.version}.${ext}`);
-      if (file.startsWith(logoDir + sep)) {
-        try {
-          return { bytes: readFileSync(file), mime: logo.mimeType, source: 'config', version: logo.version };
-        } catch {
-          /* fall through to the newest file */
-        }
-      }
+  for (const name of names) {
+    if (!name.startsWith(key)) continue;
+    const ext = name.slice(key.length + 1).toLowerCase();
+    const mime = EXT_MIME[ext];
+    if (!mime) continue;
+    try {
+      const file = resolve(dir, name);
+      if (!file.startsWith(dir + sep)) continue;
+      return { bytes: readFileSync(file), mime };
+    } catch {
+      /* try the next entry */
     }
   }
+  return null;
+}
 
-  let names: string[] = [];
+function writeDiskCache(url: string, bytes: Buffer, mime: string): void {
+  const ext = IMAGE_MIME_EXT[mime];
+  if (!ext) return;
   try {
-    names = readdirSync(logoDir).filter((n) => !n.startsWith('.'));
+    const dir = diskCacheDir();
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, `${avatarCacheKey(url)}.${ext}`), bytes);
+  } catch {
+    /* cache is best-effort; serving never depends on it */
+  }
+}
+
+/**
+ * Fetches the active member's profile avatar through this dev server and
+ * serves the raw image bytes to the browser. The URL comes from the local
+ * OpenBot config and is validated against a fixed allowlist before any
+ * network call. Fresh remote bytes win; a failed or slow fetch falls back
+ * to the last in-memory copy and then to the on-disk cache, so the sidebar
+ * never blanks out when the avatar service is unreachable.
+ */
+async function loadProfileAvatar(): Promise<AvatarHit | null> {
+  const config = readOpenBotConfig();
+  if (!config) return null;
+
+  const chosen = pickActiveMember(config);
+  const raw = chosen?.avatarUrl?.trim();
+  if (!raw) return null;
+
+  let url: URL;
+  try {
+    url = new URL(raw);
   } catch {
     return null;
   }
-
-  const newest = names
-    .map((name) => {
-      const dot = name.lastIndexOf('.');
-      const stem = dot > 0 ? name.slice(0, dot) : name;
-      const ext = dot > 0 ? name.slice(dot + 1).toLowerCase() : '';
-      const mime = EXT_MIME[ext];
-      if (!mime || !SAFE_FILE_STEM.test(stem)) return null;
-      const file = resolve(logoDir, name);
-      if (!file.startsWith(logoDir + sep)) return null;
-      try {
-        return { file, mime, stem, mtime: statSync(file).mtimeMs };
-      } catch {
-        return null;
-      }
-    })
-    .filter((c): c is { file: string; mime: string; stem: string; mtime: number } => c !== null)
-    .sort((a, b) => b.mtime - a.mtime)[0];
-
-  if (!newest) return null;
-  try {
-    return { bytes: readFileSync(newest.file), mime: newest.mime, source: 'newest', version: newest.stem };
-  } catch {
+  if (url.protocol !== 'https:' || url.hostname !== AVATAR_HOST || !url.pathname.startsWith(AVATAR_PATH_PREFIX)) {
     return null;
   }
+
+  const fresh = avatarMemory.get(raw);
+  if (fresh && Date.now() - fresh.fetchedAt < AVATAR_TTL_MS) {
+    return { bytes: fresh.bytes, mime: fresh.mime, source: 'remote' };
+  }
+
+  const fetchRemote = async (): Promise<AvatarHit | null> => {
+    try {
+      const res = await fetch(raw, {
+        signal: AbortSignal.timeout(AVATAR_FETCH_TIMEOUT_MS),
+        redirect: 'error',
+      });
+      if (!res.ok) return null;
+      const contentLength = Number(res.headers.get('content-length') ?? Number.NaN);
+      if (Number.isFinite(contentLength) && contentLength > AVATAR_MAX_BYTES) return null;
+      const bytes = Buffer.from(await res.arrayBuffer());
+      if (bytes.byteLength > AVATAR_MAX_BYTES) return null;
+      const mime = res.headers.get('content-type')?.split(';')[0]?.trim() ?? '';
+      if (!IMAGE_MIME_EXT[mime]) return null;
+      avatarMemory.set(raw, { bytes, mime, fetchedAt: Date.now() });
+      writeDiskCache(raw, bytes, mime);
+      return { bytes, mime, source: 'remote' };
+    } catch {
+      return null;
+    }
+  };
+
+  let inFlight = avatarInflight.get(raw);
+  if (!inFlight) {
+    inFlight = fetchRemote();
+    avatarInflight.set(raw, inFlight);
+    void inFlight.finally(() => avatarInflight.delete(raw));
+  }
+  const remote = await inFlight;
+  if (remote) return remote;
+
+  // Remote missed: a stale in-memory copy beats nothing, then the disk cache.
+  if (fresh) return { bytes: fresh.bytes, mime: fresh.mime, source: 'stale' };
+  const onDisk = readDiskCache(raw);
+  if (onDisk) return { ...onDisk, source: 'disk' };
+  return null;
 }
 
 
@@ -171,20 +254,9 @@ type WorkspaceProfile = { name: string | null };
  * of them, which matches the single roster the office draws from `openbot.db`.
  */
 function loadWorkspaceProfile(): WorkspaceProfile {
-  const root = dirname(resolveDbPath());
-  let config: z.infer<typeof openBotConfig>;
-  try {
-    config = openBotConfig.parse(JSON.parse(readFileSync(join(root, CONFIG_NAME), 'utf8')));
-  } catch {
-    return { name: null };
-  }
-
-  const members = (config.hosts ?? []).flatMap((h) => h.members ?? []).filter((m) => !m.disabled);
-  const active = config.activeAccountId;
-  const chosen =
-    (active ? members.find((m) => m.accountId === active) : undefined) ??
-    members.find((m) => m.role === 'owner') ??
-    members[0];
+  const config = readOpenBotConfig();
+  if (!config) return { name: null };
+  const chosen = pickActiveMember(config);
 
   const clean = (chosen?.name ?? '')
     .replace(/[\u0000-\u001f\u007f]/g, ' ')
@@ -249,7 +321,7 @@ export function openBotApiPlugin(): Plugin {
     }
   }
 
-  function handleLogoRequest(req: IncomingMessage, res: ServerResponse) {
+  function handleAvatarRequest(req: IncomingMessage, res: ServerResponse) {
     if (!isAllowedHost(req.headers.host)) {
       sendJson(res, 421, { error: 'Misdirected request' });
       return;
@@ -261,23 +333,25 @@ export function openBotApiPlugin(): Plugin {
       return;
     }
 
-    const logo = loadServerLogo();
-    if (!logo) {
-      // No workspace logo on this machine: the UI keeps its own mark.
-      res.writeHead(204, { 'Cache-Control': 'no-store', ...SECURITY_HEADERS });
-      res.end();
-      return;
-    }
+    (async () => {
+      // 204 is the "no avatar" signal: the UI shows its generated mark.
+      const avatar = await loadProfileAvatar();
+      if (!avatar) {
+        res.writeHead(204, { 'Cache-Control': 'no-store', ...SECURITY_HEADERS });
+        res.end();
+        return;
+      }
 
-    res.writeHead(200, {
-      'Content-Type': logo.mime,
-      'Content-Length': logo.bytes.length,
+      res.writeHead(200, {
+      'Content-Type': avatar.mime,
+      'Content-Length': avatar.bytes.length,
       'Cache-Control': 'no-store',
-      'X-Office-Logo-Source': logo.source,
+      'X-Office-Avatar-Source': avatar.source,
       ...SECURITY_HEADERS,
-    });
-    if (method === 'HEAD') res.end();
-    else res.end(logo.bytes);
+      });
+      if (method === 'HEAD') res.end();
+      else res.end(avatar.bytes);
+    })();
   }
 
   function handleProfileRequest(req: IncomingMessage, res: ServerResponse) {
@@ -300,7 +374,7 @@ export function openBotApiPlugin(): Plugin {
     name: 'openbot-api',
     configureServer(server) {
       server.middlewares.use('/api/agents', handleRequest);
-      server.middlewares.use('/api/office-logo', handleLogoRequest);
+      server.middlewares.use('/api/office-avatar', handleAvatarRequest);
       server.middlewares.use('/api/office-profile', handleProfileRequest);
       // Vite has no plugin `close` hook; the dev server's own lifecycle event is
       // the supported place to release the SQLite handle.

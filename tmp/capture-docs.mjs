@@ -158,11 +158,11 @@ async function setupRoutes(page) {
       body: JSON.stringify({ name: 'Nusantara Studio' }),
     }),
   );
-  await page.route('**/api/office-logo', (route) =>
+  await page.route('**/api/office-avatar', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'image/png',
-      headers: { 'x-office-logo-version': 'demo-v2' },
+      headers: { 'x-office-avatar-version': 'demo-v2' },
       body: LOGO_BYTES,
     }),
   );

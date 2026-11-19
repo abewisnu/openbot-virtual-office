@@ -19,7 +19,7 @@ Vite **dev-only** plugin. The production design (`/api/office` on port 8099, `/h
 
 | Item | Reality |
 |---|---|
-| Endpoint | `GET /api/agents` (and `HEAD`) — plus `GET /api/office-logo` for the workspace logo (§2.3) and `GET /api/office-profile` for the workspace name (§2.4) |
+| Endpoint | `GET /api/agents` (and `HEAD`) — plus `GET /api/office-avatar` for the profile avatar (§2.3) and `GET /api/office-profile` for the profile name (§2.4) |
 | Host | the Vite dev server itself, configured on `http://localhost:3000` |
 | Provider | `vite-plugin-openbot.ts` → `configureServer` middleware |
 | Availability | **dev only**. `vite preview` and any static host do **not** serve it |
@@ -141,23 +141,23 @@ path.
 
 ---
 
-### 2.3 Workspace logo — `GET /api/office-logo`
+### 2.3 Profile avatar — `GET /api/office-avatar`
 
 | Item | Reality |
 |---|---|
-| Source | `openbot-team-server-v2.json` (same folder as `openbot.db`), field `hosts[].serverLogo` (`version`, `mimeType`) |
-| File | `<app-support>/openbot-team-server-v2.json.assets/logo/<version>.<ext>`, else the **newest** allowed file in that folder when the config still names an older, missing version |
-| Response | raw image bytes, `Content-Type` taken from the config (or the file extension in fallback mode), `Cache-Control: no-store`, `X-Office-Logo-Source: config \| newest` |
-| No logo on disk | `204 No Content`, empty body — the UI keeps its own mark |
+| Source | `openbot-team-server-v2.json`, field `hosts[].members[].avatarUrl` of the active member (same resolution as §2.4) |
+| File | fetched at request time from the avatar service, then cached in memory (60 s TTL) and on disk (`node_modules/.cache/openbot-virtual-office/avatar/`) |
+| Response | raw image bytes, `Content-Type` from the avatar service, `Cache-Control: no-store`, `X-Office-Avatar-Source: remote \| stale \| disk` |
+| No avatar configured | `204 No Content`, empty body — the UI keeps its generated mark |
 | Allowed types | `image/webp`, `image/png`, `image/jpeg`, `image/gif`; SVG is refused on purpose |
-| Guards | Host allowlist → `421`, non-`GET`/`HEAD` → `405`, file stem re-validated, resolved path must stay inside the logo directory |
+| Guards | Host allowlist → `421`, non-`GET`/`HEAD` → `405`, avatar URL validated against fixed host (`api.openbot.run`) and path prefix (`/v1/avatars/`) before any network call, 2 MB size cap, 5 s fetch timeout |
 | Never leaves the process | the JSON config itself, because it also holds team-server private keys |
 
 The sidebar renders this image only when the answer is `200` with an `image/*`
 `Content-Type`; anything else keeps the built-in `VO` mark. Static hosts answer
-`/api/office-logo` with `index.html`, so that content-type check is what holds the fallback.
+`/api/office-avatar` with `index.html`, so that content-type check is what holds the fallback.
 Nothing is drawn before the first answer resolves, so a reload never flashes the green
-`VO` tile. The browser re-reads the endpoint every 20 s and on window focus, so a logo
+`VO` tile. The browser re-reads the endpoint every 20 s and on window focus, so an avatar
 replaced inside OpenBot appears without a page reload.
 
 ---

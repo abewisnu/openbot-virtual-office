@@ -149,7 +149,7 @@ There is no ETag, no `304`, no compression: every tick transfers the whole body
 (**[measured]** ~4.7 KB for 16 agents). No page reload is needed after a deploy-adjacent
 change — HMR or one poll tick catches up.
 
-The sidebar header keeps its own, slower loop: `HUD.tsx` refetches `/api/office-logo` and
+The sidebar header keeps its own, slower loop: `HUD.tsx` refetches `/api/office-avatar` and
 `/api/office-profile` every **20 s**, and again on window `focus`. Those two change rarely,
 so they do not share the 3 s roster cadence.
 
