@@ -651,6 +651,44 @@ body,
   line-height: 1;
   white-space: nowrap;
 }
+.sidebar-links {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.footer-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  color: var(--ovo-text-soft);
+  background: var(--ovo-control-bg);
+  border: 1px solid var(--ovo-control-border);
+  border-radius: 0;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  text-decoration: none;
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease;
+}
+.footer-link:hover {
+  color: var(--ovo-text-strong);
+  background: var(--ovo-control-hover);
+  border-color: var(--ovo-accent);
+}
+.footer-link:focus-visible {
+  outline: 1px solid var(--ovo-accent);
+  outline-offset: 1px;
+}
+.footer-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+.footer-label {
+  white-space: nowrap;
+}
 .panel {
   background: var(--ovo-surface);
   border: 2px solid var(--ovo-control-border);
