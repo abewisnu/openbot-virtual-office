@@ -561,47 +561,95 @@ body,
 }
 .sidebar-footer {
   flex: 0 0 auto;
-  padding: 13px 14px 16px;
+  padding: 14px 16px 16px;
   border-top: 1px solid var(--ovo-border);
 }
 .sidebar-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
   gap: 8px;
 }
-.sidebar-actions button {
-  padding: 8px 9px;
+.action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
   background: var(--ovo-control-bg);
   border: 1px solid var(--ovo-control-border);
   border-radius: 0;
   font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
 }
-.sidebar-actions .exit-button {
+.action-btn:hover {
+  background: var(--ovo-control-hover);
+}
+.action-btn:active {
+  background: var(--ovo-control-active);
+}
+.action-btn:focus-visible {
+  outline: 1px solid var(--ovo-accent);
+  outline-offset: 1px;
+}
+.action-btn--exit {
+  margin-left: auto;
   color: var(--ovo-danger);
   background: rgba(116, 52, 65, 0.18);
   border-color: #593843;
 }
-.sidebar-actions .exit-button:hover {
+.action-btn--exit:hover {
   background: rgba(116, 52, 65, 0.35);
 }
+.action-icon {
+  font-size: 11px;
+  line-height: 1;
+}
+.action-label {
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
 .sidebar-controls {
-  /* Keyboard hints stay monospace: the arrow glyphs (↑↓←→) have no pixel cut
-     and would otherwise mix two typefaces on one line. */
   margin-top: 14px;
   font-family: ui-monospace, Menlo, Consolas, monospace;
 }
-.sidebar-controls p {
-  margin: 7px 0 0;
-  color: var(--ovo-text-soft);
+.sidebar-controls .section-eyebrow {
+  display: block;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--ovo-text-dim);
+}
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
   font-size: 9px;
+}
+.control-row:first-child {
+  margin-top: 0;
+}
+.control-sep {
+  color: var(--ovo-text-dim);
+}
+.control-desc {
+  color: var(--ovo-text-soft);
+  font-family: inherit;
+  text-transform: lowercase;
 }
 .sidebar-controls kbd {
   color: var(--ovo-text-strong);
   background: var(--ovo-track);
   border: 1px solid var(--ovo-control-hover);
   border-radius: 0;
-  padding: 2px 4px;
-  margin: 0 1px;
+  padding: 2px 6px;
+  font-size: 8.5px;
+  font-family: inherit;
+  line-height: 1;
+  white-space: nowrap;
 }
 .panel {
   background: var(--ovo-surface);

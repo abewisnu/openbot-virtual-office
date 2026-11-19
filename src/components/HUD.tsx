@@ -384,19 +384,29 @@ export default function HUD() {
 
           <footer className="sidebar-footer">
             <div className="sidebar-actions">
-              <button onClick={() => setHelp(true)}>? Help</button>
-              <button className="exit-button" onClick={() => setExited(true)}>
-                ⏻ Exit
+              <button type="button" onClick={() => setHelp(true)} className="action-btn">
+                <span className="action-icon" aria-hidden="true">?</span>
+                <span className="action-label">Help</span>
+              </button>
+              <button type="button" onClick={() => setExited(true)} className="action-btn action-btn--exit">
+                <span className="action-icon" aria-hidden="true">⏻</span>
+                <span className="action-label">Exit</span>
               </button>
             </div>
             <div className="sidebar-controls">
-              <span className="section-eyebrow">CAMERA CONTROLS</span>
-              <p>
-                <kbd>WASD</kbd> / <kbd>↑↓←→</kbd> move
-              </p>
-              <p>
-                <kbd>Drag</kbd> pan · <kbd>Scroll</kbd> zoom
-              </p>
+              <span className="section-eyebrow">Camera Controls</span>
+              <div className="control-row">
+                <kbd>WASD</kbd>
+                <span className="control-sep" aria-hidden="true">/</span>
+                <kbd>↑↓←→</kbd>
+                <span className="control-desc">Move</span>
+              </div>
+              <div className="control-row">
+                <kbd>Drag</kbd>
+                <span className="control-sep" aria-hidden="true">·</span>
+                <kbd>Scroll</kbd>
+                <span className="control-desc">Pan / Zoom</span>
+              </div>
             </div>
           </footer>
         </aside>
