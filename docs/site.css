@@ -531,22 +531,6 @@ a:focus-visible {
   letter-spacing: 0.12em;
 }
 
-.logo-caption {
-  position: absolute;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 2;
-  padding: 4px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: #b6adbf;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.3em;
-  animation: logoCardIn 700ms cubic-bezier(0.22, 1, 0.36, 1) 320ms both;
-}
-
 @keyframes logoCardIn {
   from {
     opacity: 0;
@@ -604,7 +588,6 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .logo-core,
   .logo-pill,
-  .logo-caption,
   .logo-halo,
   .logo-orbit,
   .logo-core-ring,
@@ -1900,11 +1883,6 @@ a:focus-visible {
     font-size: 10px;
   }
 
-  .logo-caption {
-    bottom: 16px;
-    font-size: 9px;
-  }
-
   .visual-note {
     right: -14px;
     bottom: -22px;
@@ -2473,12 +2451,6 @@ a:focus-visible {
 
 :root[data-theme='light'] .logo-pill-label {
   color: #2f3a2c;
-}
-
-:root[data-theme='light'] .logo-caption {
-  color: #4a4352;
-  border-color: rgba(60, 48, 74, 0.15);
-  background: rgba(255, 253, 249, 0.7);
 }
 
 :root[data-theme='light'] .visual-note {
