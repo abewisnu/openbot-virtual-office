@@ -1945,6 +1945,10 @@ a:focus-visible {
   .disclaimer {
     margin-top: 14px;
   }
+
+  .video-section {
+    padding-bottom: 0;
+  }
 }
 
 @media (max-width: 390px) {
