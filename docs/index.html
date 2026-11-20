@@ -209,10 +209,11 @@
               <span class="feature-index" data-i18n="featureVisualIndex">01 / VISUALISASI</span>
               <h3 data-i18n="featureVisualTitle">Satu kantor, banyak cerita.</h3>
               <p data-i18n="featureVisualDescription">
-                Saksikan agent bergerak di antara workstation, lounge, ruang meeting, pantry, dan
-                NOC. Semua digambar sebagai pixel art 32-bit resolusi tinggi: tile 16×16, karakter
-                16×24 dengan empat arah hadap, 2–10 warna per sprite, tekstur 2× kerapatan, plus
-                siklus siang-malam, god ray, dan partikel debu yang halus.
+                Saksikan agent bergerak di antara workstation, lounge, ruang meeting berkaca 2.5D,
+                pantry, dan NOC. Semua digambar sebagai pixel art 32-bit resolusi tinggi: tile 16×16,
+                karakter 16×24 empat arah hadap, 5 tema lantai &amp; 6 varian tanaman, pencahayaan
+                malam Moody (Dark Ambient + Pools of Light dengan lampu interior), siklus
+                siang-malam, god ray, serta kontrol zoom 50%–300% dan navigasi cepat tiap ruangan.
               </p>
             </div>
           </article>
@@ -313,7 +314,7 @@
             <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
               <img
                 src="./assets/office-overview.png"
-                alt="Pemandangan penuh kantor virtual dengan agent dan beberapa zona"
+                alt="Pemandangan penuh kantor virtual dengan workstation, lounge, ruang meeting kaca 2.5D, pantry, dan area NOC"
                 data-i18n-alt="galleryOverviewAlt"
                 loading="lazy"
               />
@@ -323,11 +324,11 @@
             </button>
             <figcaption><span>01</span> <span data-i18n="galleryOverviewCaption">Satu kantor yang terus bergerak</span></figcaption>
           </figure>
-          <figure class="gallery-card">
+          <figure class="gallery-card gallery-card-top">
             <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
               <img
                 src="./assets/sidebar.png"
-                alt="Panel aktivitas tim dan status agent"
+                alt="Panel aktivitas tim, avatar profil, dan tautan navigasi"
                 data-i18n-alt="gallerySidebarAlt"
                 loading="lazy"
               />
@@ -341,7 +342,7 @@
             <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
               <img
                 src="./assets/info-panel.png"
-                alt="Panel informasi agent dengan fase dan aktivitas"
+                alt="Panel informasi agent dengan fase, aktivitas, dan tombol Follow"
                 data-i18n-alt="galleryInfoAlt"
                 loading="lazy"
               />
@@ -349,7 +350,63 @@
                 <i class="fa-solid fa-magnifying-glass-plus"></i>
               </span>
             </button>
-            <figcaption><span>03</span> <span data-i18n="galleryInfoCaption">Detail saat kamu membutuhkannya</span></figcaption>
+            <figcaption><span>03</span> <span data-i18n="galleryInfoCaption">Detail &amp; Follow saat dibutuhkan</span></figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
+              <img
+                src="./assets/agent-panel.png"
+                alt="Tampilan penuh kantor dengan agent terpilih dan panel info di bawah"
+                data-i18n-alt="galleryAgentAlt"
+                loading="lazy"
+              />
+              <span class="gallery-preview-indicator" aria-hidden="true">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+              </span>
+            </button>
+            <figcaption><span>04</span> <span data-i18n="galleryAgentCaption">Fokus agent dalam konteks ruangan</span></figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
+              <img
+                src="./assets/night-moody-lighting.png"
+                alt="Suasana malam dengan pencahayaan Moody Dark Ambient, Pools of Light, dan lampu interior"
+                data-i18n-alt="galleryNightAlt"
+                loading="lazy"
+              />
+              <span class="gallery-preview-indicator" aria-hidden="true">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+              </span>
+            </button>
+            <figcaption><span>05</span> <span data-i18n="galleryNightCaption">Moody night lighting &amp; pool of light</span></figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
+              <img
+                src="./assets/settings-customization.png"
+                alt="Menu Settings terbuka dengan pilihan tema lantai Herringbone, varian tanaman, atmosfer, dan font"
+                data-i18n-alt="gallerySettingsAlt"
+                loading="lazy"
+              />
+              <span class="gallery-preview-indicator" aria-hidden="true">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+              </span>
+            </button>
+            <figcaption><span>06</span> <span data-i18n="gallerySettingsCaption">Kustomisasi lantai, tanaman &amp; atmosfer</span></figcaption>
+          </figure>
+          <figure class="gallery-card">
+            <button class="gallery-preview-trigger" type="button" aria-haspopup="dialog">
+              <img
+                src="./assets/room-navigation.png"
+                alt="Navigasi cepat ke Meeting Room pada zoom 125% dengan kotak sorotan berkedip"
+                data-i18n-alt="galleryRoomNavAlt"
+                loading="lazy"
+              />
+              <span class="gallery-preview-indicator" aria-hidden="true">
+                <i class="fa-solid fa-magnifying-glass-plus"></i>
+              </span>
+            </button>
+            <figcaption><span>07</span> <span data-i18n="galleryRoomNavCaption">Lompat ruangan 125% &amp; sorotan target</span></figcaption>
           </figure>
         </div>
         <dialog
@@ -435,7 +492,7 @@
               <p><span class="terminal-prompt">$</span> npm run dev</p>
               <p class="terminal-success">
                 <i class="fa-solid fa-check" aria-hidden="true"></i>
-                <span data-i18n="terminalReady">OVO siap di http://localhost:5173</span>
+                <span data-i18n="terminalReady">OVO siap di http://localhost:3000</span>
               </p>
             </div>
             <div class="terminal-bottom">
@@ -697,7 +754,7 @@
           featureVisualIndex: '01 / VISUALISASI',
           featureVisualTitle: 'Satu kantor, banyak cerita.',
           featureVisualDescription:
-            'Saksikan agent bergerak di antara workstation, lounge, ruang meeting, pantry, dan NOC. Semua digambar sebagai pixel art 32-bit resolusi tinggi: tile 16×16, karakter 16×24 dengan empat arah hadap, 2–10 warna per sprite, tekstur 2× kerapatan, plus siklus siang-malam, god ray, dan partikel debu yang halus.',
+            'Saksikan agent bergerak di antara workstation, lounge, ruang meeting berkaca 2.5D, pantry, dan NOC. Semua digambar sebagai pixel art 32-bit resolusi tinggi: tile 16×16, karakter 16×24 empat arah hadap, 5 tema lantai & 6 varian tanaman, pencahayaan malam Moody (Dark Ambient + Pools of Light dengan lampu interior), siklus siang-malam, god ray, serta kontrol zoom 50%–300% dan navigasi cepat tiap ruangan.',
           featureContextIndex: '02 / KONTEKS',
           featureContextTitle: 'Tahu apa yang sedang terjadi.',
           phasePrefix: 'Fase',
@@ -725,13 +782,21 @@
           galleryLabel: 'Galeri kantor',
           galleryEyebrow: 'DI DALAM KANTOR',
           galleryTitle: 'Dibuat untuk dilihat sekilas.',
-          galleryIntro: 'Navigasi sederhana, info yang relevan, dan detail pixel-art.',
-          galleryOverviewAlt: 'Pemandangan penuh kantor virtual dengan agent dan beberapa zona',
+          galleryIntro: 'Navigasi ruangan cepat, pencahayaan dinamis, kustomisasi interior, dan detail pixel-art.',
+          galleryOverviewAlt: 'Pemandangan penuh kantor virtual dengan workstation, lounge, ruang meeting kaca 2.5D, pantry, dan area NOC',
           galleryOverviewCaption: 'Satu kantor yang terus bergerak',
-          gallerySidebarAlt: 'Panel aktivitas tim dan status agent',
+          gallerySidebarAlt: 'Panel aktivitas tim, avatar profil, dan tautan navigasi',
           gallerySidebarCaption: 'Aktivitas tim, sekilas pandang',
-          galleryInfoAlt: 'Panel informasi agent dengan fase dan aktivitas',
-          galleryInfoCaption: 'Detail saat kamu membutuhkannya',
+          galleryInfoAlt: 'Panel informasi agent dengan fase, aktivitas, dan tombol Follow',
+          galleryInfoCaption: 'Detail & Follow saat dibutuhkan',
+          galleryAgentAlt: 'Tampilan penuh kantor dengan agent terpilih dan panel info di bawah',
+          galleryAgentCaption: 'Fokus agent dalam konteks ruangan',
+          galleryNightAlt: 'Suasana malam dengan pencahayaan Moody Dark Ambient, Pools of Light, dan lampu interior',
+          galleryNightCaption: 'Moody night lighting & pool of light',
+          gallerySettingsAlt: 'Menu Settings terbuka dengan pilihan tema lantai Herringbone, varian tanaman, atmosfer, dan font',
+          gallerySettingsCaption: 'Kustomisasi lantai, tanaman & atmosfer',
+          galleryRoomNavAlt: 'Navigasi cepat ke Meeting Room pada zoom 125% dengan kotak sorotan berkedip',
+          galleryRoomNavCaption: 'Lompat ruangan 125% & sorotan target',
           galleryNote: 'Cuplikan visual menggunakan roster demo, bukan data live.',
           galleryPreviewClose: 'Tutup pratinjau gambar',
           galleryPreviewPrevious: 'Gambar sebelumnya',
@@ -748,7 +813,7 @@
           localOnly: 'HANYA LOKAL',
           terminalInstallComment: '# Ambil source dan pasang dependency',
           terminalRunComment: '# Jalankan viewer lokal dengan API read-only',
-          terminalReady: 'OVO siap di http://localhost:5173',
+          terminalReady: 'OVO siap di http://localhost:3000',
           terminalFootnote: 'Bukan koneksi cloud. Data tetap lokal.',
           terminalCopyLabel: 'Salin perintah terminal',
           copyCommands: 'Salin perintah',
@@ -833,7 +898,7 @@
           featureVisualIndex: '01 / VISUALIZATION',
           featureVisualTitle: 'One office, many stories.',
           featureVisualDescription:
-            'Watch agents move between workstations, the lounge, meeting room, pantry, and NOC. All of it is drawn as 32-bit high-resolution pixel art: 16×16 tiles, 16×24 characters with four native facings, 2–10 colours per sprite, textures at 2× density, plus a day-night cycle, god rays, and fine dust particles.',
+            'Watch agents move between workstations, the lounge, 2.5D glass meeting room, pantry, and NOC. Drawn as 32-bit high-resolution pixel art: 16×16 tiles, 16×24 characters with four native facings, 5 selectable floor styles & 6 plant variants, Moody Night Lighting (Dark Ambient + Pools of Light with interior lamps), day-night cycle, god rays, 50%–300% zoom, and room quick-jump navigation.',
           featureContextIndex: '02 / CONTEXT',
           featureContextTitle: 'Know what’s happening.',
           phasePrefix: 'Phases',
@@ -861,13 +926,21 @@
           galleryLabel: 'Office gallery',
           galleryEyebrow: 'INSIDE THE OFFICE',
           galleryTitle: 'A closer look.',
-          galleryIntro: 'Simple navigation, useful context, and pixel-art details.',
-          galleryOverviewAlt: 'Full view of the virtual office with agents and several zones',
+          galleryIntro: 'Room quick-jump navigation, dynamic lighting, interior customization, and pixel-art details.',
+          galleryOverviewAlt: 'Full view of the virtual office with workstations, lounge, 2.5D glass meeting room, pantry, and NOC area',
           galleryOverviewCaption: 'One office in motion',
-          gallerySidebarAlt: 'Team activity panel and agent statuses',
+          gallerySidebarAlt: 'Team activity panel, profile avatar, and footer navigation links',
           gallerySidebarCaption: 'Team activity, at a glance',
-          galleryInfoAlt: 'Agent information panel with phase and activity details',
-          galleryInfoCaption: 'Details when you need them',
+          galleryInfoAlt: 'Agent information panel with phase, activity details, and Follow toggle',
+          galleryInfoCaption: 'Details & Follow when you need them',
+          galleryAgentAlt: 'Full office stage with a selected agent and its bottom info strip',
+          galleryAgentCaption: 'Focused agent in office context',
+          galleryNightAlt: 'Night atmosphere featuring Moody Dark Ambient lighting, Pools of Light, and interior lamps',
+          galleryNightCaption: 'Moody night lighting & pools of light',
+          gallerySettingsAlt: 'Settings drawer showing Herringbone floor style, plant variants, atmosphere, and font options',
+          gallerySettingsCaption: 'Custom floors, plants & atmosphere',
+          galleryRoomNavAlt: 'Quick-jump to the Meeting Room at 125% zoom with the slow-flashing target highlight box',
+          galleryRoomNavCaption: '125% room jump & target highlight',
           galleryNote: 'Screenshots show a demo roster, not live data.',
           galleryPreviewClose: 'Close image preview',
           galleryPreviewPrevious: 'Previous image',
@@ -884,7 +957,7 @@
           localOnly: 'LOCAL ONLY',
           terminalInstallComment: '# Clone the repo and install dependencies',
           terminalRunComment: '# Run the local viewer with the read-only API',
-          terminalReady: 'OVO is ready at http://localhost:5173',
+          terminalReady: 'OVO is ready at http://localhost:3000',
           terminalFootnote: 'No cloud connection. Your data stays local.',
           terminalCopyLabel: 'Copy terminal commands',
           copyCommands: 'Copy commands',

@@ -74,54 +74,66 @@ Start here:
 
 ## Screenshots
 
-Every shot in `docs/assets/` came from the running app in a **1600 × 1000** viewport at 2× device
-pixels, dark theme, fed by a **dummy roster of 10 agents** served on the normal `/api/agents` route
-(same field set as the real endpoint, so the sidebar badge reads `Live`). Only the first file is a
-full frame; the others are crops, so their pixel sizes differ:
+Every shot in `docs/assets/` came from the running app in a **1600 × 1000** viewport (`1×`, dark
+theme) fed by a **dummy roster of 11 agents** served on `/api/agents` (same field set as the real
+endpoint, so the sidebar badge reads `Live`). Two panels (`sidebar.png`, `info-panel.png`) are
+crops; the rest are full **1600 × 1000** captures across Day, Dusk, and Night atmospheres:
 
 | File | Pixels | Frame |
 |---|---|---|
-| `office-overview.png` | 3200 × 2000 | full viewport (1600 × 1000 at 2×), sidebar hidden |
-| `sidebar.png` | 343 × 911 | crop of the floating sidebar |
-| `info-panel.png` | 1396 × 238 | crop of the info card |
-| `agent-panel.png` | 1414 × 911 | crop around the selected agent and its card |
-| `office-activity.gif` | 640 × 400 | 10 s clip, 10 fps, downscaled from the capture |
+| `office-overview.png` | 1600 × 1000 | full viewport, sidebar hidden, Day + Warm Oak |
+| `sidebar.png` | 336 × 1000 | crop of the floating sidebar (`Working` expanded) |
+| `info-panel.png` | 777 × 123 | crop of the selected-agent info card (`Follow` toggle) |
+| `agent-panel.png` | 1600 × 1000 | full viewport with selected agent & info strip open |
+| `night-moody-lighting.png` | 1600 × 1000 | Night + Moody night lighting (Low-Key + Pools of Light) |
+| `settings-customization.png` | 1600 × 1000 | Settings open (Dusk, Herringbone floor, Assorted Mix plants, Geist Pixel) |
+| `room-navigation.png` | 1600 × 1000 | Top-right `Meeting` quick-jump (`125%` zoom + `3 s` highlight box) |
+| `office-activity.gif` | 640 × 400 | 10 s timelapse clip, 10 fps (`ffmpeg`) |
 
 The workspace identity is
-a demo one — name **Nusantara Studio**, custom pixel logo — so the documentation never shows a real
-account name or logo. No mock lives in a component: the world, the sidebar and the info card all
-read the same store shape they read in production.
+a demo one — name **Nusantara Studio**, custom circular profile avatar via `/api/office-avatar` — so
+the documentation never shows a real account name or avatar. No mock lives in a component: the
+world, the sidebar and the info card all read the same store shape they read in production.
 
 <!-- Side-by-side on GitHub, stacked on narrow screens: two cells, one image each. -->
 | <img src="docs/assets/office-overview.png" alt="Full office canvas with the sidebar hidden" width="100%"> | <img src="docs/assets/sidebar.png" alt="Floating sidebar with the team activity list" width="40%"> |
 |:--:|:--:|
-| **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), Meeting Area, Lounge, Pantry & Storage and the raised-floor NOC on the left. Hiding the sidebar reserves no layout space, so the office is pixel-for-pixel identical behind it. | **2 · Sidebar** — the frosted panel floats 16 px from every edge, showing the demo workspace **Nusantara Studio** with its own pixel logo, the `Live` source badge and clock, one row per phase with a clickable count, the recent-updates feed, and the Settings / Help / Exit controls. |
+| **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), 2.5D glass Meeting Room, Lounge, Pantry & Storage (centered dining rug), floor/desk lamps, balanced botanical planters and the raised-floor NOC on the left, plus the top-right room/zoom toolbar (`50%–300%`). | **2 · Sidebar** — the frosted panel floats 16 px from every edge, showing **Nusantara Studio** with its circular profile avatar, the `Live` source badge and clock, clickable phase rows, recent-updates feed, **Settings**, and the footer with **Help**, **Exit**, camera shortcuts, **GitHub** and **Website**. |
 
 <img src="docs/assets/info-panel.png" alt="Info panel for the selected agent" width="100%">
 
-**3 · Info panel** — close-up of the card: the agent's name and role, the live `phase` badge with the
-single highest-priority `activity` note, then placement (`Zone`, workstation id), workspace footprint
-on disk, world `Position` and `Unread` count. The pixel face is drawn from `avatarSeed`, so the same
-agent keeps the same face on every reload.
+**3 · Info panel** — close-up of the card: the agent's name and role, live `phase` badge,
+interactive **Follow** lock toggle (`Following`), highest-priority `activity` note, placement
+(`Zone`, workstation id), workspace footprint on disk, world `Position` and `Unread` count. The pixel
+face is drawn from `avatarSeed`, so the same agent keeps the same face on every reload.
 
 <img src="docs/assets/agent-panel.png" alt="Office with an agent selected and its info strip open" width="100%">
 
 **4 · Agent selected in the office** — the same card in context: clicking an agent in the canvas (or
 a name in the `Working` row) outlines it and pins the info strip to the bottom of the stage, while the
-sidebar keeps the roster visible. This is the whole page, so it also shows how the floating panels sit
-over the office.
+sidebar keeps the roster visible.
+
+| <img src="docs/assets/night-moody-lighting.png" alt="Night atmosphere with Moody night lighting pools of light" width="100%"> | <img src="docs/assets/settings-customization.png" alt="Settings panel showing floor, plant, atmosphere and font options" width="100%"> |
+|:--:|:--:|
+| **5 · Moody night lighting** — Night mode with **Moody night lighting** enabled (default on): Low-Key dark ambient layer with warm Pool-of-Light cutouts around floor/desk lamps, monitors, Lounge and Pantry, plus NOC rack LED halos. | **6 · Settings customisation** — Dusk atmosphere with **Herringbone** floor tiles, **Assorted Mix** plants and **Geist Pixel** sidebar typography; floor, plant and moody-lighting choices persist in `localStorage`. |
+
+<img src="docs/assets/room-navigation.png" alt="Meeting Room quick-jump at 125% zoom with slow-flashing outline box" width="100%">
+
+**7 · Room quick-jump & highlight** — clicking any room chip (`Lounge`, `Meeting`, `Pantry`,
+`NOC`, `Desks`) in the top-right toolbar glides the camera to `125%` zoom and draws a `3 s`
+slow-flashing outline box around the destination room.
 
 <img src="docs/assets/office-activity.gif" alt="Ten seconds of office activity" width="100%">
 
-**5 · Ten seconds of activity** — `docs/assets/office-activity.gif`: 10 s, 10 fps, 640 × 400,
+**8 · Ten seconds of activity** — `docs/assets/office-activity.gif`: 10 s, 10 fps, 640 × 400,
 looped. Agents walk to their desks and type while `Working`, pair up on the Lounge sofas, the Meeting
-Area and the Pantry when idle, and the name plate under a working workstation rides below its chair.
+Area and the Pantry when idle (persisting idle/lounge poses across reloads), while lounge coffee steam
+and window motes animate continuously.
 
-> Regenerating these: start `npm run dev`, answer `/api/agents` with any fixture array that matches
-> the real field set, answer `/api/office-avatar` and `/api/office-profile` with the demo identity, let
-> the agents settle for a few seconds, then capture — full page with the sidebar hidden, the sidebar
-> alone, the info card close-up, the page with an agent selected, and a 10 s screen recording
-> converted to GIF (`ffmpeg -ss 14 -t 10 -i capture.webm -vf "fps=10,scale=640:-1" office-activity.gif`).
+> Regenerating these: start `npm run dev`, answer `/api/agents` with a fixture array matching the real
+> field set, answer `/api/office-avatar` and `/api/office-profile` with the demo identity, let agents
+> settle, then capture the Day overview, sidebar, info panel, selected agent, Night Moody lighting,
+> Settings customisation, `Meeting` quick-jump (`125%` + highlight box) and 10 s GIF (`ffmpeg -ss 2 -t 10 -i capture.webm -vf "fps=10,scale=640:400:flags=neighbor,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=none" office-activity.gif`).
 
 ## Integration with OpenBot
 
@@ -155,7 +167,7 @@ you can watch.
 ## Running
 ```bash
 npm install
-npm run dev      # http://localhost:5173  (the only mode that has /api/agents)
+npm run dev      # http://localhost:3000  (the only mode that has /api/agents)
 npm run build    # type-check + production build into dist/
 npm run preview  # static dist/ — NO API, the UI falls back to mock
 npm run verify   # every gate below, in one run; exits 1 on the first failure
@@ -182,48 +194,44 @@ and a throwaway `vite build` into `$RUNNER_TEMP`, so CI never writes `dist/`. A 
 `.github/workflows/pages.yml`, uploads `docs/` to GitHub Pages when anything under `docs/` changes.
 
 ## Controls
-WASD / arrow keys / drag = camera · scroll or `+`/`-` = zoom (`0.70x`–`3x`, starts at `0.75x`) · hover a
-character **or its workstation** = highlight ring + cursor `pointer` · click a
-character **or its workstation computer** = info panel · `E` = randomise simulation status · `Esc` = close panel.
+WASD / arrow keys / drag = camera · scroll, `+`/`−`, or top-right zoom bar = zoom (`0.50x`–`3x`, starts at `0.75x`, click readout to reset) · top-right room bar (`Lounge`, `Meeting`, `Pantry`, `NOC`, `Desks`) = glide camera to the room at `125%` with a `3 s` slow-flashing outline box · hover a character **or its workstation** = highlight ring + cursor `pointer` + live tooltip · click a character **or its workstation computer** = info panel (with **Follow** toggle) · `E` = randomise simulation status (mock mode only) · `Esc` = close panel.
 
-The camera (pan + zoom) persists in `localStorage` under `ovo-view` and the selected agent in
-`?agent=<id>` on the URL, so a reload reopens the office where it left off with the same agent
-selected. Both are inert for a fresh visitor — no stored view, no query — so the shipped defaults
-still win.
+Camera pan + zoom (`ovo-view`), idle/lounge agent poses (`ovo-agent-poses`), visual environment preferences (`ovo-floor`, `ovo-plant`, `ovo-moody-lighting`), and the selected agent (`?agent=<id>`) persist across reloads. Display toggles (`Theme`, `Atmosphere`, `Sidebar font`, `Show names & status`) reset on reload.
 
 URL `?props=<n>` scales props by `n` (0.5–4, default `2`); the floor, glass partitions and doors stay on the tile grid so nothing overshoots. A door opening is `DOOR_SPAN` tiles wide (`src/constants.ts`, 3) and its leaf is one sprite centred on the opening.
 
 ### Rooms
 
 Five zones share one floor plate: Meeting, Workstations, Lounge, Pantry & Storage, and NOC —
-only the Meeting Room is glassed in. `zoneName()` in `src/office/Layout.ts` returns the name the
-HUD shows for the tile under the pointer. Tile coordinates, the meeting-room whiteboard and the
-NOC rack / CRAC / UPS dressing live in
+only the Meeting Room is enclosed with 2.5D glass partitions. `zoneName()` in `src/office/Layout.ts`
+returns the name the HUD shows for the tile under the pointer. Tile coordinates, the meeting-room
+whiteboard, centered Pantry dining rug, floor/desk lamps, balanced botanical planters and the NOC
+rack / CRAC / UPS dressing live in
 [`docs/OVO_OFFICE_LAYOUT.md`](docs/OVO_OFFICE_LAYOUT.md).
 
 ## Architecture
 
 | File | Role |
 |---|---|
-| `src/office/AssetGenerator.ts` | All pixel art drawn on Canvas 2D → `Texture` (nearest filter): floor, walls, windows, glass, furniture, characters, monitors. |
-| `src/office/Layout.ts` | `buildLayout(deskCount)`: rooms, collision grid, seats `WS-NN`, chat spots. |
+| `src/office/AssetGenerator.ts` | All pixel art drawn on Canvas 2D → `Texture` (`nearest` filter): 5 floor variants, 6 plant variants, `lampOn`/`lampOff` fixtures, 2.5D glass partitions, walls, windows, furniture, characters, monitors. |
+| `src/office/Layout.ts` | `buildLayout(deskCount)`: rooms, collision grid, seats `WS-NN`, chat spots, lamp/plant placement. |
 | `src/office/Pathfinder.ts` | BFS over the tile grid. |
 | `src/office/Character.ts` | Sprite, idle/walk/sit + typing, speech bubble, name label, status dot. |
 | `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`/`waiting`. |
-| `src/office/DayCycle.ts` | Pure daylight curve, seven keyframes → tint + ray strength. |
-| `src/office/Particles.ts` | Dust motes in window shafts; steam / air emitters over dispensers, coffee tables and CRACs. |
-| `src/office/Atmosphere.ts` | God rays, floor light pools, pixel-stepped vignette. |
+| `src/office/DayCycle.ts` | Pure daylight curve & atmosphere presets (`clock`, `dawn`, `day`, `dusk`, `night`), seven keyframes → tint, ray strength & ambient darkness. |
+| `src/office/Particles.ts` | Dust motes in window shafts; steam / air emitters aligned to lounge coffee cups, pantry dispensers and CRACs. |
+| `src/office/Atmosphere.ts` | Bayer-dithered god rays, floor light pools, Low-Key dark ambient lighting with warm Pool-of-Light cutouts (`moodyLighting`), no vignette. |
 | `src/office/Lounge.ts` | Pure Lounge box + `staysInLounge(phase)` (`starting`, `restarting`). |
 | `src/office/Idle.ts` | Pure standby rules: `isSocialZone()`, `pickIdleSeat()`, `visAVis()`. |
 | `src/office/Avatar.ts` | Pure avatar recipe: `stableIndex()` + `avatarSpec()` with per-theme contrast clamps. |
-| `src/office/World.ts` | Pixi scene, Y-sorting, camera, input, agent placement, monitor state. |
-| `src/store/useStore.ts` | Zustand: employees, selection, notifications, 3 s polling. |
+| `src/office/World.ts` | Pixi scene, Y-sorting, camera (`50%`–`300%`), room quick-jump + `3 s` flash box, persistent idle poses, hover tooltip, follow lock, monitor state. |
+| `src/store/useStore.ts` | Zustand: employees, selection, persisted settings (`floorStyle`, `plantStyle`, `moodyLighting`), notifications, 3 s polling. |
 | `src/store/sourcePolicy.ts` | Pure roster-source policy: `pending` → `openbot` → `mock`. |
 | `src/data/openbotSource.node.ts` | Node side: SQLite `readonly`, 11 queries, derives `phase` + `activity`. |
 | `src/data/workspaceSize.node.ts` | Measures an agent's workspace folder (server-side only). |
 | `src/data/openbotSource.ts` | Type contract, Zod schema, fetch client. |
 | `vite-plugin-openbot.ts` | Dev-only middleware: `/api/agents`, `/api/office-avatar`, `/api/office-profile`. |
-| `src/components/*` | HUD, info panel, canvas host. |
+| `src/components/*` | HUD (sidebar, Settings, top-right room/zoom bar, hover tooltip, footer links), info panel (`Follow` toggle), canvas host. |
 
 Per-file detail (geometry, pixel-art recipe, pure-module contracts) lives in the `docs/OVO_*.md` docs; file-by-file ownership is in [`docs/OPENBOT_OFFICE_GUIDE.md`](docs/OPENBOT_OFFICE_GUIDE.md) §2.
 
@@ -241,8 +249,10 @@ per-phase × per-activity matrix — live in
 ## Typography
 
 The sidebar font is picked in **Settings → Sidebar font**: `mono` (default, system monospace) or
-**Geist Pixel** (self-hosted pixel face, SIL OFL 1.1). The choice resets on reload. The static
-`docs/` site uses Geist Pixel for all text and loads nothing from a third party.
+**Geist Pixel** (self-hosted pixel face, SIL OFL 1.1). Display toggles (`Sidebar font`, `Theme`,
+`Atmosphere`) reset on reload, while visual environment choices (`Floor style`, `Plant style`,
+`Moody night lighting`) persist in `localStorage`. The static `docs/` site uses Geist Pixel for
+all text and loads nothing from a third party.
 
 Full spec — typeface table, self-hosting details, OFL licence, the `docs/site.css` setup, and the
 two deliberate exceptions — lives in [`docs/OVO_THEME.md`](docs/OVO_THEME.md).
@@ -251,8 +261,9 @@ two deliberate exceptions — lives in [`docs/OVO_THEME.md`](docs/OVO_THEME.md).
 
 The UI chrome has three modes, picked in **Settings → Theme**: `system` (default, follows the OS
 and keeps following it live), `light`, `dark`. The canvas office art is **not** themed — it is
-pixel art drawn once into textures, so it keeps its own day/night look; the light palette is a warm
-paper tone chosen so the frosted sidebar still reads as an overlay. The choice resets on reload.
+pixel art drawn once into textures, so it keeps its own day/night look (though **Settings → Atmosphere**
+lets you preview `Clock`, `Dawn`, `Day`, `Dusk`, or `Night`, and toggle **Moody night lighting**);
+the light palette is a warm paper tone chosen so the frosted sidebar still reads as an overlay.
 
 `src/theme.ts` resolves the mode to a palette and writes two attributes on `<html>`
 (`data-theme`, `data-theme-mode`); while the mode is `system`, a live `prefers-color-scheme`
