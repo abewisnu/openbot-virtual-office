@@ -135,6 +135,14 @@ and window motes animate continuously.
 > settle, then capture the Day overview, sidebar, info panel, selected agent, Night Moody lighting,
 > Settings customisation, `Meeting` quick-jump (`125%` + highlight box) and 10 s GIF (`ffmpeg -ss 2 -t 10 -i capture.webm -vf "fps=10,scale=640:400:flags=neighbor,split[s0][s1];[s0]palettegen=max_colors=128[p];[s1][p]paletteuse=dither=none" office-activity.gif`).
 
+## Video
+
+A short clip of OVO in motion — agents moving, working, and taking breaks in the pixel-art office:
+
+[![OpenBot Virtual Office video](docs/assets/thumbnail-youtube.jpg)](https://www.youtube.com/watch?v=qDa3PjnVw4o)
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/qDa3PjnVw4o?si=UDS1ZtvKn9NQ06on" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 ## Integration with OpenBot
 
 <img src="https://avatars.githubusercontent.com/u/100160810?s=60&v=4" alt="nightly-labs logo" width="28">

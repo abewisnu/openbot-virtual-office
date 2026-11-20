@@ -929,6 +929,109 @@ a:focus-visible {
   font-size: 9px;
 }
 
+/* ── Video section ─────────────────────────────────────────────────────── */
+.video-section {
+  padding-bottom: 0;
+}
+
+.video-frame {
+  max-width: 960px;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  background: #14121c;
+}
+
+.video-trigger {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: #14121c;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.video-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.video-trigger img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #14121c;
+  transition: transform 220ms ease, filter 220ms ease;
+}
+
+.video-trigger:hover img,
+.video-trigger:focus-visible img {
+  transform: scale(1.015);
+  filter: brightness(0.82);
+}
+
+.video-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: 64px;
+  height: 64px;
+  place-items: center;
+  border: 1px solid rgba(242, 237, 224, 0.42);
+  color: #f2ede0;
+  background: rgba(20, 18, 28, 0.86);
+  transform: translate(-50%, -50%);
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+.video-play i {
+  margin-left: 4px;
+}
+
+.video-trigger:hover .video-play,
+.video-trigger:focus-visible .video-play {
+  color: var(--accent);
+  background: rgba(20, 18, 28, 0.96);
+  transform: translate(-50%, -50%) scale(1.06);
+}
+
+@media (hover: none) {
+  .video-play {
+    transform: translate(-50%, -50%);
+  }
+}
+
+.video-facade-note {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+  color: #7f758a;
+  font-family: var(--mono);
+  font-size: 10px;
+}
+
+.video-facade-note i {
+  color: var(--accent);
+}
+
+.video-frame-inner {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+}
+
+.video-frame-inner iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .gallery-lightbox {
   width: min(94vw, 1240px);
   max-width: calc(100vw - 32px);
@@ -1910,6 +2013,212 @@ a:focus-visible {
   }
 }
 
+/* ── Desktop font readability ─────────────────────────────────────────── */
+/* Geist Pixel loses glyph detail below ~13px, so desktop text is scaled up
+   here. Mobile breakpoints (max-width: 680px / 390px) above stay untouched. */
+@media (min-width: 901px) {
+  .brand {
+    font-size: 16px;
+  }
+
+  .main-nav {
+    font-size: 14px;
+  }
+
+  .language-toggle {
+    font-size: 12px;
+  }
+
+  .eyebrow,
+  .section-eyebrow {
+    font-size: 12px;
+  }
+
+  .hero-lede {
+    font-size: 17px;
+  }
+
+  .button {
+    font-size: 14px;
+  }
+
+  .hero-meta {
+    font-size: 12px;
+  }
+
+  .frame-bar {
+    font-size: 11px;
+  }
+
+  .frame-live {
+    font-size: 10px;
+  }
+
+  .preview-caption {
+    font-size: 11px;
+  }
+
+  .caption-status {
+    font-size: 10px;
+  }
+
+  .visual-note {
+    font-size: 10px;
+  }
+
+  .signal-inner p {
+    font-size: 11px;
+  }
+
+  .section-intro {
+    font-size: 15px;
+  }
+
+  .feature-index {
+    font-size: 11px;
+  }
+
+  .feature-copy h3,
+  .feature-card h3 {
+    font-size: 22px;
+  }
+
+  .feature-copy p,
+  .feature-card > p {
+    font-size: 14px;
+  }
+
+  .how-copy > p:not(.eyebrow),
+  .start-copy > p:not(.eyebrow) {
+    font-size: 15px;
+  }
+
+  .text-link {
+    font-size: 14px;
+  }
+
+  .flow-node b {
+    font-size: 13px;
+  }
+
+  .flow-node small {
+    font-size: 12px;
+  }
+
+  .flow-node-tag {
+    font-size: 10px;
+  }
+
+  .flow-connector {
+    font-size: 10px;
+  }
+
+  .flow-footnote {
+    font-size: 11px;
+  }
+
+  .gallery-card figcaption {
+    font-size: 12px;
+  }
+
+  .gallery-card figcaption span {
+    font-size: 11px;
+  }
+
+  .gallery-note {
+    font-size: 11px;
+  }
+
+  .gallery-lightbox-caption {
+    font-size: 13px;
+  }
+
+  .video-facade-note {
+    font-size: 11px;
+  }
+
+  .gallery-lightbox-caption > span:first-child {
+    font-size: 11px;
+  }
+
+  .requirements {
+    font-size: 13px;
+  }
+
+  .terminal-top {
+    font-size: 11px;
+  }
+
+  .terminal-label {
+    font-size: 10px;
+  }
+
+  .terminal-body {
+    font-size: 11px;
+  }
+
+  .terminal-bottom {
+    font-size: 10px;
+  }
+
+  .terminal-copy {
+    font-size: 10px;
+  }
+
+  .docs-strip h2 {
+    font-size: 24px;
+  }
+
+  .docs-links a {
+    font-size: 12px;
+  }
+
+  .support-copy h2 {
+    font-size: 25px;
+  }
+
+  .support-copy > p:not(.eyebrow) {
+    font-size: 13px;
+  }
+
+  .support-highlights {
+    font-size: 11px;
+  }
+
+  .footer-brand {
+    font-size: 13px;
+  }
+
+  .footer-inner > p,
+  .footer-links {
+    font-size: 12px;
+  }
+
+  .disclaimer {
+    font-size: 11px;
+  }
+
+  .crypto-strip-label {
+    font-size: 12px;
+  }
+
+  .crypto-chip {
+    font-size: 12px;
+  }
+
+  .chip-coin-name {
+    font-size: 11px;
+  }
+
+  .chip-copy {
+    font-size: 11px;
+  }
+
+  .chip-copied {
+    font-size: 11px;
+  }
+}
+
 :root[data-theme='light'] {
   color-scheme: light;
   color: #241f2b;
@@ -2090,6 +2399,36 @@ a:focus-visible {
 
 :root[data-theme='light'] .gallery-card figcaption {
   color: #403749;
+}
+
+:root[data-theme='light'] .video-frame {
+  border-color: rgba(60, 48, 74, 0.15);
+  background: #fffdf9;
+}
+
+:root[data-theme='light'] .video-trigger {
+  background: #e9e4dc;
+}
+
+:root[data-theme='light'] .video-trigger img {
+  background: #e9e4dc;
+}
+
+:root[data-theme='light'] .video-play {
+  border-color: rgba(60, 48, 74, 0.24);
+  color: #241f2b;
+  background: rgba(255, 253, 249, 0.9);
+}
+
+:root[data-theme='light'] .video-trigger:hover .video-play,
+:root[data-theme='light'] .video-trigger:focus-visible .video-play {
+  color: var(--accent);
+  background: rgba(255, 253, 249, 0.98);
+}
+
+:root[data-theme='light'] .video-facade-note {
+  border-top-color: rgba(60, 48, 74, 0.15);
+  color: #5c5466;
 }
 
 :root[data-theme='light'] .gallery-lightbox {

@@ -454,6 +454,47 @@
         </p>
       </section>
 
+      <section
+        class="video-section section-space page-width"
+        aria-labelledby="video-title"
+      >
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow section-eyebrow" data-i18n="videoEyebrow">LIHAT OVO BERGERAK</p>
+            <h2 id="video-title" data-i18n="videoTitle">Dunia kecil, hidup nyata.</h2>
+          </div>
+          <p class="section-intro" data-i18n="videoIntro">
+            Video singkat: agent bergerak, bekerja, dan beristirahat di kantor pixel-art OVO.
+          </p>
+        </div>
+        <div class="video-frame">
+          <button
+            class="video-trigger"
+            id="video-trigger"
+            type="button"
+            aria-label="Putar video YouTube OpenBot Virtual Office"
+            data-i18n-aria-label="videoPlayLabel"
+            title="Putar video"
+            data-i18n-title="videoPlayLabel"
+          >
+            <img
+              src="./assets/thumbnail-youtube.jpg"
+              alt="Thumbnail video OpenBot Virtual Office"
+              data-i18n-alt="videoThumbAlt"
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="video-play" aria-hidden="true">
+              <i class="fa-solid fa-play"></i>
+            </span>
+          </button>
+          <div class="video-facade-note">
+            <i class="fa-brands fa-youtube" aria-hidden="true"></i>
+            <span data-i18n="videoFacadeNote">YouTube · klik untuk memuat pemutar</span>
+          </div>
+        </div>
+      </section>
+
       <section class="start-section" id="mulai">
         <div class="page-width start-layout">
           <div class="start-copy">
@@ -801,6 +842,13 @@
           galleryPreviewClose: 'Tutup pratinjau gambar',
           galleryPreviewPrevious: 'Gambar sebelumnya',
           galleryPreviewNext: 'Gambar berikutnya',
+          videoEyebrow: 'LIHAT OVO BERGERAK',
+          videoTitle: 'Dunia kecil, hidup nyata.',
+          videoIntro:
+            'Video singkat: agent bergerak, bekerja, dan beristirahat di kantor pixel-art OVO.',
+          videoPlayLabel: 'Putar video YouTube OpenBot Virtual Office',
+          videoThumbAlt: 'Thumbnail video OpenBot Virtual Office',
+          videoFacadeNote: 'YouTube · klik untuk memuat pemutar',
           startEyebrow: 'SIAP MELIHATNYA?',
           startTitle: 'Mulai dari mesinmu sendiri.',
           startDescription:
@@ -945,6 +993,13 @@
           galleryPreviewClose: 'Close image preview',
           galleryPreviewPrevious: 'Previous image',
           galleryPreviewNext: 'Next image',
+          videoEyebrow: 'SEE OVO IN MOTION',
+          videoTitle: 'A small world, alive.',
+          videoIntro:
+            'A short video: agents moving, working, and taking breaks in the OVO pixel-art office.',
+          videoPlayLabel: 'Play the OpenBot Virtual Office YouTube video',
+          videoThumbAlt: 'OpenBot Virtual Office video thumbnail',
+          videoFacadeNote: 'YouTube · click to load the player',
           startEyebrow: 'READY TO TAKE A LOOK?',
           startTitle: 'Get started on your machine.',
           startDescription:
@@ -1025,6 +1080,8 @@
       const galleryPreviewPrevious = document.querySelector('#gallery-lightbox-previous');
       const galleryPreviewNext = document.querySelector('#gallery-lightbox-next');
       const galleryPreviewTriggers = [...document.querySelectorAll('.gallery-preview-trigger')];
+      const videoTrigger = document.querySelector('#video-trigger');
+      const VIDEO_EMBED_URL = 'https://www.youtube.com/embed/qDa3PjnVw4o?si=UDS1ZtvKn9NQ06on';
       let themeMode = document.documentElement.dataset.themeMode || 'system';
       let language = document.documentElement.lang === 'en' ? 'en' : 'id';
       let copyFeedbackTimeout;
@@ -1163,6 +1220,16 @@
         setLanguage(language === 'id' ? 'en' : 'id'),
       );
       terminalCopy.addEventListener('click', copyTerminalCommands);
+
+      videoTrigger?.addEventListener('click', () => {
+        const frame = document.createElement('div');
+        frame.className = 'video-frame-inner';
+        frame.innerHTML =
+          '<iframe width="560" height="315" src="' +
+          VIDEO_EMBED_URL +
+          '" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';
+        videoTrigger.replaceWith(frame);
+      });
 
       document.querySelectorAll('.crypto-chip').forEach((button) => {
         button.addEventListener('click', async () => {
