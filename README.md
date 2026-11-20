@@ -91,14 +91,14 @@ crops; the rest are full **1600 × 1000** captures across Day, Dusk, and Night a
 | `office-activity.gif` | 640 × 400 | 10 s timelapse clip, 10 fps (`ffmpeg`) |
 
 The workspace identity is
-a demo one — name **Nusantara Studio**, custom circular profile avatar via `/api/office-avatar` — so
+a demo one — name **Virtual Office**, custom circular profile avatar via `/api/office-avatar` — so
 the documentation never shows a real account name or avatar. No mock lives in a component: the
 world, the sidebar and the info card all read the same store shape they read in production.
 
 <!-- Side-by-side on GitHub, stacked on narrow screens: two cells, one image each. -->
 | <img src="docs/assets/office-overview.png" alt="Full office canvas with the sidebar hidden" width="100%"> | <img src="docs/assets/sidebar.png" alt="Floating sidebar with the team activity list" width="40%"> |
 |:--:|:--:|
-| **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), 2.5D glass Meeting Room, Lounge, Pantry & Storage (centered dining rug), floor/desk lamps, balanced botanical planters and the raised-floor NOC on the left, plus the top-right room/zoom toolbar (`50%–300%`). | **2 · Sidebar** — the frosted panel floats 16 px from every edge, showing **Nusantara Studio** with its circular profile avatar, the `Live` source badge and clock, clickable phase rows, recent-updates feed, **Settings**, and the footer with **Help**, **Exit**, camera shortcuts, **GitHub** and **Website**. |
+| **1 · Full office, sidebar hidden** — the canvas owns the whole viewport: workstation block on the right (4 bays per row, one desk per agent), 2.5D glass Meeting Room, Lounge, Pantry & Storage (centered dining rug), floor/desk lamps, balanced botanical planters and the raised-floor NOC on the left, plus the top-right room/zoom toolbar (`50%–300%`). | **2 · Sidebar** — the frosted panel floats 16 px from every edge, showing **Virtual Office** with its circular profile avatar, the `Live` source badge and clock, clickable phase rows, recent-updates feed, **Settings**, and the footer with **Help**, **Exit**, camera shortcuts, **GitHub** and **Website**. |
 
 <img src="docs/assets/info-panel.png" alt="Info panel for the selected agent" width="100%">
 
