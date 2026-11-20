@@ -183,6 +183,7 @@ node --import ./scripts/register-ts.mjs scripts/verify-rooms.mjs  # pantry spaci
 node --import ./scripts/register-ts.mjs scripts/verify-idle.mjs  # standby agents sit and chat in the social rooms
 node --import ./scripts/register-ts.mjs scripts/verify-rack-leds.mjs # rack LED blink rate table
 node scripts/verify-labels.mjs         # agent name plate + status dot size and seated height
+node scripts/verify-lamps.mjs          # per-desk lamp lighting gate for seated ready/working agents
 ```
 
 `npm run preview` and any other static host do not serve `/api/agents`: the request falls through to
@@ -218,6 +219,7 @@ rack / CRAC / UPS dressing live in
 | `src/office/Pathfinder.ts` | BFS over the tile grid. |
 | `src/office/Character.ts` | Sprite, idle/walk/sit + typing, speech bubble, name label, status dot. |
 | `src/office/Monitor.ts` | Pure `monitorStateFor(phase, seated)` → `off`/`still`/`moving`/`waiting`. |
+| `src/office/Lamp.ts` | Pure `deskLampLitFor(phase, seated)` — workstation desk lamp glows only for seated `ready`/`working` agents. |
 | `src/office/DayCycle.ts` | Pure daylight curve & atmosphere presets (`clock`, `dawn`, `day`, `dusk`, `night`), seven keyframes → tint, ray strength & ambient darkness. |
 | `src/office/Particles.ts` | Dust motes in window shafts; steam / air emitters aligned to lounge coffee cups, pantry dispensers and CRACs. |
 | `src/office/Atmosphere.ts` | Bayer-dithered god rays, floor light pools, Low-Key dark ambient lighting with warm Pool-of-Light cutouts (`moodyLighting`), no vignette. |
