@@ -6,6 +6,12 @@ export interface FurnitureDef {
   x: number;
   y: number;
   z: number;
+  /**
+   * Seat this fixture belongs to. Desk lamps carry their workstation id so the
+   * world can gate the light on that agent's phase instead of lighting the
+   * whole room.
+   */
+  seatId?: string;
 }
 export interface Seat {
   id: string;
@@ -224,8 +230,9 @@ export function buildLayout(deskCount = 12): Layout {
       place("desk", deskLeft(tx), ty, DESK_W, 1);
       const pos = { x: (tx + 1) * TILE, y: (ty + 1) * TILE + 24 };
       chair("chairUp", pos.x, pos.y, true);
+      const seatId = `WS-${String(n++).padStart(2, "0")}`;
       seats.push({
-        id: `WS-${String(n++).padStart(2, "0")}`,
+        id: seatId,
         kind: "desk",
         pos,
         facing: "up",
@@ -242,15 +249,16 @@ export function buildLayout(deskCount = 12): Layout {
           z: (ty + 1) * TILE + 0.5,
         },
       });
-      // Place desk lamp on alternating desks for warm/cool night pool-of-light contrast
-      if (n % 2 === 0) {
-        furniture.push({
-          type: "deskLamp",
-          x: (tx + 1) * TILE + 38,
-          y: (ty + 1) * TILE - 12,
-          z: (ty + 1) * TILE + 0.6,
-        });
-      }
+      // One lamp per desk so every workstation can show its own agent state:
+      // lit while a `ready`/`working` agent sits there, dark otherwise. Mounted
+      // on the desk corner without adding floor collision.
+      furniture.push({
+        type: "deskLamp",
+        x: (tx + 1) * TILE + 38,
+        y: (ty + 1) * TILE - 12,
+        z: (ty + 1) * TILE + 0.6,
+        seatId,
+      });
       placed++;
     }
   }

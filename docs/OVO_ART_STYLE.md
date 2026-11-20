@@ -76,8 +76,11 @@ or `floorStyle` changes.
   moonlight at Night. Ray strength follows `rayScale` with a calm breathe (`0.72 + 0.28 × sin(t × 0.55)`)
   and gains up to `0.35` as `working` agents approach six.
 - **Emissive Local Pools**: Bayer-dithered glow pools under active monitors, NOC hardware (`serverRack`,
-  `crac`, `ups`), pantry appliances (`fridge`, `dispenser`), and active interior lamps (`floorLamp`,
-  `deskLamp`, `wallSconce`).
+  `crac`, `ups`), pantry appliances (`fridge`, `dispenser`), and the interior lamps. Ambient fixtures
+  (`floorLamp`, `wallSconce`) follow the moody day gate (`night` 1, `dusk` 0.68, off at dawn/day), while
+  every workstation `deskLamp` is gated per agent: it only glows when its seat's owner is physically
+  seated and in phase `ready` or `working`. A reserved desk, a walker, a `blocked` agent waiting for a
+  human, and every idle/starting/restarting/stopped desk produce no pool and no cutout.
 - **Moody / Low-Key Night Lighting (Dark Ambient + Pools of Light)**: Enabled by default via
   **Settings → Moody night lighting** (`ovo-moody-lighting`). At Night (`ambientDark = 0.56`) and
   Dusk (`0.28`), a deep `#070918` pixel-grid ambient veil sits between sorted world sprites and room/name

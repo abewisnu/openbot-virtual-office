@@ -9,6 +9,7 @@ import { isChattingSeat, isSocialSeat, isSocialZone, pickIdleSeat, pickIdleTile 
 import { isInLounge, staysInLounge } from './Lounge';
 import { Character, type Vec } from './Character';
 import { monitorStateFor } from './Monitor';
+import { deskLampLitFor } from './Lamp';
 import { findPath, type Tile } from './Pathfinder';
 import { Atmosphere, type EmissiveLight } from './Atmosphere';
 import { Particles, type EmitSpot } from './Particles';
@@ -151,7 +152,8 @@ export class World {
   /** Whether Moody / Low-Key dark ambient + warm lamps are enabled in Settings. */
   private moodyLighting = true;
   private plantSprites: Sprite[] = [];
-  private lampSprites: { type: LampType; sprite: Sprite }[] = [];
+  /** Interior lamp sprites: ambient floor lamps/sconces plus per-desk lamps that keep their seat id. */
+  private lampSprites: { type: LampType; sprite: Sprite; seatId?: string }[] = [];
   /** Live daylight curve; recomputed from the clock each frame. */
   private daylight: Daylight = daylightAt(12);
   private background!: Sprite;
@@ -260,7 +262,7 @@ export class World {
       this.sortLayer.addChild(s);
       if (f.type === 'plant') this.plantSprites.push(s);
       else if (f.type === 'floorLamp' || f.type === 'deskLamp' || f.type === 'wallSconce') {
-        this.lampSprites.push({ type: f.type, sprite: s });
+        this.lampSprites.push({ type: f.type, sprite: s, seatId: f.type === 'deskLamp' ? f.seatId : undefined });
       }
     }
     this.applyPlantStyle();
@@ -356,10 +358,30 @@ export class World {
     }
     return out;
   }
+  /** Ambient static pools: floor lamps and wall sconces, always on while moody night lighting is. */
   private staticLampLights: EmissiveLight[] = [];
+  /** Per-desk pools, tagged with their workstation so they follow the agent phase. */
+  private deskLampLights: { seatId: string | undefined; light: EmissiveLight }[] = [];
+  /**
+   * Workstations whose lamp should glow: the agent owns the seat *and* is
+   * physically sitting in it, with a `ready` or `working` phase. A reserved
+   * desk with its agent still walking over stays dark, matching the monitor
+   * rule so the screen and the lamp never disagree.
+   */
+  private litDeskSeatIds(): Set<string> {
+    const out = new Set<string>();
+    for (const seat of this.layout.seats) {
+      if (seat.kind !== 'desk' || !seat.monitor) continue;
+      const ch = seat.occupant ? this.chars.find((c) => c.id === seat.occupant) : undefined;
+      const seated = !!ch && ch.state === 'sit' && ch.seat === seat;
+      if (deskLampLitFor(seated && ch ? this.empOf(ch.id)?.phase : undefined, seated)) out.add(seat.id);
+    }
+    return out;
+  }
   private buildStaticLights(): EmissiveLight[] {
     const out: EmissiveLight[] = [];
     this.staticLampLights = [];
+    this.deskLampLights = [];
     for (const f of this.layout.furniture) {
       if (f.type === 'serverRack') out.push({ x: f.x, y: f.y - 24, w: 132, h: 108, color: 0x4aa3d8, intensity: 0.48, pulse: 2.2, cutout: 0.72 });
       else if (f.type === 'crac') out.push({ x: f.x, y: f.y - 16, w: 120, h: 90, color: 0x6fd8ff, intensity: 0.38, pulse: 1.5, cutout: 0.65 });
@@ -369,7 +391,10 @@ export class World {
       else if (f.type === 'floorLamp') {
         this.staticLampLights.push({ x: f.x, y: f.y - 36, w: 280, h: 220, color: 0xffb85c, intensity: 0.85, pulse: 0.8, cutout: 0.96 });
       } else if (f.type === 'deskLamp') {
-        this.staticLampLights.push({ x: f.x - 10, y: f.y + 4, w: 172, h: 134, color: 0xffc66d, intensity: 0.72, cutout: 0.88 });
+        this.deskLampLights.push({
+          seatId: f.seatId,
+          light: { x: f.x - 10, y: f.y + 4, w: 172, h: 134, color: 0xffc66d, intensity: 0.72, cutout: 0.88 },
+        });
       } else if (f.type === 'wallSconce') {
         this.staticLampLights.push({ x: f.x, y: f.y + 24, w: 190, h: 156, color: 0xffb259, intensity: 0.70, cutout: 0.84 });
       }
@@ -378,18 +403,26 @@ export class World {
   }
   private collectEmissiveLights(): EmissiveLight[] {
     const lights = [...this.staticLights];
+    // Same day gate as `updateLamps`: the lamp sprite and its pool are one
+    // source of light, so dawn/day never leaves a glow over a dark bulb.
     const lampScale = !this.moodyLighting
       ? 0
       : this.daylight.key === 'night'
         ? 1
         : this.daylight.key === 'dusk'
           ? 0.68
-          : this.daylight.key === 'dawn'
-            ? 0.40
-            : 0;
+          : 0;
     if (lampScale > 0) {
+      const cut = Math.min(1, lampScale * 1.1);
       for (const l of this.staticLampLights) {
-        lights.push({ ...l, intensity: l.intensity * lampScale, cutout: (l.cutout ?? 0.85) * Math.min(1, lampScale * 1.1) });
+        lights.push({ ...l, intensity: l.intensity * lampScale, cutout: (l.cutout ?? 0.85) * cut });
+      }
+      // Desk pools follow their agent: only a seated `ready`/`working` owner
+      // gets a warm office pool, everyone else leaves the desk in the ambient.
+      const deskLit = this.litDeskSeatIds();
+      for (const { seatId, light } of this.deskLampLights) {
+        if (!seatId || !deskLit.has(seatId)) continue;
+        lights.push({ ...light, intensity: light.intensity * lampScale, cutout: (light.cutout ?? 0.85) * cut });
       }
     }
     for (const { seat } of this.monitors) {
@@ -996,6 +1029,7 @@ export class World {
       }
     }
     this.updateRackLeds();
+    this.updateLamps();
     this.updateMonitors();
     this.particles.setDayKey(this.daylight.key);
     this.atmosphere.update(dt, {
@@ -1147,11 +1181,20 @@ export class World {
       .rect(x + w - corner + 2, y + hh - t + 2, corner, t).fill({ color: 0xffffff, alpha: 0.95 * alpha })
       .rect(x + w - t + 2, y + hh - corner + 2, t, corner).fill({ color: 0xffffff, alpha: 0.95 * alpha });
   }
+  /**
+   * Lamp textures for the current light. Floor lamps and wall sconces only
+   * need Moody night lighting (Night/Dusk) and stay on as ambient light, but a
+   * desk lamp answers its own workstation: it glows only while a `ready` or
+   * `working` agent is sitting there. Every other desk keeps its bulb dark and
+   * leaves the room to the ambient fixtures. Called every frame because phases
+   * change without a daylight event, and each swap is a cheap reference check.
+   */
   private updateLamps() {
-    const lit = this.moodyLighting && (this.daylight.key === 'night' || this.daylight.key === 'dusk');
-    const bank = lit ? this.assets.lampOn : this.assets.lampOff;
+    const ambientLit = this.moodyLighting && (this.daylight.key === 'night' || this.daylight.key === 'dusk');
+    const deskLit = ambientLit ? this.litDeskSeatIds() : null;
     for (const item of this.lampSprites) {
-      const tex = bank[item.type];
+      const lit = ambientLit && (item.type !== 'deskLamp' || (!!item.seatId && !!deskLit?.has(item.seatId)));
+      const tex = (lit ? this.assets.lampOn : this.assets.lampOff)[item.type];
       if (item.sprite.texture !== tex) item.sprite.texture = tex;
     }
   }

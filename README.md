@@ -115,7 +115,7 @@ sidebar keeps the roster visible.
 
 | <img src="docs/assets/night-moody-lighting.png" alt="Night atmosphere with Moody night lighting pools of light" width="100%"> | <img src="docs/assets/settings-customization.png" alt="Settings panel showing floor, plant, atmosphere and font options" width="100%"> |
 |:--:|:--:|
-| **5 · Moody night lighting** — Night mode with **Moody night lighting** enabled (default on): Low-Key dark ambient layer with warm Pool-of-Light cutouts around floor/desk lamps, monitors, Lounge and Pantry, plus NOC rack LED halos. | **6 · Settings customisation** — Dusk atmosphere with **Herringbone** floor tiles, **Assorted Mix** plants and **Geist Pixel** sidebar typography; floor, plant and moody-lighting choices persist in `localStorage`. |
+| **5 · Moody night lighting** — Night mode with **Moody night lighting** enabled (default on): Low-Key dark ambient layer with warm Pool-of-Light cutouts around floor lamps and wall sconces, per-desk lamps for seated `ready`/`working` agents, monitors, Lounge and Pantry, plus NOC rack LED halos. | **6 · Settings customisation** — Dusk atmosphere with **Herringbone** floor tiles, **Assorted Mix** plants and **Geist Pixel** sidebar typography; floor, plant and moody-lighting choices persist in `localStorage`. |
 
 <img src="docs/assets/room-navigation.png" alt="Meeting Room quick-jump at 125% zoom with slow-flashing outline box" width="100%">
 

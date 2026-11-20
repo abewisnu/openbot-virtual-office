@@ -54,8 +54,12 @@ when **Moody night lighting** is active at Dusk/Night:
   the Workstation entrance corner `(33, 7)`.
 - **`wallSconce`**: North corridor wall pillar (`x: 1280, y: 124`) and NOC partition transom
   (`x: 128` and `x: 352` at `y: 970`).
-- **`deskLamp`**: Alternating workstation desks (`n % 2 === 0`), mounted on the desk corner without
-  adding floor collision.
+- **`deskLamp`**: One per workstation desk, mounted on the desk corner without adding floor collision.
+  Every seat carries its lamp's `seatId` (`WS-nn`), so the light follows the agent rather than the
+  room: while **Moody night lighting** is active at Dusk/Night, a desk lamp is lit only when a
+  `ready` or `working` agent is physically seated at that desk. Empty, unstaffed, `idle`, `blocked`,
+  `starting`, `restarting` and `stopped` desks stay dark, because a reserved seat is not an occupant.
+  Floor lamps and wall sconces are ambient fixtures and stay lit with the option enabled.
 
 ## NOC — Network Operations Centre
 
