@@ -413,8 +413,194 @@ a:focus-visible {
   background: #a7f078;
 }
 
+.frame-brand {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding-left: 12px;
+}
+
+.frame-logo {
+  position: relative;
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(167, 157, 181, 0.28);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.frame-logo::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at 30% 20%, rgba(167, 240, 120, 0.35), transparent 70%);
+  content: '';
+  opacity: 0;
+}
+
+.frame-logo-ovo {
+  width: 26px;
+  height: 26px;
+  border-color: rgba(167, 240, 120, 0.4);
+  box-shadow: 0 0 14px rgba(167, 240, 120, 0.28);
+  animation: frame-logo-glow-ovo 4s ease-in-out infinite;
+}
+
+.frame-logo-ovo img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+}
+
+.frame-logo-ovo::before {
+  animation: frame-logo-sweep-ovo 4s ease-in-out infinite;
+}
+
+.frame-logo-openbot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border-color: rgba(201, 152, 240, 0.4);
+  box-shadow: 0 0 14px rgba(201, 152, 240, 0.26);
+  animation: frame-logo-glow-openbot 4s ease-in-out infinite;
+  animation-delay: 0.35s;
+}
+
+.frame-logo-openbot img {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+}
+
+.frame-connector {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  color: rgba(167, 157, 181, 0.55);
+}
+
+.frame-connector-dots {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.frame-connector-dots i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: frame-flow-dot 1.6s ease-in-out infinite;
+}
+
+.frame-connector-dots i:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.frame-connector-dots i:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+.frame-connector-dots i:nth-child(4) {
+  animation-delay: 0.42s;
+}
+
+.frame-connector-dots i:nth-child(5) {
+  animation-delay: 0.56s;
+}
+
+.frame-connector-chevron {
+  position: relative;
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-left: 3px;
+  border-top: 1px solid currentColor;
+  border-right: 1px solid currentColor;
+  transform: rotate(45deg);
+  animation: frame-chevron-bob 1.6s ease-in-out infinite;
+  animation-delay: 0.28s;
+}
+
 .frame-title {
-  padding-left: 15px;
+  padding-left: 8px;
+  color: #8d8398;
+}
+
+@keyframes frame-logo-glow-ovo {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(167, 240, 120, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(167, 240, 120, 0.42);
+  }
+}
+
+@keyframes frame-logo-glow-openbot {
+  0%,
+  100% {
+    box-shadow: 0 0 10px rgba(201, 152, 240, 0.18);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(201, 152, 240, 0.4);
+  }
+}
+
+@keyframes frame-logo-sweep-ovo {
+  0%,
+  100% {
+    opacity: 0;
+    transform: translateX(-120%);
+  }
+  40% {
+    opacity: 0;
+  }
+  55% {
+    opacity: 0.9;
+  }
+  75% {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+}
+
+@keyframes frame-flow-dot {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes frame-chevron-bob {
+  0%,
+  100% {
+    transform: translateX(0) rotate(45deg);
+  }
+  50% {
+    transform: translateX(3px) rotate(45deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .frame-logo-ovo,
+  .frame-logo-openbot,
+  .frame-connector-dots i,
+  .frame-connector-chevron,
+  .frame-logo-ovo::before {
+    animation: none;
+  }
 }
 
 .frame-live {
@@ -2278,6 +2464,75 @@ a:focus-visible {
 
 :root[data-theme='light'] .frame-lights i:nth-child(3) {
   background: #65a84d;
+}
+
+:root[data-theme='light'] .frame-brand {
+  color: #4e4559;
+}
+
+:root[data-theme='light'] .frame-logo {
+  background: rgba(36, 31, 43, 0.05);
+}
+
+:root[data-theme='light'] .frame-logo-ovo {
+  border-color: rgba(101, 168, 77, 0.55);
+  box-shadow: 0 0 10px rgba(101, 168, 77, 0.22);
+}
+
+:root[data-theme='light'] .frame-logo-openbot {
+  border-color: rgba(140, 90, 190, 0.5);
+  box-shadow: 0 0 10px rgba(140, 90, 190, 0.22);
+}
+
+:root[data-theme='light'] .frame-connector {
+  color: rgba(36, 31, 43, 0.4);
+}
+
+:root[data-theme='light'] .frame-title {
+  color: #6c6377;
+}
+
+@media (max-width: 680px) {
+  .frame-brand {
+    gap: 6px;
+    padding-left: 4px;
+  }
+
+  .frame-logo,
+  .frame-logo-ovo,
+  .frame-logo-openbot {
+    width: 22px;
+    height: 22px;
+  }
+
+  .frame-logo-ovo img,
+  .frame-logo-openbot img {
+    width: 22px;
+    height: 22px;
+  }
+
+  .frame-connector {
+    gap: 3px;
+  }
+
+  .frame-connector-dots {
+    gap: 2px;
+  }
+
+  .frame-connector-dots i {
+    width: 2px;
+    height: 2px;
+  }
+
+  .frame-connector-chevron {
+    width: 7px;
+    height: 7px;
+    margin-left: 1px;
+  }
+
+  .frame-title {
+    display: none;
+  }
 }
 
 :root[data-theme='light'] .office-preview {
