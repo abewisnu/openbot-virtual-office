@@ -137,11 +137,9 @@ and window motes animate continuously.
 
 ## Video
 
-A short clip of OVO in motion — agents moving, working, and taking breaks in the pixel-art office:
+A short clip of OVO in motion — agents moving, working, and taking breaks in the pixel-art office. Click the thumbnail to watch on YouTube:
 
 [![OpenBot Virtual Office video](docs/assets/thumbnail-youtube.jpg)](https://www.youtube.com/watch?v=qDa3PjnVw4o)
-
-<iframe width="560" height="315" src="https://www.youtube.com/embed/qDa3PjnVw4o?si=UDS1ZtvKn9NQ06on" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
 ## Integration with OpenBot
 
