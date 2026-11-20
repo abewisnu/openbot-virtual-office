@@ -388,6 +388,8 @@ a:focus-visible {
 /* ambient halo behind core */
 .logo-halo {
   position: absolute;
+  top: 50%;
+  left: 50%;
   width: 210px;
   height: 210px;
   border-radius: 50%;
@@ -398,6 +400,9 @@ a:focus-visible {
 /* orbital rings */
 .logo-orbit {
   position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   border: 1px solid rgba(167, 240, 120, 0.16);
 }
@@ -419,38 +424,34 @@ a:focus-visible {
 /* satellites on orbits */
 .logo-node {
   position: absolute;
+  top: 50%;
+  left: 50%;
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 10px rgba(167, 240, 120, 0.75);
-}
-
-.logo-node-a {
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) translateY(-85px);
   animation: nodePulse 2.6s ease-in-out infinite;
 }
 
+.logo-node-a {
+  transform: translate(-50%, -50%) translateY(-85px);
+}
+
 .logo-node-b {
-  top: 50%;
-  left: 50%;
   width: 5px;
   height: 5px;
   transform: translate(-50%, -50%) translateY(120px);
   opacity: 0.6;
-  animation: nodePulse 2.6s ease-in-out 900ms infinite;
+  animation-delay: 900ms;
 }
 
 .logo-node-c {
-  top: 50%;
-  left: 50%;
   width: 4px;
   height: 4px;
   transform: translate(-50%, -50%) translate(120px, 0);
   opacity: 0.5;
-  animation: nodePulse 2.6s ease-in-out 1.5s infinite;
+  animation-delay: 1.5s;
 }
 
 /* OVO core */
