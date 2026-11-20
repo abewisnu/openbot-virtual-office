@@ -1,0 +1,19 @@
+services:
+  virtual-office:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_OFFICE_POLL_MS: ${VITE_OFFICE_POLL_MS:-}
+    container_name: openbot-virtual-office
+    restart: unless-stopped
+    environment:
+      PORT: ${PORT:-3000}
+      OPENBOT_DB_PATH: ${OPENBOT_DB_PATH:-}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS:-}
+    ports:
+      - "${PORT:-3000}:${PORT:-3000}"
+    # Opsional: mount direktori OpenBot host (read-only) untuk telemetry SQLite live
+    # lalu set OPENBOT_DB_PATH=/data/openbot/openbot.db di .env:
+    # volumes:
+    #   - ${HOME}/Library/Application Support/OpenBot:/data/openbot:ro

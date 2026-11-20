@@ -54,16 +54,18 @@ The browser never holds a DB path, a credential, or SQL. It knows one URL and on
 |---|---|---|
 | `src/data/openbotSource.ts` | public types, `AGENT_PHASES`, `ACTIVITY_KINDS`, Zod `agentProfileSchema`, `fetchAgentProfilesAsync` | the wire contract changes |
 | `src/data/openbotSource.node.ts` | env parse, DB handle, SQL, `derivePhase`, `ACTIVITY_WEIGHT`, window constants | derivation or query changes |
-| `vite-plugin-openbot.ts` | `/api/agents`, Host/method guards, headers, field strip | transport or security changes |
-| `vite.config.ts` | Registers `react()` and the OpenBot plugin; dev server config | the dev server or its plugins change |
+| `vite-plugin-openbot.ts` | `/api/agents`, `/api/office-avatar`, `/api/office-profile`, Host allowlist (`ALLOWED_HOSTS`), headers, field strip | transport or security changes |
+| `vite.config.ts` | Registers `react()` and the OpenBot plugin; reads `.env` `PORT` (default `3000`) for dev & preview | the dev/preview server or its plugins change |
+| `server.ts` | Lightweight production Node server (`npm start` / Docker) serving `dist/`, OpenBot APIs, and `/healthz` on `PORT` | production serving or health probe changes |
+| `Dockerfile` / `docker-compose.yml` | Multi-stage `node:22-alpine` image (`dist-server/server.mjs` + minimal `better-sqlite3`) and `.env` `PORT` Compose setup | container build or deployment changes |
 | `scripts/verify-openbot-source.mjs` | Pins the SQL queries to `readonly` and the phase windows | the SQL or window constants change |
 | `src/store/useStore.ts` | `toEmployee`, `statusForPhase`, `startPolling` / `stopPolling`, mock fallback, camera/zoom & persisted Settings state (`floorStyle`, `plantStyle`, `moodyLighting`) | state, polling, or settings changes |
 | `src/data/mockEmployees.ts` | fallback roster | the demo scene changes |
 | `src/constants.ts` | `PHASE_COLORS`, `PHASE_LABEL`, `ACTIVITY_LABEL`, `ZOOM_STEPS` (`0.50x–3x`), `badgeFor`, `shirtColorFor` | colours, zoom steps, or labels change |
 | `src/office/AssetGenerator.ts` | 32-bit pixel-art textures, 5 floor styles, 6 plant variants, `lampOn`/`lampOff` fixtures, 2.5D glass partitions | sprite or material textures change |
-| `src/office/World.ts` | `assign`, `owesDesk`, desk seats, typing, `setDot`, hover tooltip + selection, room jump + 3 s highlight, pose persistence (`ovo-agent-poses`), `bindMotion`, `tuneParticles` | behaviour, movement, lighting sync, or performance policy changes |
+| `src/office/World.ts` | `assign`, `owesDesk`, dynamic `rebuildLayout` (12–24 desks), desk seats, typing, `setDot`, hover tooltip + selection, room jump + 3 s highlight, pose persistence (`ovo-agent-poses`), `bindMotion`, `tuneParticles` | behaviour, movement, lighting sync, or performance policy changes |
 | `src/office/Character.ts` | sprite, idle/walk/sit + typing frames, four native facings, selection and hover rings, `setCalm` | character animation changes |
-| `src/office/Layout.ts` | `buildLayout(deskCount)`, seats `WS-NN`, room partitions, lamps & plants | office geometry changes |
+| `src/office/Layout.ts` | `buildLayout(deskCount)` (12–24 desks, `4×3–6` bays at 5-tile row pitch), seats `WS-01`..`WS-24`, room partitions, lamps & plants | office geometry changes |
 | `src/office/DayCycle.ts` | pure daylight curve, seven keyframes → `{ key, night, tint, tintAlpha, rayScale, ambientDark }`, `daylightForMode()` | the day-night schedule changes |
 | `src/office/Particles.ts` | dust motes in the window shafts, steam/air emitters (`coffeeTable`, `dispenser`, `crac`), `MAX_MOTES` cap, `setQuality` budget scale | particle density or emitter kinds change |
 | `src/office/Atmosphere.ts` | Bayer-dithered god rays, floor light pools, emissive local pools, Low-Key dark ambient veil & Pool-of-Light cutouts (`moodyLighting`), `setCalm` | the atmospheric pass changes |

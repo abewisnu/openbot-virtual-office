@@ -4,7 +4,7 @@ import type { Status, AgentPhase, Employee } from '../types';
 import { useStore, type RoomHighlightRect } from '../store/useStore';
 import { generateAssets, makeBackground, makeCharFrames, makeLook, makeRackLeds, rackBlinkRate, type Assets, type ConcretePlantStyle, type FloorStyle, type FurnitureType, type LampType, type Look, type PlantStyle, type RackLed } from './AssetGenerator';
 import { avatarSpec } from './Avatar';
-import { buildLayout, zoneName, type ChatSpot, type Layout, type RoomLabel, type Seat } from './Layout';
+import { buildLayout, clampDeskCount, zoneName, type ChatSpot, type Layout, type RoomLabel, type Seat } from './Layout';
 import { isChattingSeat, isSocialSeat, isSocialZone, pickIdleSeat, pickIdleTile } from './Idle';
 import { isInLounge, staysInLounge } from './Lounge';
 import { Character, type Vec } from './Character';
@@ -169,6 +169,7 @@ export class World {
   /** True while an agent owes the desk a visit because work is waiting. */
   private instructions = new Map<string, boolean>();
   private layout!: Layout;
+  private deskCount = 0;
   private assets!: Assets;
   private walkable: Tile[] = [];
   /** Floor tiles and lounge-kind seats inside the Lounge room: the starting/restarting pen. */
@@ -217,19 +218,6 @@ export class World {
     const emps = st.employees;
     this.assets = generateAssets(this.night, emps.map((e, i) => this.lookFor(e, i)), this.floorStyle);
     this.backgroundCache.set(`${this.night}:${this.floorStyle}`, this.assets.background);
-    // Size the workstation block to the live roster: one desk per agent.
-    this.layout = buildLayout(emps.length);
-    this.layout.blocked.forEach((row, ty) => row.forEach((b, tx) => { if (!b) this.walkable.push({ tx, ty }); }));
-    // Penned agents (`starting`, `restarting`) only ever get goals from these two
-    // lists, so they cannot walk out of the open-plan Lounge even though the
-    // column-14 and row-16 edges carry no glass.
-    this.loungeTiles = this.walkable.filter((t) => isInLounge(t.tx, t.ty));
-    this.loungeSeats = this.layout.seats.filter(
-      (s) => s.kind === 'lounge' && isInLounge(s.approach.tx, s.approach.ty),
-    );
-    // Idle agents live in the social rooms and nowhere else: their floor goals
-    // are these tiles, so a standby agent never paces the workstation aisles.
-    this.socialTiles = this.walkable.filter((t) => isSocialZone(zoneName(t.tx, t.ty)));
 
     const bg = new Sprite(this.assets.background);
     bg.scale.set(ART / DENSITY);
@@ -253,6 +241,55 @@ export class World {
     this.app.stage.addChild(this.root);
     this.atmosphere.mountScreen(this.app.stage);
     this.atmosphere.resize(this.app.screen.width, this.app.screen.height);
+
+    // Size the workstation block to the live roster (12–24 desks) and mount props.
+    this.rebuildLayout(clampDeskCount(emps.length));
+    this.layout.roomLabels.forEach((label) => this.roomLabelLayer.addChild(this.buildRoomLabel(label)));
+    this.rebuildCharacters();    this.bindInput(); this.bindMotion();
+    this.restoreView();
+    this.updateClock();
+    this.app.ticker.add((t) => this.update(t.deltaMS / 1000));
+    this.ready = true;
+  }
+
+  /**
+   * Builds (or rebuilds) the office layout, collision walkability lists, props,
+   * monitors, emitters and lamp anchors for `targetDesks` (12–24 desks).
+   * Called once at startup and again whenever the loaded agent roster grows
+   * past the currently built workstation count.
+   */
+  private rebuildLayout(targetDesks: number) {
+    if (this.chars.length) {
+      saveAgentPoses(this.chars);
+      this.savedPoses = loadAgentPoses();
+      for (const ch of this.chars) {
+        ch.container.destroy({ children: true });
+        ch.tag.destroy({ children: true });
+      }
+      this.chars = [];
+      this.phases.clear();
+      this.instructions.clear();
+    }
+    this.hoverId = null;
+    this.hoverMark.clear();
+    for (const child of this.sortLayer.removeChildren()) {
+      child.destroy({ children: true });
+    }
+
+    this.deskCount = targetDesks;
+    this.layout = buildLayout(targetDesks);
+    this.walkable = [];
+    this.layout.blocked.forEach((row, ty) => row.forEach((b, tx) => { if (!b) this.walkable.push({ tx, ty }); }));
+    // Penned agents (`starting`, `restarting`) only ever get goals from these two
+    // lists, so they cannot walk out of the open-plan Lounge even though the
+    // column-14 and row-16 edges carry no glass.
+    this.loungeTiles = this.walkable.filter((t) => isInLounge(t.tx, t.ty));
+    this.loungeSeats = this.layout.seats.filter(
+      (s) => s.kind === 'lounge' && isInLounge(s.approach.tx, s.approach.ty),
+    );
+    // Idle agents live in the social rooms and nowhere else: their floor goals
+    // are these tiles, so a standby agent never paces the workstation aisles.
+    this.socialTiles = this.walkable.filter((t) => isSocialZone(zoneName(t.tx, t.ty)));
 
     this.plantSprites = [];
     this.lampSprites = [];
@@ -279,14 +316,8 @@ export class World {
       this.sortLayer.addChild(s);
       this.monitors.push({ seat, sprite: s });
     }
-    this.layout.roomLabels.forEach((label) => this.roomLabelLayer.addChild(this.buildRoomLabel(label)));
     this.emitters = this.buildEmitters();
     this.staticLights = this.buildStaticLights();
-    this.rebuildCharacters();    this.bindInput(); this.bindMotion();
-    this.restoreView();
-    this.updateClock();
-    this.app.ticker.add((t) => this.update(t.deltaMS / 1000));
-    this.ready = true;
   }
   /**
    * Motion preferences and tab visibility. `prefers-reduced-motion` pins the
@@ -644,6 +675,8 @@ export class World {
     }
     this.chars = [];
     this.phases.clear();
+    this.layout.seats.forEach((s) => { s.occupant = null; });
+    this.layout.chatSpots.forEach((s) => { s.occupant = null; });
     const emps = useStore.getState().employees;
     emps.forEach((e, i) => {
       const frames = this.assets.chars[i] ?? makeCharFrames(this.lookFor(e, i));
@@ -953,7 +986,13 @@ export class World {
       }
     }
     const z = ZOOM_STEPS[this.cam.zi], sp = (480 / z) * dt;
-    if (!this.charactersMatchSource()) this.rebuildCharacters();
+    const targetDesks = clampDeskCount(st.employees.length);
+    if (targetDesks !== this.deskCount) {
+      this.rebuildLayout(targetDesks);
+      this.rebuildCharacters();
+    } else if (!this.charactersMatchSource()) {
+      this.rebuildCharacters();
+    }
     const k = this.keys;
     if (k.has('KeyW') || k.has('ArrowUp')) this.cam.y -= sp;
     if (k.has('KeyS') || k.has('ArrowDown')) this.cam.y += sp;

@@ -20,17 +20,16 @@ Vite **dev-only** plugin. The production design (`/api/office` on port 8099, `/h
 | Item | Reality |
 |---|---|
 | Endpoint | `GET /api/agents` (and `HEAD`) — plus `GET /api/office-avatar` for the profile avatar (§2.3) and `GET /api/office-profile` for the profile name (§2.4) |
-| Host | the Vite dev server itself, configured on `http://localhost:3000` |
-| Provider | `vite-plugin-openbot.ts` → `configureServer` middleware |
-| Availability | **dev only**. `vite preview` and any static host do **not** serve it |
+| Host | Vite dev/preview (`vite.config.ts`) or Node production server (`server.ts`), default `http://localhost:3000` (configurable via `.env` `PORT`) |
+| Provider | `vite-plugin-openbot.ts` → `handleOpenBotApi` shared across `configureServer`, `configurePreviewServer`, and `server.ts` |
+| Availability | Vite dev (`npm run dev`), Vite preview (`npm run preview`), and production (`npm start` / Docker Compose). Static-only hosts still fall back to mock data |
 | Response | bare JSON array, browser-safe subset, no envelope |
-| Dataset | 16 agents, ~4.7 KB, ~80 ms first call on loopback (count follows the live roster) |
+| Dataset | 16 agents, ~4.7 KB, ~80 ms first call on loopback (count follows the live roster; office supports up to 24 desks) |
 | Status model | `phase` (7 values) + one `activity` (or `null`) |
 | Realtime | browser polls every 3 s (`VITE_OFFICE_POLL_MS`) |
 | Writes | none. Connection opened `readonly: true` |
 
-There is no `/health`, no `/api/office`, no port 8099, no auth, no ETag, no gzip, and no
-folder/sidebar-JSON grouping in the shipped app.
+`server.ts` also exposes `GET /healthz` (`200 {"ok":true}`). There is no `/api/office`, no port 8099, no auth, no ETag, and no folder/sidebar-JSON grouping in the shipped app.
 
 ---
 
@@ -40,9 +39,9 @@ folder/sidebar-JSON grouping in the shipped app.
 
 | Rule | Behaviour | Evidence |
 |---|---|---|
-| Path | `/api/agents` only; any other `/api/*` is **not** intercepted | `configureServer` registers `'/api/agents'` |
+| Path | `/api/agents`, `/api/office-avatar`, `/api/office-profile`; unknown `/api/*` → `404` on `server.ts` (SPA fallback on Vite) | `handleOpenBotApi` in `vite-plugin-openbot.ts` |
 | Methods | `GET`, `HEAD`; anything else → `405` + `Allow: GET, HEAD` | measured `POST /api/agents` → `405` |
-| Host header | `127.0.0.1`, `localhost`, `::1`, `[::1]`, or a literal IPv4; otherwise → `421` | measured `Host: evil.example` → `421` |
+| Host header | `127.0.0.1`, `localhost`, `::1`, `[::1]`, `127.x.x.x`, or `ALLOWED_HOSTS`; otherwise → `421` | `isAllowedHost` in `vite-plugin-openbot.ts` |
 | Cache | `Cache-Control: no-store` | measured response header |
 | Headers | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Content-Security-Policy: default-src 'self'; script-src 'self'` | measured response headers |
 | Errors | `500 { "error": "Agent data unavailable" }`; DB path and SQL never in the body | `vite-plugin-openbot.ts` catch block |
@@ -498,29 +497,23 @@ this is not where the answer is.
 
 | Target item | Why it does not exist |
 |---|---|
-| `GET /api/office` on `127.0.0.1:8099` | no production server; the Vite plugin is dev-only |
-| `GET /health` (`200` / `503`) | not implemented; requests hit the SPA fallback and return `200 text/html` |
-| `scripts/start-office.sh`, `scripts/stop-office.sh`, `logs/office.pid` | no such files; `package.json` has only `dev`, `build`, `preview` |
-| `server.proxy` / `preview.proxy` in `vite.config.ts` | not needed: the plugin answers on the same origin as the app |
+| `GET /api/office` on `127.0.0.1:8099` | superseded by `server.ts` serving `dist/` + `/api/*` on `PORT` (default `3000`) |
+| `GET /healthz` (`200 {"ok":true}`) | implemented in `server.ts` for container/process health probes |
+| `scripts/start-office.sh`, `scripts/stop-office.sh`, `logs/office.pid` | not used; run via `npm start` or `docker compose up -d --build` |
+| `server.proxy` / `preview.proxy` in `vite.config.ts` | not needed: Vite and `server.ts` answer on the same origin as the app |
 | Weak `ETag` + `If-None-Match` → `304` | not implemented; every poll transfers the full body |
-| `gzip` / `br` | not implemented |
+| `gzip` / `br` | not implemented at the Node layer |
 | Envelope `{ ok, generatedAt, total, agents }` | the endpoint returns a bare array |
 | Sidebar-JSON folder grouping | no folder code exists; `folder` / `folders` are absent from the payload |
-| `PORT`, `HOST`, `NO_BUILD`, `OFFICE_API_URL` | read by nothing; the dev server decides host/port |
-| Auth layer | none. The loopback bind is the boundary |
+| `NO_BUILD`, `OFFICE_API_URL` | unused; `PORT`, `HOST`, `OPENBOT_DB_PATH`, `ALLOWED_HOSTS`, `VITE_OFFICE_POLL_MS` are active |
+| Auth layer | none. Loopback `Host` allowlist (`ALLOWED_HOSTS` opt-in) is the boundary |
 | Chat, instruction box, "send task" | **out of scope by design.** OVO is an observer; instructions are authored in OpenBot. No compose endpoint exists and none is planned |
-
-Design summary, for whoever builds it: one process serves `dist/` and the API on one
-origin so no CORS or token is needed; `/health` must run a real query so it distinguishes
-"process alive" from "DB usable"; static paths must resolve inside `dist/` or return `403`;
-`ETag` would turn unchanged polls into `304`.
 
 ---
 
 ## 10. Security rules
 
-1. Bind loopback only. Widening past loopback needs TLS **and** auth first; today there is
-   no auth, so the bind is the whole boundary.
+1. Restrict API `Host` headers to loopback by default; only widen via `ALLOWED_HOSTS` when running behind a trusted reverse proxy or container network with appropriate network isolation.
 2. The `Host` allowlist exists to stop DNS rebinding; foreign hosts get `421`.
 3. `GET` / `HEAD` only; other methods `405`.
 4. Security headers are set on every API response (§2.1).
@@ -541,11 +534,8 @@ origin so no CORS or token is needed; `/health` must run a real query so it dist
 
 1. **`projection_agents.updated_at` is not proof of work.** Use
    `agent_usage_activity.occurred_at`.
-2. **`200` does not mean the API answered.** `/health` and `/api/office` return the HTML
-   shell with status `200`. Check `Content-Type` and parse the body.
-3. **`npm run preview` has no API.** It serves static `dist/`, so the fetch fails and the
-   client falls back to the mock roster. This is the most common false "it works on my
-   machine".
+2. **`200` on static-only hosts does not mean the API answered.** On a static host without `vite-plugin-openbot.ts` or `server.ts`, `/api/*` falls through to HTML with status `200`. Check `Content-Type` and parse the body.
+3. **`npm run dev`, `npm run preview`, and `npm start` all serve the API.** Static file hosts (like GitHub Pages) do not, and fall back to mock data.
 4. **`OPENBOT_DB` is not read.** Use `OPENBOT_DB_PATH`.
 5. **A quiet roster looks empty.** `ready` decays to `idle` after 30 min of no traffic by
    design.

@@ -24,8 +24,9 @@ import { measureWorkspaceFootprint } from './workspaceSize.node.ts';
 // `vite.config.ts`) is only visible once the server is actually starting.
 export function resolveDbPath(): string {
   const env = z.object({ OPENBOT_DB_PATH: z.string().optional() }).parse(process.env ?? {});
+  const configured = env.OPENBOT_DB_PATH?.trim();
   return (
-    env.OPENBOT_DB_PATH ??
+    configured ||
     `${process.env.HOME ?? ''}/Library/Application Support/OpenBot/openbot.db`
   );
 }

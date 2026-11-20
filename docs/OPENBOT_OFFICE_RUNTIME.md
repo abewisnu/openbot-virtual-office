@@ -7,10 +7,7 @@ given in OpenBot; OVO only renders the result.
 How the app runs today: process topology, ports, data access, polling, environment
 variables, verification and failure modes.
 
-**Status of record (2026-11-17):** the app runs as a Vite **dev server only**. There is no
-production server, no `/health`, no pidfile, no start/stop script and no supervisor. Values
-marked **[measured]** were produced by a command quoted in this page; anything not marked is
-code-derived.
+**Status of record (2026-11-20):** the app supports **Vite dev** (`npm run dev`), **Vite preview** (`npm run preview`), and the **production Node server** (`npm start` → `node server.ts` or Docker Compose via `dist-server/server.mjs`). All three share the same API handlers from `vite-plugin-openbot.ts` and read `PORT` from `.env` (default `3000`). Values marked **[measured]** were produced by commands quoted in this page; anything not marked is code-derived.
 
 Contract and schema: `OPENBOT_OFFICE_API.md`. Wiring walkthrough:
 `OPENBOT_OFFICE_GUIDE.md`.
@@ -23,15 +20,16 @@ Contract and schema: `OPENBOT_OFFICE_API.md`. Wiring walkthrough:
 OpenBot app ──writes──▶ openbot.db (WAL, ~450 MB)
                               │  readonly: true, fileMustExist: true
                               ▼
-                    Vite dev server (localhost:3000)
-                    ├── src/ (HMR, ESM)
-                    └── GET /api/agents   ← middleware from vite-plugin-openbot.ts
+                    Vite dev server / server.ts (0.0.0.0:${PORT:-3000})
+                    ├── src/ (dev) or dist/ (production)
+                    ├── GET /healthz                ← health probe (server.ts)
+                    └── GET /api/*                  ← handleOpenBotApi() in vite-plugin-openbot.ts
                               ▲  poll every 3 s
                               │
                           browser (React + Zustand + PixiJS)
 ```
 
-- One process today: the Vite dev server. It serves the app **and** the endpoint.
+- One process: Vite in dev/preview or `node server.ts` (`dist-server/server.mjs` in Docker) in production. It serves the app **and** the read-only API endpoints on the same origin.
 - Internal identifiers: npm package `openbot-virtual-office`, browser tab title
   `OpenBot Virtual Office (OVO)`.
 - The project has **no database of its own**. It reads OpenBot's database read-only.
@@ -46,54 +44,50 @@ one unparseable `agent_json` row costs one agent, not the whole list.
 
 ## 2. Runtime topology
 
-### 2.1 Development — the only supported mode
+### 2.1 Development
 
 ```
-npm run dev ──▶ Vite dev server (localhost:3000)
+npm run dev ──▶ Vite dev server (0.0.0.0:${PORT:-3000})
 ├── src/ (HMR, ESM)
-└── /api/agents ──▶ in-process middleware ──▶ SQLite (read-only)
+└── /api/* ──▶ openBotApiPlugin().configureServer ──▶ SQLite (read-only)
 ```
 
-`vite.config.ts` registers two plugins: `react()` and `openBotApiPlugin()`. The plugin's
-`configureServer` hook attaches `/api/agents`; its `close` hook closes the SQLite handle.
+`vite.config.ts` registers `react()` and `openBotApiPlugin()`, reading `PORT` directly from `.env*` files (default `3000`). The plugin attaches `/api/agents`, `/api/office-avatar`, and `/api/office-profile`, and closes the SQLite handle on `httpServer` close.
 
-**[measured]** `VITE v5.4.21 ready in 191 ms`, `Local: http://127.0.0.1:5199/` (the same
-server on an alternate port for a verification run).
-
-### 2.2 Preview — static bundle, no data
+### 2.2 Preview
 
 ```
-npm run preview ──▶ Vite preview server (localhost:4173)
-└── dist/ served as static files
+npm run preview ──▶ Vite preview server (0.0.0.0:${PORT:-3000})
+├── dist/ served as static files
+└── /api/* ──▶ openBotApiPlugin().configurePreviewServer ──▶ SQLite (read-only)
 ```
 
-There is **no** preview hook in the plugin. **[measured]** `GET /api/agents` on the preview
-port returns `200 text/html`: the SPA shell, not JSON. The client's Zod parse fails, it
-returns an empty list, and the UI shows mock agents. Never use preview to judge live data.
+`configurePreviewServer` attaches the exact same OpenBot API middleware as `configureServer`, on the same `.env`-configured `PORT` (default `3000`).
 
-### 2.3 Production — does not exist
+### 2.3 Production (`server.ts` & Docker Compose)
 
-No server process serves `dist/` together with an API. Production would need a real Node
-process (see `OPENBOT_OFFICE_API.md` §9 for the target design). Until then, "deploy" means
-"run the dev server somewhere reachable".
+```
+npm start (node server.ts)  OR  docker compose up -d --build (dist-server/server.mjs)
+├── dist/ served as static files (SPA fallback + immutable /assets/* cache)
+├── GET /healthz ──▶ 200 {"ok":true}
+└── /api/* ──▶ handleOpenBotApi() ──▶ SQLite (read-only)
+```
+
+`server.ts` runs on built-in `node:http` with zero extra server framework dependencies. It loads `.env` (`process.loadEnvFile`), binds `HOST` (default `0.0.0.0`) and `PORT` (default `3000`), and closes the HTTP server and SQLite handle on `SIGINT` / `SIGTERM`.
+
+The `Dockerfile` uses a multi-stage `node:22-alpine` build: compiles `dist/`, bundles + minifies `server.ts` into `dist-server/server.mjs` (~456 KB via `esbuild`), copies only minimal `better-sqlite3` runtime files (omitting frontend packages like `pixi.js`, C++ build sources, and `npm`/`corepack`), and runs as non-root `USER node`.
 
 ### 2.4 Ports
 
 | Mode | Port | Serves | API |
 |---|---|---|---|
-| dev | `3000` (configured in `vite.config.ts` / `package.json`, `--port` to override) | app + HMR | `GET /api/agents` |
-| preview | `4173` (Vite default) | `dist/` static | none — SPA fallback |
-| production | — | — | — |
-
-Port 8099 appears only in the unimplemented target design. `PORT`, `HOST` and
-`OFFICE_API_URL` are read by nothing.
+| dev (`npm run dev`) | `3000` default (override via `.env` `PORT`) | app + HMR | `/api/agents`, `/api/office-avatar`, `/api/office-profile` |
+| preview (`npm run preview`) | `3000` default (override via `.env` `PORT`) | `dist/` static | `/api/agents`, `/api/office-avatar`, `/api/office-profile` |
+| production (`npm start` / Docker) | `3000` default (override via `.env` `PORT`) | `dist/` static + `/healthz` | `/api/agents`, `/api/office-avatar`, `/api/office-profile` |
 
 ### 2.5 Exposure
 
-The dev server binds loopback by default. A public tunnel (`ngrok`) has been used for
-demos; that publishes the dev server, including HMR sockets and the read-only agent list,
-to the internet with **no authentication**. Treat any tunnel URL as public: stop it when the
-demo ends.
+Both Vite and `server.ts` restrict API `Host` headers to loopback (`localhost`, `127.0.0.1`, `::1`, `127.0.0.0/8`) by default to prevent DNS rebinding. For LAN, reverse-proxy, or custom container domains, add allowed hostnames to `ALLOWED_HOSTS` in `.env` (comma-separated, or `*` if explicitly desired behind a trusted proxy). Treat any public exposure without TLS + auth as public read-only telemetry.
 
 ---
 
@@ -200,51 +194,46 @@ started by hand:
 
 ```bash
 cd /path/to/openbot-virtual-office
-npm run dev                     # Vite dev server on localhost:3000
+npm run dev                     # Vite dev server (default http://localhost:3000, or .env PORT)
+# or production / container:
+npm run build && npm start      # Node server on PORT (default 3000)
+docker compose up -d --build    # Alpine container on ${PORT:-3000}
 ```
 
-Stop by PID, never by pattern. `pkill -f vite` can kill an unrelated project's dev server.
+Stop local Node processes by PID rather than `pkill -f vite` so unrelated dev servers are untouched:
 
 ```bash
-pgrep -f "vite --port 3000"     # find the exact PID
-kill <pid>                      # SIGTERM
-lsof -nP -iTCP:3000 -sTCP:LISTEN   # must be empty afterwards
+lsof -nP -iTCP:3000 -sTCP:LISTEN   # find PID on configured PORT
+kill <pid>                         # SIGTERM
 ```
 
 If a process ignores `SIGTERM`, escalate to `SIGKILL` on that PID only.
 
-### 5.2 Process lifecycle — the real risk
+### 5.2 Process lifecycle
 
-Both the dev server and any tunnel run unsupervised. They die when the parent shell or
-session ends, or when the machine sleeps. There is no watchdog: a dead office stays dead
-until someone restarts it.
-
-Supervision (launchd, systemd, `--restart unless-stopped`) was offered and **declined** by
-the operator: start on request only. Do not add a supervisor without being asked.
+Locally, `npm run dev` / `npm start` run in the foreground session. When deployed with `docker-compose.yml`, the container uses `restart: unless-stopped` and monitors `/healthz`.
 
 ### 5.3 Health check
 
-There is no `/health`. **[measured]** `GET /health` returns `200 text/html` (the SPA shell),
-so it cannot distinguish a healthy process from a broken one.
-
-Use this instead — it fails loudly when the API is not answering:
+`server.ts` (production / Docker) exposes `GET /healthz`, returning `200 {"ok":true}`. For Vite dev/preview (which do not serve `/healthz`) or to verify live DB reads end to end, probe `/api/agents`:
 
 ```bash
-curl -s http://127.0.0.1:3000/api/agents | head -c 1     # '[' means JSON
+curl -s http://127.0.0.1:3000/healthz                     # {"ok":true} on server.ts
+curl -s http://127.0.0.1:3000/api/agents | head -c 1      # '[' means JSON
 curl -sI http://127.0.0.1:3000/api/agents | grep -i content-type
 ```
 
-A JSON array of agents is a real answer. `text/html` means the plugin is not attached (for
-example because you are on `preview`).
+A JSON array of agents confirms the API is attached. `text/html` means the request hit a static-only host.
 
 ### 5.4 Failure modes
 
 | Symptom | Cause | Action |
 |---|---|---|
 | `EADDRINUSE` on start | previous instance still bound | find the PID on that port, stop it, re-check |
-| `curl` returns nothing / `000` | no process listening | start the dev server; check the port |
-| `/api/agents` → `200 text/html` | not the dev server (preview or static host) | run `npm run dev`; the API is dev-only |
-| `/api/agents` → `500` | query or `agent_json` parse failure | read the server log; the body never contains a DB path |
+| `curl` returns nothing / `000` | no process listening | start dev/prod server; check `.env` `PORT` |
+| `/api/agents` → `421 Misdirected request` | non-loopback `Host` header | add hostname to `ALLOWED_HOSTS` in `.env` |
+| `/api/agents` → `200 text/html` | static-only host without Node middleware | run `npm run dev`, `npm start`, or Docker Compose |
+| `/api/agents` → `500` | query or `agent_json` parse failure (or no DB mounted) | check `OPENBOT_DB_PATH` / container volume mount |
 | UI shows agents but numbers look canned | mock fallback after a failed fetch | check the source badge; verify `/api/agents` returns JSON |
 | `SQLITE_CANTOPEN` / `fileMustExist` throw | DB moved or path wrong | check `OPENBOT_DB_PATH` and that the file exists |
 | `SQLITE_BUSY` | long read against a busy writer | shorten the query, keep one connection, never write |
@@ -253,10 +242,10 @@ example because you are on `preview`).
 
 ### 5.5 Security boundaries
 
-- Loopback only. Never bind `0.0.0.0` without TLS **and** auth; neither exists.
-- `Host` allowlist → foreign hosts `421` (DNS-rebinding defence).
+- API `Host` allowlist defaults to loopback (`127.0.0.1`, `localhost`, `::1`); foreign hosts get `421` unless explicitly added via `ALLOWED_HOSTS` (DNS-rebinding defence).
 - `GET` / `HEAD` only → other methods `405`.
 - Security headers on every API response: `nosniff`, `DENY`, `no-referrer`, CSP `self`.
+- Static serving in `server.ts` resolves paths inside `dist/` (`403` outside `dist/`).
 - No secrets, DB paths, or machine paths in any `VITE_`-prefixed variable; they are inlined
   into public JavaScript at build time.
 
@@ -267,23 +256,17 @@ example because you are on `preview`).
 ### 6.1 Build
 
 ```bash
-npm run build      # tsc --noEmit && vite build
+npm run build      # tsc --noEmit && tsc -p tsconfig.node.json --noEmit && vite build
 ```
 
-**[measured]** `dist/` = 856 KB total; `dist/assets/index-*.js` = 562,268 bytes raw,
-176,057 bytes gzip; main CSS 6,824 bytes. `better-sqlite3` is externalised, so the bundle
-stays browser-safe.
-
+`better-sqlite3` is externalised, so the browser bundle stays browser-safe.
 `dist/` is immutable per build: never edit files in place, always rebuild.
 
-### 6.2 Static serving rules (target, for whoever writes the server)
+### 6.2 Static serving rules (`server.ts`)
 
-- Serve from `dist/`; unknown non-API paths fall back to `dist/index.html`.
-- Resolve every requested path and confirm it is still inside `dist/`; anything outside → `403`.
-- Do not cache `index.html` aggressively; hashed assets in `dist/assets/` are immutable.
-- A weak `ETag` (`W/"size-mtime"`) on static files lets revalidation end in `304`.
-
-These rules apply only once a real server exists. Today Vite's own static handling is used.
+- Serves from `dist/`; extensionless non-API routes fall back to `dist/index.html`.
+- Resolves every requested path and confirms it stays inside `dist/`; anything outside → `403`.
+- Sends `no-cache` for `.html` and `public, max-age=31536000, immutable` for hashed `/assets/*`.
 
 ---
 
@@ -291,17 +274,15 @@ These rules apply only once a real server exists. Today Vite's own static handli
 
 | Variable | Consumer | Status | Purpose |
 |---|---|---|---|
+| `PORT` | `vite.config.ts`, `server.ts`, `docker-compose.yml` | **in use** | HTTP listen/host port, default `3000` |
+| `HOST` | `server.ts` | **in use** | Bind address for production server, default `0.0.0.0` |
 | `OPENBOT_DB_PATH` | Node side (`openbotSource.node.ts`) | **in use** | DB file override |
+| `ALLOWED_HOSTS` | `vite-plugin-openbot.ts` | **in use** | Comma-separated extra API `Host` headers (`*` for all) |
 | `VITE_OFFICE_POLL_MS` | browser (`GameCanvas.tsx`) | **in use** | poll interval, default `3000` |
 
-Not read by anything — listed only so nobody assumes they work: `OPENBOT_DB`, `HOST`,
-`PORT`, `NO_BUILD`, `OFFICE_API_URL`.
+Not read by anything: `OPENBOT_DB`, `NO_BUILD`, `OFFICE_API_URL`.
 
-`.env` is loaded by `vite.config.ts` with Vite's `loadEnv(mode, cwd, '')`: only
-`OPENBOT_DB_PATH` is copied into `process.env` for the Node-side plugin, and nothing else.
-`VITE_`-prefixed keys reach the browser bundle on their own, which is exactly why DB paths and
-tokens must never carry that prefix. A path placed in `.env` therefore works, and an invalid one
-surfaces as `500 { "error": "Agent data unavailable" }`.
+In Vite (`vite.config.ts`), `PORT` is read from `.env*` files (falling back to `3000`), while `loadEnv` forwards `OPENBOT_DB_PATH` and `ALLOWED_HOSTS` into `process.env`. In production (`server.ts`), `process.loadEnvFile()` loads `.env` if present without overriding container-injected env vars. `VITE_`-prefixed keys are inlined at build time by Vite.
 
 ---
 

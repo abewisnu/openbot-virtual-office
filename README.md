@@ -154,31 +154,43 @@ you can watch.
 
 ## Prerequisites
 
-- **Node.js 22.18+** (tested on Node 24) and npm. The `npm run verify` scripts
-  import `.ts` modules directly and need Node's unflagged type stripping.
+- **Node.js 22.18+** (tested on Node 22/24) and npm (or **Docker** / **Docker Compose** for containerized runs). The `npm run verify` scripts and `server.ts` import `.ts` modules directly and need Node's unflagged type stripping.
 - OpenBot installed on the same machine, because OVO reads OpenBot's `openbot.db` in read-only mode.
   Default per-OS locations are listed in
   [`docs/OPENBOT_OFFICE_RUNTIME.md`](docs/OPENBOT_OFFICE_RUNTIME.md); override with
-  `OPENBOT_DB_PATH`.
+  `OPENBOT_DB_PATH` in `.env`.
 - Without OpenBot/DB the app still runs, but falls back to mock data (source badge in the sidebar).
   The mock roster is shown only after a fetch fails; before the first reply the badge reads
   `Connecting` and the list is empty.
 
 ## Running
 ```bash
+cp .env.example .env   # optional: set PORT (default 3000), OPENBOT_DB_PATH, ALLOWED_HOSTS
 npm install
-npm run dev      # http://localhost:3000  (the only mode that has /api/agents)
-npm run build    # type-check + production build into dist/
-npm run preview  # static dist/ — NO API, the UI falls back to mock
-npm run verify   # every gate below, in one run; exits 1 on the first failure
+npm run dev            # Vite dev server + OpenBot API (default http://localhost:3000)
+npm run build          # type-check + production build into dist/
+npm start              # production Node server (dist/ + /api/* + /healthz on PORT)
+npm run preview        # Vite preview server (also mounts OpenBot API on PORT)
+npm run verify         # every gate below, in one run; exits 1 on the first failure
+```
 
+### Docker Compose
+```bash
+cp .env.example .env   # change PORT (default 3000) or ALLOWED_HOSTS if needed
+docker compose up -d --build
+```
+
+The multi-stage `Dockerfile` builds on `node:22-alpine`, bundles the server into a single minified ESM file (`dist-server/server.mjs`), strips `better-sqlite3` to its runtime binary only, and runs as non-root `USER node` with a `/healthz` health check.
+
+### Individual verification gates
+```bash
 node scripts/verify-monitor.mjs        # phase × seated matrix + monitor source guards
 node scripts/verify-openbot-source.mjs # check the SQL queries stay read-only
 node scripts/verify-lounge.mjs         # `starting`/`restarting` agents stay inside the Lounge room
 node scripts/verify-store.mjs          # roster source states: never mock before a failed fetch
 node scripts/verify-workspace.mjs      # workspace-folder size walker + no path leak to the browser
 node scripts/verify-avatar.mjs         # per-theme tint contrast on both avatar surfaces
-node --import ./scripts/register-ts.mjs scripts/verify-chairs.mjs  # chair collision + meeting-room chat
+node --import ./scripts/register-ts.mjs scripts/verify-chairs.mjs  # chair collision + meeting chat + 24 desks
 node --import ./scripts/register-ts.mjs scripts/verify-rooms.mjs  # pantry spacing, NOC server-room dressing, carpet
 node --import ./scripts/register-ts.mjs scripts/verify-idle.mjs  # standby agents sit and chat in the social rooms
 node --import ./scripts/register-ts.mjs scripts/verify-rack-leds.mjs # rack LED blink rate table
@@ -186,8 +198,7 @@ node scripts/verify-labels.mjs         # agent name plate + status dot size and 
 node scripts/verify-lamps.mjs          # per-desk lamp lighting gate for seated ready/working agents
 ```
 
-`npm run preview` and any other static host do not serve `/api/agents`: the request falls through to
-`index.html` with status `200`. Check `Content-Type`, do not trust the status code alone.
+Note: static-only hosts without Node/API return `index.html` (`200 text/html`) for `/api/agents`, so the client falls back to mock data. Check `Content-Type`, do not trust the status code alone.
 
 GitHub Actions runs the same gates on every push and pull request: `.github/workflows/gates.yml`
 installs with `npm ci`, runs `npm run typecheck` (browser **and** Node side), then `npm run verify`
@@ -325,7 +336,7 @@ Full recipe — the hash, the per-theme contrast table with the worst-case ratio
   agent in the URL — so a reload reopens where the visitor left off.
 - **Truth**: the code is the source of truth; the docs describe the code that exists, and designs
   that are not built yet are clearly marked *not implemented*.
-- **Supported mode**: the Vite dev server (`npm run dev`) — the only mode with `/api/agents`.
+- **Supported modes**: Vite dev/preview (`npm run dev`, `npm run preview`) and the production Node server (`npm start` / Docker Compose) — all three serve `/api/agents`.
 
 ## Notes
 - **Identity & boundary**: OVO = OpenBot Virtual Office, a 2D pixel-art visualisation of OpenBot work.

@@ -8,7 +8,7 @@ The office world is one shared floor plate with five zones. `zoneName()` in
 | Room | Walls | Interior | Door |
 |---|---|---|---|
 | Meeting | column 17 and column 32 (rows 5–19), row 20 | columns 18–31, rows 6–19 | 3-tile opening in column 32, rows 10–12, facing the 3-tile aisle (33–35) before the first desk bay |
-| Workstations | none — open plan, meeting-room glass on its left | columns 36–58, rows 6–31; bays on columns 37/43/49/55 and rows 9/15/21/27 | open bay fronts (no partition) |
+| Workstations | none — open plan, meeting-room glass on its left | columns 36–58, rows 6–38; 12–24 bays on columns 37/43/49/55 and rows 9/14/19/24/29/34 | open bay fronts (no partition) |
 | Lounge | none — open plan, north window band is its only hard edge | columns 1–13, rows 6–15 (`LOUNGE_ROOM`) | open to the columns 15–16 aisle |
 | Pantry & Storage | none — open plan; shelf wall along row 20 in three clusters with one-tile gullies | columns 1–13, rows 16–29 | open at the shelf gullies |
 | NOC | pantry wall on row 30, two openings | columns 1–13, rows 31–38; racks, CRAC, UPS and patch panels | openings at columns 6–7 and column 10 |

@@ -20,5 +20,5 @@
     "checkJs": false,
     "noEmit": true
   },
-  "include": ["vite.config.ts", "vite-plugin-openbot.ts", "scripts/**/*.mjs"]
+  "include": ["vite.config.ts", "vite-plugin-openbot.ts", "server.ts", "scripts/**/*.mjs"]
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useStore, type RoomHighlightRect } from "../store/useStore";
-import { PHASE_COLORS, PHASE_LABEL } from "../constants";
+import { PHASE_COLORS, PHASE_LABEL, TILE } from "../constants";
+import { clampDeskCount } from "../office/Layout";
 import {
   DAYLIGHT_LABEL,
   DAYLIGHT_MODES,
@@ -27,8 +28,16 @@ const ROOM_JUMPS: readonly {
   { label: "Meeting", x: 800, y: 400, box: { x: 576, y: 192, w: 448, h: 448 } },
   { label: "Pantry", x: 240, y: 784, box: { x: 32, y: 576, w: 416, h: 384 } },
   { label: "NOC", x: 240, y: 1120, box: { x: 32, y: 992, w: 416, h: 256 } },
-  { label: "Desks", x: 1536, y: 544, box: { x: 1152, y: 192, w: 736, h: 768 } },
+  { label: "Desks", x: 1536, y: 544, box: { x: 1152, y: 192, w: 736, h: 704 } },
 ];
+
+function deskJumpFor(agentCount: number): { x: number; y: number; box: RoomHighlightRect } {
+  const rows = Math.ceil(clampDeskCount(agentCount) / 4);
+  const lastApproachTy = 9 + (rows - 1) * 5 + 2;
+  const top = 6 * TILE;
+  const h = (lastApproachTy + 2) * TILE - top;
+  return { x: 1536, y: top + h / 2, box: { x: 1152, y: top, w: 736, h } };
+}
 
 export default function HUD() {
   const {
@@ -581,16 +590,19 @@ export default function HUD() {
         aria-label="Office camera controls"
       >
         <div className="stage-rooms">
-          {ROOM_JUMPS.map((room) => (
-            <button
-              key={room.label}
-              type="button"
-              onClick={() => focusPoint(room.x, room.y, 1.25, room.box)}
-              title={`Jump camera to ${room.label} (125%)`}
-            >
-              {room.label}
-            </button>
-          ))}
+          {ROOM_JUMPS.map((room) => {
+            const target = room.label === "Desks" ? deskJumpFor(employees.length) : room;
+            return (
+              <button
+                key={room.label}
+                type="button"
+                onClick={() => focusPoint(target.x, target.y, 1.25, target.box)}
+                title={`Jump camera to ${room.label} (125%)`}
+              >
+                {room.label}
+              </button>
+            );
+          })}
         </div>
         <div className="stage-zoom">
           <button

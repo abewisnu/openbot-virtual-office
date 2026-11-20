@@ -55,6 +55,20 @@ for (const s of layout.seats) {
   const reachable = hubs.some((hub) => findPath(blocked, hub, s.approach));
   check(`path hub -> ${s.id}`, reachable);
 }
+const layout24 = buildLayout(24);
+const desks24 = layout24.seats.filter((s) => s.kind === 'desk');
+check('buildLayout(24) creates 24 desks (WS-01..WS-24)', desks24.length === 24 && desks24[0]?.id === 'WS-01' && desks24[23]?.id === 'WS-24', `got ${desks24.length}`);
+check(
+  'all 24 desk seats are solid with walkable & reachable approaches',
+  desks24.every((s) => {
+    const st = tileOf(s.pos);
+    return (
+      layout24.blocked[st.ty]?.[st.tx] === true &&
+      layout24.blocked[s.approach.ty]?.[s.approach.tx] === false &&
+      hubs.some((hub) => findPath(layout24.blocked, hub, s.approach))
+    );
+  }),
+);
 // A chatting pair sits opposite each other across the table, so each meeting
 // chair has to own exactly one facing partner on the same column.
 for (const s of meetingChairs) {

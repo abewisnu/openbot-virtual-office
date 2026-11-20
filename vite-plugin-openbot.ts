@@ -60,11 +60,19 @@ function isAllowedHost(host: string | undefined): boolean {
   const name = normalizeHost(host);
   if (!name) return false;
   if (LOOPBACK.has(name)) return true;
-  // Any literal in 127.0.0.0/8 is loopback too. Nothing else is accepted: a DNS
-  // name cannot be pointed at this port (rebinding), and a public or LAN
-  // address is not a reason to answer, because the bind is the only boundary.
+  // Any literal in 127.0.0.0/8 is loopback too. Nothing else is accepted by
+  // default so a DNS name cannot be pointed at this port (rebinding).
   const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(name);
-  return v4 !== null && v4[1] === '127';
+  if (v4 !== null && v4[1] === '127') return true;
+  // Optional opt-in allowlist for container / reverse-proxy deployments.
+  const rawAllowed = process.env.ALLOWED_HOSTS?.trim();
+  if (!rawAllowed) return false;
+  if (rawAllowed === '*') return true;
+  const extra = rawAllowed
+    .split(',')
+    .map((h) => normalizeHost(h))
+    .filter(Boolean);
+  return extra.includes(name);
 }
 
 const SECURITY_HEADERS: Record<string, string> = {
@@ -286,98 +294,122 @@ function sendJson(
   else res.end(payload);
 }
 
-export function openBotApiPlugin(): Plugin {
-  function handleRequest(req: IncomingMessage, res: ServerResponse) {
-    if (!isAllowedHost(req.headers.host)) {
-      sendJson(res, 421, { error: 'Misdirected request' });
-      return;
-    }
-
-    const method = req.method ?? 'GET';
-    if (method !== 'GET' && method !== 'HEAD') {
-      sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
-      return;
-    }
-
-    try {
-      // Strip anything the browser does not need: provider/model/threadId.
-      const agents = fetchAgentProfiles().map((p) => ({
-        agentId: p.agentId,
-        name: p.name,
-        role: p.role,
-        avatarColor: p.avatarColor,
-        avatarHue: p.avatarHue,
-        avatarSeed: p.avatarSeed,
-        workspaceBytes: p.workspaceBytes,
-        phase: p.phase,
-        activity: p.activity,
-        unreadCount: p.unreadCount,
-      }));
-      sendJson(res, 200, agents, {}, method === 'HEAD');
-    } catch (err) {
-      // Never ship a DB path or SQL text to the browser.
-      console.error('[openbot-api]', err);
-      sendJson(res, 500, { error: 'Agent data unavailable' });
-    }
+function handleAgentsRequest(req: IncomingMessage, res: ServerResponse): void {
+  if (!isAllowedHost(req.headers.host)) {
+    sendJson(res, 421, { error: 'Misdirected request' });
+    return;
   }
 
-  function handleAvatarRequest(req: IncomingMessage, res: ServerResponse) {
-    if (!isAllowedHost(req.headers.host)) {
-      sendJson(res, 421, { error: 'Misdirected request' });
+  const method = req.method ?? 'GET';
+  if (method !== 'GET' && method !== 'HEAD') {
+    sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
+    return;
+  }
+
+  try {
+    // Strip anything the browser does not need: provider/model/threadId.
+    const agents = fetchAgentProfiles().map((p) => ({
+      agentId: p.agentId,
+      name: p.name,
+      role: p.role,
+      avatarColor: p.avatarColor,
+      avatarHue: p.avatarHue,
+      avatarSeed: p.avatarSeed,
+      workspaceBytes: p.workspaceBytes,
+      phase: p.phase,
+      activity: p.activity,
+      unreadCount: p.unreadCount,
+    }));
+    sendJson(res, 200, agents, {}, method === 'HEAD');
+  } catch (err) {
+    // Never ship a DB path or SQL text to the browser.
+    console.error('[openbot-api]', err);
+    sendJson(res, 500, { error: 'Agent data unavailable' });
+  }
+}
+
+function handleAvatarRequest(req: IncomingMessage, res: ServerResponse): void {
+  if (!isAllowedHost(req.headers.host)) {
+    sendJson(res, 421, { error: 'Misdirected request' });
+    return;
+  }
+
+  const method = req.method ?? 'GET';
+  if (method !== 'GET' && method !== 'HEAD') {
+    sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
+    return;
+  }
+
+  (async () => {
+    // 204 is the "no avatar" signal: the UI shows its generated mark.
+    const avatar = await loadProfileAvatar();
+    if (!avatar) {
+      res.writeHead(204, { 'Cache-Control': 'no-store', ...SECURITY_HEADERS });
+      res.end();
       return;
     }
 
-    const method = req.method ?? 'GET';
-    if (method !== 'GET' && method !== 'HEAD') {
-      sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
-      return;
-    }
-
-    (async () => {
-      // 204 is the "no avatar" signal: the UI shows its generated mark.
-      const avatar = await loadProfileAvatar();
-      if (!avatar) {
-        res.writeHead(204, { 'Cache-Control': 'no-store', ...SECURITY_HEADERS });
-        res.end();
-        return;
-      }
-
-      res.writeHead(200, {
+    res.writeHead(200, {
       'Content-Type': avatar.mime,
       'Content-Length': avatar.bytes.length,
       'Cache-Control': 'no-store',
       'X-Office-Avatar-Source': avatar.source,
       ...SECURITY_HEADERS,
-      });
-      if (method === 'HEAD') res.end();
-      else res.end(avatar.bytes);
-    })();
+    });
+    if (method === 'HEAD') res.end();
+    else res.end(avatar.bytes);
+  })();
+}
+
+function handleProfileRequest(req: IncomingMessage, res: ServerResponse): void {
+  if (!isAllowedHost(req.headers.host)) {
+    sendJson(res, 421, { error: 'Misdirected request' });
+    return;
   }
 
-  function handleProfileRequest(req: IncomingMessage, res: ServerResponse) {
-    if (!isAllowedHost(req.headers.host)) {
-      sendJson(res, 421, { error: 'Misdirected request' });
-      return;
-    }
-
-    const method = req.method ?? 'GET';
-    if (method !== 'GET' && method !== 'HEAD') {
-      sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
-      return;
-    }
-
-    // `name: null` is a normal answer: the sidebar falls back to "Workspace".
-    sendJson(res, 200, loadWorkspaceProfile(), {}, method === 'HEAD');
+  const method = req.method ?? 'GET';
+  if (method !== 'GET' && method !== 'HEAD') {
+    sendJson(res, 405, { error: 'Method not allowed' }, { Allow: 'GET, HEAD' });
+    return;
   }
 
+  // `name: null` is a normal answer: the sidebar falls back to "Workspace".
+  sendJson(res, 200, loadWorkspaceProfile(), {}, method === 'HEAD');
+}
+
+/** Shared API dispatcher used by Vite dev/preview and the standalone Node server. */
+export function handleOpenBotApi(req: IncomingMessage, res: ServerResponse): boolean {
+  const pathname = (req.url ?? '/').split('?')[0];
+  if (pathname === '/api/agents') {
+    handleAgentsRequest(req, res);
+    return true;
+  }
+  if (pathname === '/api/office-avatar') {
+    handleAvatarRequest(req, res);
+    return true;
+  }
+  if (pathname === '/api/office-profile') {
+    handleProfileRequest(req, res);
+    return true;
+  }
+  return false;
+}
+
+export function openBotApiPlugin(): Plugin {
   return {
     name: 'openbot-api',
     configureServer(server) {
-      server.middlewares.use('/api/agents', handleRequest);
+      server.middlewares.use('/api/agents', handleAgentsRequest);
       server.middlewares.use('/api/office-avatar', handleAvatarRequest);
       server.middlewares.use('/api/office-profile', handleProfileRequest);
       // Vite has no plugin `close` hook; the dev server's own lifecycle event is
       // the supported place to release the SQLite handle.
+      server.httpServer?.on('close', closeOpenBotDb);
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use('/api/agents', handleAgentsRequest);
+      server.middlewares.use('/api/office-avatar', handleAvatarRequest);
+      server.middlewares.use('/api/office-profile', handleProfileRequest);
       server.httpServer?.on('close', closeOpenBotDb);
     },
   };

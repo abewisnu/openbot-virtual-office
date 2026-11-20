@@ -60,16 +60,24 @@ const ROOM_LABELS: RoomLabel[] = [
 ];
 const LABEL_SPAN = 2; // free tiles required on each side of the plate centre
 
+export const MIN_DESKS = 12;
+export const MAX_DESKS = 24;
+export const DESK_COLS = [37, 43, 49, 55] as const;
+
+export function clampDeskCount(deskCount = MIN_DESKS): number {
+  return Math.max(MIN_DESKS, Math.min(MAX_DESKS, Math.floor(deskCount) || MIN_DESKS));
+}
+
 export function zoneName(tx: number, ty: number): string {
   if (tx < 15 && ty < 16) return "Lounge";
   if (tx < 15 && ty < 30 && ty >= 17) return "Pantry & Storage";
   if (tx < 15 && ty >= 30) return "NOC";
   if (tx >= 17 && tx <= 32 && ty < 20) return "Meeting Area";
-  if (tx >= 39) return "Workstation Area";
+  if (tx >= 36) return "Workstation Area";
   return "Sirkulasi";
 }
 
-export function buildLayout(deskCount = 12): Layout {
+export function buildLayout(deskCount = MIN_DESKS): Layout {
   const blocked = Array.from({ length: ROWS }, (_, ty) =>
     Array.from(
       { length: COLS },
@@ -204,17 +212,14 @@ export function buildLayout(deskCount = 12): Layout {
   };
 
   // --- Workstation (right side): one desk per agent, 4 columns per row.
-  // The desk count tracks the live agent roster (min 12, max 16 so the room
-  // still reads as an office) so no agent is left without a computer.
+  // The desk count tracks the live agent roster (min 12, max 24 = 4 cols x 6 rows)
+  // so no agent is left without a computer.
   // A 2x desk stands 4 tiles wide and 3.5 tiles tall, so bays sit on a 6-tile
   // column pitch (4 tiles of desk + a 2-tile aisle on the right of each bay)
-  // and a 6-tile row pitch, which leaves roughly two clear rows between a desk
-  // back and the chair in front of it. Four bays at that pitch need tiles
-  // 36-57, so the block starts on column 37: the last bay stops one tile short
-  // of the wall and the first one starts one tile off the glass partition at
-  // column 35. Rows start at ty 9, clear of the window band (art rows 0-5).
-  const deskTarget = Math.max(12, Math.min(16, Math.floor(deskCount) || 12));
-  const DESK_COLS = [37, 43, 49, 55];
+  // and a 5-tile row pitch (ty = 9, 14, 19, 24, 29, 34), which leaves 3 walkable
+  // rows between a chair and the desk behind it plus 2 clear rows (37-38) at
+  // the bottom wall. Four bays horizontally need tiles 36-57, starting on col 37.
+  const deskTarget = clampDeskCount(deskCount);
   // Tile footprint of one desk, measured from the sprite: the desk art is 32
   // art px wide, so at PROP px per art px it covers `32*PROP/TILE` tiles (4 at
   // the shipped 2x scale, 2 at ?props=1). The collision grid has to match that
@@ -224,7 +229,7 @@ export function buildLayout(deskCount = 12): Layout {
   let n = 1;
   let placed = 0;
   for (let row = 0; placed < deskTarget; row++) {
-    const ty = 9 + row * 6;
+    const ty = 9 + row * 5;
     for (const tx of DESK_COLS) {
       if (placed >= deskTarget) break;
       place("desk", deskLeft(tx), ty, DESK_W, 1);
