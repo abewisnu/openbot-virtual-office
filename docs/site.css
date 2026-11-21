@@ -422,7 +422,7 @@ a:focus-visible {
   animation: orbitSpin 44s linear infinite reverse;
 }
 
-/* satellites on orbits */
+/* satellites on orbits — each node rotates along its orbit ring */
 .logo-node {
   position: absolute;
   top: 50%;
@@ -432,7 +432,7 @@ a:focus-visible {
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 10px rgba(167, 240, 120, 0.75);
-  animation: nodePulse 2.6s ease-in-out infinite;
+  animation: nodeOrbitA 26s linear infinite, nodePulse 2.6s ease-in-out infinite;
 }
 
 .logo-node-a {
@@ -444,7 +444,8 @@ a:focus-visible {
   height: 5px;
   transform: translate(-50%, -50%) translateY(120px);
   opacity: 0.6;
-  animation-delay: 900ms;
+  animation: nodeOrbitB 44s linear infinite reverse, nodePulse 2.6s ease-in-out infinite;
+  animation-delay: 0s, 900ms;
 }
 
 .logo-node-c {
@@ -452,7 +453,8 @@ a:focus-visible {
   height: 4px;
   transform: translate(-50%, -50%) translate(120px, 0);
   opacity: 0.5;
-  animation-delay: 1.5s;
+  animation: nodeOrbitB 44s linear infinite reverse, nodePulse 2.6s ease-in-out infinite;
+  animation-delay: 0s, 1.5s;
 }
 
 /* OVO core */
@@ -535,6 +537,46 @@ a:focus-visible {
   }
 }
 
+/* Node A: orbit radius 85px (orbit-a diameter 170px) */
+@keyframes nodeOrbitA {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg) translateY(-85px);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg) translateY(-85px);
+  }
+}
+
+/* Mobile: Node A orbit radius 70px */
+@keyframes nodeOrbitA-mobile {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg) translateY(-70px);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg) translateY(-70px);
+  }
+}
+
+/* Node B & C: orbit radius 120px (orbit-b diameter 240px) */
+@keyframes nodeOrbitB {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg) translateY(-120px);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg) translateY(-120px);
+  }
+}
+
+/* Mobile: Node B & C orbit radius 98px */
+@keyframes nodeOrbitB-mobile {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg) translateY(-98px);
+  }
+  to {
+    transform: translate(-50%, -50%) rotate(360deg) translateY(-98px);
+  }
+}
+
 @keyframes haloPulse {
   0%,
   100% {
@@ -577,6 +619,33 @@ a:focus-visible {
   .logo-node,
   .logo-collab-x {
     animation: none;
+  }
+
+  /* Keep nodes at their starting positions when motion is reduced */
+  .logo-node-a {
+    transform: translate(-50%, -50%) translateY(-85px);
+  }
+
+  .logo-node-b {
+    transform: translate(-50%, -50%) translateY(120px);
+  }
+
+  .logo-node-c {
+    transform: translate(-50%, -50%) translate(120px, 0);
+  }
+
+  @media (max-width: 600px) {
+    .logo-node-a {
+      transform: translate(-50%, -50%) translateY(-70px);
+    }
+
+    .logo-node-b {
+      transform: translate(-50%, -50%) translateY(98px);
+    }
+
+    .logo-node-c {
+      transform: translate(-50%, -50%) translate(98px, 0);
+    }
   }
 }
 
@@ -1833,14 +1902,19 @@ a:focus-visible {
 
   .logo-node-a {
     transform: translate(-50%, -50%) translateY(-70px);
+    animation: nodeOrbitA-mobile 26s linear infinite, nodePulse 2.6s ease-in-out infinite;
   }
 
   .logo-node-b {
     transform: translate(-50%, -50%) translateY(98px);
+    animation: nodeOrbitB-mobile 44s linear infinite reverse, nodePulse 2.6s ease-in-out infinite;
+    animation-delay: 0s, 900ms;
   }
 
   .logo-node-c {
     transform: translate(-50%, -50%) translate(98px, 0);
+    animation: nodeOrbitB-mobile 44s linear infinite reverse, nodePulse 2.6s ease-in-out infinite;
+    animation-delay: 0s, 1.5s;
   }
 
   .logo-core img {
