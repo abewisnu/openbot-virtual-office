@@ -464,6 +464,14 @@ a:focus-visible {
   animation: logoCardIn 700ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+.logo-core-openbot {
+  position: absolute;
+  top: calc(50% - 48px);
+  left: 100%;
+  margin-left: 16px;
+  animation-delay: 220ms;
+}
+
 .logo-core img {
   position: relative;
   z-index: 1;
@@ -489,46 +497,6 @@ a:focus-visible {
   border: 1.5px solid rgba(167, 240, 120, 0.45);
   box-shadow: inset 0 0 16px rgba(167, 240, 120, 0.14), 0 0 18px rgba(167, 240, 120, 0.12);
   animation: coreRing 3.2s ease-in-out infinite;
-}
-
-/* OpenBot satellite pill */
-.logo-pill {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  z-index: 2;
-  padding: 7px 14px 7px 7px;
-  border: 1px solid rgba(167, 240, 120, 0.28);
-  border-radius: 999px;
-  background: linear-gradient(140deg, rgba(167, 240, 120, 0.12), rgba(20, 18, 28, 0.9));
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 22px rgba(167, 240, 120, 0.1);
-  animation: logoCardIn 700ms cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
-}
-
-.logo-pill-openbot {
-  position: absolute;
-  top: calc(50% - 118px);
-  right: 6px;
-}
-
-.logo-pill img {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-  border-radius: 50%;
-  background: rgba(167, 240, 120, 0.08);
-  transition: transform 260ms ease;
-}
-
-.logo-pill:hover img {
-  transform: scale(1.12) rotate(-4deg);
-}
-
-.logo-pill-label {
-  color: #d8d2e0;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.12em;
 }
 
 @keyframes logoCardIn {
@@ -587,7 +555,6 @@ a:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   .logo-core,
-  .logo-pill,
   .logo-halo,
   .logo-orbit,
   .logo-core-ring,
@@ -1864,23 +1831,10 @@ a:focus-visible {
     height: 76px;
   }
 
-  .logo-pill {
-    gap: 8px;
-    padding: 6px 12px 6px 6px;
-  }
-
-  .logo-pill-openbot {
-    top: calc(50% - 98px);
-    right: 6px;
-  }
-
-  .logo-pill img {
-    width: 28px;
-    height: 28px;
-  }
-
-  .logo-pill-label {
-    font-size: 10px;
+  .logo-core-openbot {
+    top: calc(50% - 38px);
+    left: 100%;
+    margin-left: 12px;
   }
 
   .visual-note {
@@ -2437,20 +2391,6 @@ a:focus-visible {
 :root[data-theme='light'] .logo-core-ring {
   border-color: rgba(63, 143, 38, 0.5);
   box-shadow: inset 0 0 14px rgba(63, 143, 38, 0.08), 0 0 14px rgba(63, 143, 38, 0.12);
-}
-
-:root[data-theme='light'] .logo-pill {
-  border-color: rgba(63, 143, 38, 0.3);
-  background: linear-gradient(140deg, rgba(63, 143, 38, 0.14), #fffdf9);
-  box-shadow: 0 10px 26px rgba(36, 31, 43, 0.14);
-}
-
-:root[data-theme='light'] .logo-pill img {
-  background: rgba(63, 143, 38, 0.08);
-}
-
-:root[data-theme='light'] .logo-pill-label {
-  color: #2f3a2c;
 }
 
 :root[data-theme='light'] .visual-note {
