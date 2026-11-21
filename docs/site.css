@@ -239,6 +239,30 @@ a:focus-visible {
   z-index: 1;
 }
 
+.hero-copy > * {
+  animation: fadeUp 680ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-copy > :nth-child(1) {
+  animation-delay: 80ms;
+}
+
+.hero-copy > :nth-child(2) {
+  animation-delay: 180ms;
+}
+
+.hero-copy > :nth-child(3) {
+  animation-delay: 280ms;
+}
+
+.hero-copy > :nth-child(4) {
+  animation-delay: 380ms;
+}
+
+.hero-copy > :nth-child(5) {
+  animation-delay: 480ms;
+}
+
 .eyebrow {
   display: flex;
   align-items: center;
@@ -260,6 +284,7 @@ a:focus-visible {
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 0 12px rgba(167, 240, 120, 0.6);
+  animation: statusPulse 2.4s ease-in-out infinite;
 }
 
 .hero h1 {
@@ -611,13 +636,148 @@ a:focus-visible {
   }
 }
 
+/* ── General UI animations (status dot, signal, feature, flow, terminal, support, crypto, gallery, reveal) ── */
+@keyframes statusPulse {
+  0%,
+  100% {
+    opacity: 0.65;
+    box-shadow: 0 0 6px rgba(167, 240, 120, 0.4);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 14px rgba(167, 240, 120, 0.7);
+  }
+}
+
+@keyframes signalTick {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes featureBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes flowIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flowBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.6;
+  }
+  50% {
+    transform: translateY(4px);
+    opacity: 1;
+  }
+}
+
+@keyframes dotBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes statusDotPulse {
+  0%,
+  100% {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+}
+
+@keyframes emblemFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 0 22px rgba(0, 112, 224, 0.12);
+  }
+  50% {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 34px rgba(0, 112, 224, 0.24);
+  }
+}
+
+@keyframes chipIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cardIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .logo-core,
   .logo-halo,
   .logo-orbit,
   .logo-core-ring,
   .logo-node,
-  .logo-collab-x {
+  .logo-collab-x,
+  .status-dot,
+  .signal-icon,
+  .feature-symbol,
+  .flow-node,
+  .flow-connector,
+  .terminal-dots i,
+  .terminal-status-dot,
+  .support-emblem,
+  .crypto-chip,
+  .gallery-card,
+  .hero-copy > *,
+  .section-heading {
     animation: none;
   }
 
@@ -687,6 +847,15 @@ a:focus-visible {
 .signal-icon {
   color: var(--accent);
   font-size: 9px;
+  animation: signalTick 3.2s ease-in-out infinite;
+}
+
+.signal-inner p:nth-child(2) .signal-icon {
+  animation-delay: 1.1s;
+}
+
+.signal-inner p:nth-child(3) .signal-icon {
+  animation-delay: 2.2s;
 }
 
 .section-space {
@@ -699,6 +868,7 @@ a:focus-visible {
   justify-content: space-between;
   gap: 36px;
   margin-bottom: 38px;
+  animation: fadeUp 640ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .section-eyebrow {
@@ -818,12 +988,14 @@ a:focus-visible {
   color: var(--accent);
   background: rgba(167, 240, 120, 0.055);
   font-size: 15px;
+  animation: featureBob 3.8s ease-in-out infinite;
 }
 
 .symbol-shield {
   border-color: rgba(167, 157, 181, 0.26);
   color: #c3b4d7;
   background: rgba(167, 157, 181, 0.06);
+  animation-delay: 1.6s;
 }
 
 .feature-card h3 {
@@ -891,6 +1063,19 @@ a:focus-visible {
   padding: 9px 12px;
   border: 1px solid rgba(167, 157, 181, 0.12);
   background: rgba(36, 31, 45, 0.68);
+  animation: flowIn 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.flow-card .flow-node:nth-child(1) {
+  animation-delay: 120ms;
+}
+
+.flow-card .flow-node:nth-child(3) {
+  animation-delay: 420ms;
+}
+
+.flow-card .flow-node:nth-child(5) {
+  animation-delay: 720ms;
 }
 
 .flow-node-highlight {
@@ -979,6 +1164,11 @@ a:focus-visible {
 
 .flow-connector .fa-solid {
   color: var(--accent);
+  animation: flowBounce 1.8s ease-in-out infinite;
+}
+
+.flow-connector:nth-of-type(2) .fa-solid {
+  animation-delay: 0.9s;
 }
 
 .flow-footnote {
@@ -1008,6 +1198,31 @@ a:focus-visible {
   padding: 8px;
   border: 1px solid var(--border);
   background: #1b1721;
+  animation: cardIn 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.gallery-card:nth-child(2) {
+  animation-delay: 80ms;
+}
+
+.gallery-card:nth-child(3) {
+  animation-delay: 160ms;
+}
+
+.gallery-card:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+.gallery-card:nth-child(5) {
+  animation-delay: 320ms;
+}
+
+.gallery-card:nth-child(6) {
+  animation-delay: 400ms;
+}
+
+.gallery-card:nth-child(7) {
+  animation-delay: 480ms;
 }
 
 .gallery-main {
@@ -1372,6 +1587,15 @@ a:focus-visible {
 .terminal-dots i {
   width: 7px;
   height: 7px;
+  animation: dotBlink 2.2s ease-in-out infinite;
+}
+
+.terminal-dots i:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.terminal-dots i:nth-child(3) {
+  animation-delay: 0.6s;
 }
 
 .terminal-label {
@@ -1449,6 +1673,7 @@ a:focus-visible {
   flex: 0 0 6px;
   border-radius: 50%;
   background: var(--accent);
+  animation: statusDotPulse 2.6s ease-in-out infinite;
 }
 
 .terminal-bottom-actions {
@@ -1582,6 +1807,7 @@ a:focus-visible {
   color: #4aa3ff;
   background: rgba(0, 112, 224, 0.12);
   box-shadow: 0 0 30px rgba(0, 112, 224, 0.12);
+  animation: emblemFloat 4s ease-in-out infinite;
 }
 
 .support-emblem .fa-paypal {
@@ -2837,6 +3063,23 @@ a:focus-visible {
   font-size: 10px;
   cursor: pointer;
   transition: border-color 160ms ease, background 160ms ease;
+  animation: chipIn 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.crypto-chip:nth-child(1) {
+  animation-delay: 60ms;
+}
+
+.crypto-chip:nth-child(2) {
+  animation-delay: 140ms;
+}
+
+.crypto-chip:nth-child(3) {
+  animation-delay: 220ms;
+}
+
+.crypto-chip:nth-child(4) {
+  animation-delay: 300ms;
 }
 
 .crypto-chip:hover {
